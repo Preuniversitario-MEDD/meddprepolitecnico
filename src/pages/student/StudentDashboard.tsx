@@ -14,10 +14,10 @@ export default function StudentDashboard() {
   const { profile, user } = useAuth();
   const navigate = useNavigate();
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
-  const [progress, setProgress] = useState<Record<string, { completada: boolean; puntaje: number }>>({});
+  const [progress, setProgress] = useState<Record<string, {completada: boolean;puntaje: number;}>>({});
   const [globalProgress, setGlobalProgress] = useState(0);
 
-  useEffect(() => { loadData(); }, [user]);
+  useEffect(() => {loadData();}, [user]);
 
   async function loadData() {
     const { data: ses } = await supabase.from('sesiones').select('*').order('numero');
@@ -25,14 +25,14 @@ export default function StudentDashboard() {
 
     if (user) {
       const { data: prog } = await supabase.from('progreso_estudiante').select('*').eq('user_id', user.id);
-      const map: Record<string, { completada: boolean; puntaje: number }> = {};
-      prog?.forEach(p => {
+      const map: Record<string, {completada: boolean;puntaje: number;}> = {};
+      prog?.forEach((p) => {
         map[p.sesion_id] = { completada: p.completada, puntaje: Number(p.puntaje_quiz) || 0 };
       });
       setProgress(map);
 
-      const completed = prog?.filter(p => p.completada).length || 0;
-      setGlobalProgress(Math.round((completed / 14) * 100));
+      const completed = prog?.filter((p) => p.completada).length || 0;
+      setGlobalProgress(Math.round(completed / 14 * 100));
     }
   }
 
@@ -50,18 +50,18 @@ export default function StudentDashboard() {
     locked: { bg: 'bg-muted', icon: Lock, label: 'Bloqueada', border: 'border-muted' },
     completed: { bg: 'gradient-cool', icon: CheckCircle, label: 'Completada', border: 'border-accent' },
     'in-progress': { bg: 'gradient-warm', icon: Clock, label: 'En progreso', border: 'border-neon-orange' },
-    available: { bg: 'gradient-primary', icon: FlaskConical, label: 'Disponible', border: 'border-primary' },
+    available: { bg: 'gradient-primary', icon: FlaskConical, label: 'Disponible', border: 'border-primary' }
   };
 
   const sessionColors = [
-    'from-neon-violet to-neon-blue',
-    'from-neon-pink to-neon-fuchsia',
-    'from-neon-blue to-neon-mint',
-    'from-neon-orange to-neon-pink',
-    'from-neon-mint to-neon-blue',
-    'from-neon-fuchsia to-neon-violet',
-    'from-neon-orange to-neon-violet',
-  ];
+  'from-neon-violet to-neon-blue',
+  'from-neon-pink to-neon-fuchsia',
+  'from-neon-blue to-neon-mint',
+  'from-neon-orange to-neon-pink',
+  'from-neon-mint to-neon-blue',
+  'from-neon-fuchsia to-neon-violet',
+  'from-neon-orange to-neon-violet'];
+
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -69,10 +69,10 @@ export default function StudentDashboard() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-1"
-      >
-        <h1 className="text-2xl md:text-3xl font-display font-bold">
-          ¡Hola, <span className="text-gradient-primary">{firstName}</span>! 👋
+        className="space-y-1">
+        
+        <h1 className="text-2xl md:text-3xl font-display font-bold text-neon-mint">
+          ¡Hola, <span className="text-gradient-primary text-neon-mint">{firstName}</span>! 👋
         </h1>
         <p className="text-muted-foreground text-sm">Sigue avanzando en tu preparación de Química</p>
       </motion.div>
@@ -81,8 +81,8 @@ export default function StudentDashboard() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1 }}
-      >
+        transition={{ delay: 0.1 }}>
+        
         <Card className="card-elevated neon-border overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -91,7 +91,7 @@ export default function StudentDashboard() {
             </div>
             <Progress value={globalProgress} className="h-3" />
             <p className="text-xs text-muted-foreground mt-2">
-              {Object.values(progress).filter(p => p.completada).length} de 14 sesiones completadas
+              {Object.values(progress).filter((p) => p.completada).length} de 14 sesiones completadas
             </p>
           </CardContent>
         </Card>
@@ -113,14 +113,14 @@ export default function StudentDashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 whileHover={status !== 'locked' ? { scale: 1.03 } : {}}
-                whileTap={status !== 'locked' ? { scale: 0.97 } : {}}
-              >
+                whileTap={status !== 'locked' ? { scale: 0.97 } : {}}>
+                
                 <Card
                   className={`card-elevated cursor-pointer transition-all overflow-hidden ${
-                    status === 'locked' ? 'opacity-50 cursor-not-allowed' : 'hover:glow-primary'
-                  } border-l-4 ${config.border}`}
-                  onClick={() => status !== 'locked' && navigate(`/student/session/${sesion.id}`)}
-                >
+                  status === 'locked' ? 'opacity-50 cursor-not-allowed' : 'hover:glow-primary'} border-l-4 ${
+                  config.border}`}
+                  onClick={() => status !== 'locked' && navigate(`/student/session/${sesion.id}`)}>
+                  
                   <CardContent className="p-3">
                     <div className={`w-10 h-10 rounded-xl mb-2 flex items-center justify-center bg-gradient-to-br ${sessionColors[colorIndex]}`}>
                       <config.icon className="w-5 h-5 text-primary-foreground" />
@@ -128,20 +128,20 @@ export default function StudentDashboard() {
                     <p className="font-display font-bold text-sm">S{sesion.numero}</p>
                     <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{sesion.titulo}</p>
                     <span className={`inline-block mt-2 text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                      status === 'completed' ? 'bg-accent/20 text-accent' :
-                      status === 'in-progress' ? 'bg-neon-orange/20 text-neon-orange' :
-                      status === 'locked' ? 'bg-muted text-muted-foreground' :
-                      'bg-primary/20 text-primary'
-                    }`}>
+                    status === 'completed' ? 'bg-accent/20 text-accent' :
+                    status === 'in-progress' ? 'bg-neon-orange/20 text-neon-orange' :
+                    status === 'locked' ? 'bg-muted text-muted-foreground' :
+                    'bg-primary/20 text-primary'}`
+                    }>
                       {config.label}
                     </span>
                   </CardContent>
                 </Card>
-              </motion.div>
-            );
+              </motion.div>);
+
           })}
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
