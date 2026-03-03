@@ -9,13 +9,13 @@ import {
   Moon, Sun, GraduationCap, FlaskConical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import AvatarUpload from '@/components/AvatarUpload';
 
 const adminLinks = [
   { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/admin/students', icon: Users, label: 'Estudiantes' },
   { path: '/admin/content', icon: BookOpen, label: 'Contenido' },
-  { path: '/admin/settings', icon: Settings, label: 'Ajustes' },
+  { path: '/admin/settings', icon: Settings, label: 'Roles' },
 ];
 
 const studentLinks = [
@@ -25,7 +25,7 @@ const studentLinks = [
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-  const { profile, role, signOut } = useAuth();
+  const { profile, role, signOut, refreshProfile } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -75,11 +75,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
           <div className="p-3 border-t border-sidebar-border space-y-2">
             <div className="flex items-center gap-2 px-3 py-2">
-              <Avatar className="w-8 h-8">
-                <AvatarFallback className="gradient-primary text-primary-foreground text-xs">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarUpload
+                userId={profile?.user_id || ''}
+                avatarUrl={profile?.avatar_url || null}
+                initials={initials}
+                size="sm"
+                onUpload={() => refreshProfile()}
+              />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium truncate text-sidebar-foreground">{profile?.nombre} {profile?.apellidos}</p>
                 <p className="text-xs text-muted-foreground">{profile?.cedula}</p>
@@ -99,7 +101,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 overflow-auto pb-20 md:pb-0">
-        {/* Mobile header */}
         {isMobile && (
           <header className="sticky top-0 z-40 glass border-b border-border px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -119,12 +120,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </header>
         )}
 
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
+        <motion.div key={location.pathname} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           {children}
         </motion.div>
       </main>
@@ -146,10 +142,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   <link.icon className={`w-5 h-5 ${active ? 'text-primary' : ''}`} />
                   <span className="text-[10px] font-medium">{link.label}</span>
                   {active && (
-                    <motion.div
-                      layoutId="bottomnav"
-                      className="absolute -top-0.5 w-8 h-1 rounded-full gradient-primary"
-                    />
+                    <motion.div layoutId="bottomnav" className="absolute -top-0.5 w-8 h-1 rounded-full gradient-primary" />
                   )}
                 </button>
               );

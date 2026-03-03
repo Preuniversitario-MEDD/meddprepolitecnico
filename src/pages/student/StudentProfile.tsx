@@ -1,10 +1,10 @@
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
+import AvatarUpload from '@/components/AvatarUpload';
 
 export default function StudentProfile() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   if (!profile) return null;
 
   const initials = (profile.nombre?.[0] || '') + (profile.apellidos?.[0] || '');
@@ -28,9 +28,13 @@ export default function StudentProfile() {
         <Card className="card-elevated">
           <CardContent className="p-6">
             <div className="flex items-center gap-4 mb-6">
-              <Avatar className="w-16 h-16">
-                <AvatarFallback className="gradient-neon text-primary-foreground text-xl font-bold">{initials}</AvatarFallback>
-              </Avatar>
+              <AvatarUpload
+                userId={profile.user_id}
+                avatarUrl={profile.avatar_url}
+                initials={initials}
+                size="lg"
+                onUpload={() => refreshProfile()}
+              />
               <div>
                 <h2 className="text-xl font-display font-bold">{profile.nombre} {profile.apellidos}</h2>
                 <p className="text-sm text-muted-foreground">@{profile.usuario}</p>
@@ -40,14 +44,14 @@ export default function StudentProfile() {
             <div className="grid gap-3 text-sm">
               {[
                 ['Cédula', profile.cedula],
-                ['Usuario', profile.usuario],
+                ['Usuario', `${profile.cedula}-${profile.nombre} ${profile.apellidos}`],
                 ['Fecha de Nacimiento', profile.fecha_nacimiento || 'N/A'],
                 ['Edad', calcAge(profile.fecha_nacimiento)],
                 ['Estado', profile.activo ? '✅ Activo' : '❌ Bloqueado'],
               ].map(([label, value]) => (
-                <div key={label} className="flex justify-between py-2 border-b border-border">
+                <div key={label as string} className="flex justify-between py-2 border-b border-border">
                   <span className="text-muted-foreground">{label}</span>
-                  <span className="font-medium">{value}</span>
+                  <span className="font-medium text-foreground">{value}</span>
                 </div>
               ))}
             </div>
