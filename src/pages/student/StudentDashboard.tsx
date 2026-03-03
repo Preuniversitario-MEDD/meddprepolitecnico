@@ -87,7 +87,7 @@ export default function StudentDashboard() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
               <p className="font-display font-semibold text-sm">Progreso Global</p>
-              <span className="text-2xl font-bold text-gradient-primary">{globalProgress}%</span>
+              <span className="text-2xl font-bold text-gradient-primary text-accent">{globalProgress}%</span>
             </div>
             <Progress value={globalProgress} className="h-3" />
             <p className="text-xs text-muted-foreground mt-2">
