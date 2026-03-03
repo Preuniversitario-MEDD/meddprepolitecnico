@@ -71,8 +71,8 @@ export default function Login() {
       {/* Theme toggle */}
       <button
         onClick={toggleTheme}
-        className="absolute top-4 right-4 p-2 rounded-full glass"
-      >
+        className="absolute top-4 right-4 p-2 rounded-full glass">
+        
         {theme === 'dark' ? <Sun className="w-5 h-5 text-neon-orange" /> : <Moon className="w-5 h-5 text-primary-foreground" />}
       </button>
 
@@ -80,19 +80,19 @@ export default function Login() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="w-full max-w-md"
-      >
+        className="w-full max-w-md">
+        
         <Card className="glass border-0 card-elevated">
           <CardHeader className="text-center space-y-3 pb-2">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-              className="mx-auto w-16 h-16 rounded-2xl gradient-neon flex items-center justify-center glow-primary"
-            >
+              className="mx-auto w-16 h-16 rounded-2xl gradient-neon flex items-center justify-center glow-primary">
+              
               <FlaskConical className="w-8 h-8 text-primary-foreground" />
             </motion.div>
-            <h1 className="text-3xl font-bold font-display text-gradient-primary">
+            <h1 className="text-3xl font-bold font-display text-gradient-primary bg-neon-pink text-primary-foreground">
               ESPOLMEDD
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -102,43 +102,43 @@ export default function Login() {
 
           <CardContent className="pt-4">
             <AnimatePresence mode="wait">
-              {step === 'login' ? (
-                <motion.form
-                  key="login"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  onSubmit={handleLogin}
-                  className="space-y-4"
-                >
+              {step === 'login' ?
+              <motion.form
+                key="login"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                onSubmit={handleLogin}
+                className="space-y-4">
+                
                   <div className="space-y-2">
                     <Label htmlFor="cedula">Cédula</Label>
                     <Input
-                      id="cedula"
-                      placeholder="Ingresa tu cédula (10 dígitos)"
-                      value={cedula}
-                      onChange={e => setCedula(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      maxLength={10}
-                      className="h-12"
-                    />
+                    id="cedula"
+                    placeholder="Ingresa tu cédula (10 dígitos)"
+                    value={cedula}
+                    onChange={(e) => setCedula(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    maxLength={10}
+                    className="h-12" />
+                  
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="password">Contraseña</Label>
                     <div className="relative">
                       <Input
-                        id="password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Contraseña"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        className="h-12 pr-10"
-                      />
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Contraseña"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="h-12 pr-10" />
+                    
                       <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      >
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
@@ -147,16 +147,16 @@ export default function Login() {
                   <Button type="submit" className="w-full h-12 gradient-primary text-primary-foreground font-semibold text-base" disabled={loading}>
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Ingresar'}
                   </Button>
-                </motion.form>
-              ) : (
-                <motion.form
-                  key="change"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  onSubmit={handleChangePassword}
-                  className="space-y-4"
-                >
+                </motion.form> :
+
+              <motion.form
+                key="change"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                onSubmit={handleChangePassword}
+                className="space-y-4">
+                
                   <div className="p-3 rounded-lg bg-neon-orange/10 border border-neon-orange/30">
                     <p className="text-sm font-medium text-neon-orange">
                       ⚠️ Primera vez — Debes crear tu nueva contraseña
@@ -166,34 +166,34 @@ export default function Login() {
                   <div className="space-y-2">
                     <Label>Nueva contraseña</Label>
                     <Input
-                      type="password"
-                      placeholder="Mínimo 6 caracteres"
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                      className="h-12"
-                    />
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="h-12" />
+                  
                   </div>
 
                   <div className="space-y-2">
                     <Label>Confirmar contraseña</Label>
                     <Input
-                      type="password"
-                      placeholder="Repite la contraseña"
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      className="h-12"
-                    />
+                    type="password"
+                    placeholder="Repite la contraseña"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="h-12" />
+                  
                   </div>
 
                   <Button type="submit" className="w-full h-12 gradient-primary text-primary-foreground font-semibold" disabled={loading}>
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Guardar contraseña'}
                   </Button>
                 </motion.form>
-              )}
+              }
             </AnimatePresence>
           </CardContent>
         </Card>
       </motion.div>
-    </div>
-  );
+    </div>);
+
 }
