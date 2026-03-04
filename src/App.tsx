@@ -11,43 +11,29 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminContent from "./pages/admin/AdminContent";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminQuiz from "./pages/admin/AdminQuiz";
+import AdminLibrary from "./pages/admin/AdminLibrary";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentSessions from "./pages/student/StudentSessions";
 import StudentProfile from "./pages/student/StudentProfile";
 import SessionDetail from "./pages/student/SessionDetail";
+import SectionExam from "./pages/student/SectionExam";
+import Library from "./pages/student/Library";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode; requiredRole?: 'admin' | 'estudiante' }) {
   const { user, role, loading } = useAuth();
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-      </div>
-    );
-  }
-  
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (requiredRole && role !== requiredRole) {
-    return <Navigate to={role === 'admin' ? '/admin' : '/student'} replace />;
-  }
-  
+  if (requiredRole && role !== requiredRole) return <Navigate to={role === 'admin' ? '/admin' : '/student'} replace />;
   return <AppLayout>{children}</AppLayout>;
 }
 
 function AppRoutes() {
   const { user, role, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center gradient-primary">
-        <div className="w-12 h-12 rounded-full border-4 border-primary-foreground border-t-transparent animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center gradient-primary"><div className="w-12 h-12 rounded-full border-4 border-primary-foreground border-t-transparent animate-spin" /></div>;
 
   return (
     <Routes>
@@ -58,12 +44,16 @@ function AppRoutes() {
       <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/students" element={<ProtectedRoute requiredRole="admin"><AdminStudents /></ProtectedRoute>} />
       <Route path="/admin/content" element={<ProtectedRoute requiredRole="admin"><AdminContent /></ProtectedRoute>} />
+      <Route path="/admin/quiz" element={<ProtectedRoute requiredRole="admin"><AdminQuiz /></ProtectedRoute>} />
+      <Route path="/admin/library" element={<ProtectedRoute requiredRole="admin"><AdminLibrary /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
 
       {/* Student Routes */}
       <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
       <Route path="/student/sessions" element={<ProtectedRoute><StudentSessions /></ProtectedRoute>} />
       <Route path="/student/session/:id" element={<ProtectedRoute><SessionDetail /></ProtectedRoute>} />
+      <Route path="/student/exam/:tipo" element={<ProtectedRoute><SectionExam /></ProtectedRoute>} />
+      <Route path="/student/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
       <Route path="/student/profile" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
