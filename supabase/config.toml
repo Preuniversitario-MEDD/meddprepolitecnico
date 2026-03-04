@@ -1,1 +1,7 @@
 project_id = "xoaondyfwefdnuknlaix"
+
+[functions.admin-users]
+verify_jwt = false
+
+[functions.generate-exercise]
+verify_jwt = false

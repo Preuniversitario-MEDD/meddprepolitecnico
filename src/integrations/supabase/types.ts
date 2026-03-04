@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      biblioteca: {
+        Row: {
+          categoria: string | null
+          created_at: string | null
+          descripcion: string | null
+          id: string
+          titulo: string
+          url: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          id?: string
+          titulo: string
+          url: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          id?: string
+          titulo?: string
+          url?: string
+        }
+        Relationships: []
+      }
       contenido: {
         Row: {
           created_at: string
@@ -21,6 +48,7 @@ export type Database = {
           imagen_url: string | null
           orden: number
           sesion_id: string
+          solucion: string | null
           texto: string | null
           tipo: string
           titulo: string
@@ -32,6 +60,7 @@ export type Database = {
           imagen_url?: string | null
           orden?: number
           sesion_id: string
+          solucion?: string | null
           texto?: string | null
           tipo: string
           titulo?: string
@@ -43,6 +72,7 @@ export type Database = {
           imagen_url?: string | null
           orden?: number
           sesion_id?: string
+          solucion?: string | null
           texto?: string | null
           tipo?: string
           titulo?: string
@@ -57,6 +87,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      examenes: {
+        Row: {
+          aprobado: boolean | null
+          fecha: string | null
+          id: string
+          puntaje: number | null
+          respuestas: Json | null
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          aprobado?: boolean | null
+          fecha?: string | null
+          id?: string
+          puntaje?: number | null
+          respuestas?: Json | null
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          aprobado?: boolean | null
+          fecha?: string | null
+          id?: string
+          puntaje?: number | null
+          respuestas?: Json | null
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -106,29 +166,47 @@ export type Database = {
       progreso_estudiante: {
         Row: {
           completada: boolean
+          ejercicios_completados: number | null
+          ejercicios_correctos: number | null
+          errores_quiz: number | null
           fecha: string
           id: string
+          intentos_quiz: number | null
+          preguntas_correctas_total: number | null
           preguntas_respondidas: Json | null
           puntaje_quiz: number | null
           sesion_id: string
+          tiempo_invertido: number | null
           user_id: string
         }
         Insert: {
           completada?: boolean
+          ejercicios_completados?: number | null
+          ejercicios_correctos?: number | null
+          errores_quiz?: number | null
           fecha?: string
           id?: string
+          intentos_quiz?: number | null
+          preguntas_correctas_total?: number | null
           preguntas_respondidas?: Json | null
           puntaje_quiz?: number | null
           sesion_id: string
+          tiempo_invertido?: number | null
           user_id: string
         }
         Update: {
           completada?: boolean
+          ejercicios_completados?: number | null
+          ejercicios_correctos?: number | null
+          errores_quiz?: number | null
           fecha?: string
           id?: string
+          intentos_quiz?: number | null
+          preguntas_correctas_total?: number | null
           preguntas_respondidas?: Json | null
           puntaje_quiz?: number | null
           sesion_id?: string
+          tiempo_invertido?: number | null
           user_id?: string
         }
         Relationships: [
