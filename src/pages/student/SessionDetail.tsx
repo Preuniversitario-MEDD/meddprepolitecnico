@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, BookOpen, Lightbulb, PenTool, Brain, Eye, EyeOff, Sparkles, Loader2, Timer, Target, AlertTriangle, Trophy, PartyPopper } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ArrowLeft, BookOpen, Lightbulb, PenTool, Brain, Eye, EyeOff, Sparkles, Loader2, Timer, Target, AlertTriangle, Trophy, PartyPopper, ChevronDown } from 'lucide-react';
 import QuizComponent from '@/components/quiz/QuizComponent';
 import { useToast } from '@/hooks/use-toast';
 import type { Tables } from '@/integrations/supabase/types';
@@ -15,11 +16,8 @@ import type { Tables } from '@/integrations/supabase/types';
 type Contenido = Tables<'contenido'>;
 type Sesion = Tables<'sesiones'>;
 
-interface AIExercise {
-  titulo: string;
-  enunciado: string;
-  solucion: string;
-}
+interface Pestana { id: string; sesion_id: string; nombre: string; clave: string; orden: number; }
+interface AIExercise { titulo: string; enunciado: string; solucion: string; }
 
 export default function SessionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +26,8 @@ export default function SessionDetail() {
   const { toast } = useToast();
   const [sesion, setSesion] = useState<Sesion | null>(null);
   const [contenido, setContenido] = useState<Contenido[]>([]);
+  const [pestanas, setPestanas] = useState<Pestana[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('');
   const [showSolutions, setShowSolutions] = useState<Record<string, boolean>>({});
   const [aiExercise, setAiExercise] = useState<AIExercise | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -39,22 +39,28 @@ export default function SessionDetail() {
   useEffect(() => { if (id) loadData(); }, [id]);
 
   async function loadData() {
-    const { data: s } = await supabase.from('sesiones').select('*').eq('id', id!).single();
+    const [{ data: s }, { data: c }, { data: tabs }] = await Promise.all([
+      supabase.from('sesiones').select('*').eq('id', id!).single(),
+      supabase.from('contenido').select('*').eq('sesion_id', id!).order('orden'),
+      supabase.from('pestanas_sesion').select('*').eq('sesion_id', id!).order('orden'),
+    ]);
     setSesion(s);
-    const { data: c } = await supabase.from('contenido').select('*').eq('sesion_id', id!).order('orden');
     setContenido(c || []);
+    
+    const tabList = (tabs || []) as Pestana[];
+    setPestanas(tabList);
+    // Default to first tab, or keep quiz as extra
+    if (tabList.length > 0 && !activeTab) setActiveTab(tabList[0].clave);
 
     if (user) {
       const { data: prog } = await supabase.from('progreso_estudiante').select('*').eq('user_id', user.id).eq('sesion_id', id!).maybeSingle();
       if (prog) {
-        const intentos = (prog as any).intentos_quiz || 0;
-        const errores = (prog as any).errores_quiz || 0;
-        const tiempo = (prog as any).tiempo_invertido || 0;
-        const correctas = (prog as any).preguntas_correctas_total || 0;
+        const intentos = prog.intentos_quiz || 0;
+        const errores = prog.errores_quiz || 0;
+        const tiempo = prog.tiempo_invertido || 0;
+        const correctas = prog.preguntas_correctas_total || 0;
         setStats({ intentos, errores, tiempo, correctasTotal: correctas });
-        
-        // Calculate session progress: exercises (40%) + quiz (60%)
-        const ejerciciosProgress = Math.min(((prog as any).ejercicios_correctos || 0) / 20, 1) * 40;
+        const ejerciciosProgress = Math.min((prog.ejercicios_correctos || 0) / 20, 1) * 40;
         const quizProgress = Math.min(correctas / 150, 1) * 60;
         const total = Math.round(ejerciciosProgress + quizProgress);
         setSessionProgress(total);
@@ -80,13 +86,23 @@ export default function SessionDetail() {
     setAiLoading(false);
   }
 
-  const teoria = contenido.filter(c => c.tipo === 'teoria');
-  const trucos = contenido.filter(c => c.tipo === 'truco');
-  const ejercicios = contenido.filter(c => c.tipo === 'ejercicio');
-  const tabIcons = [BookOpen, Lightbulb, PenTool, Brain];
   const formatTime = (s: number) => { const m = Math.floor(s / 60); return m > 0 ? `${m}m ${s % 60}s` : `${s}s`; };
 
+  // Group content by grupo_nombre for a given tab clave
+  function getGroupedContent(clave: string) {
+    const items = contenido.filter(c => c.tipo === clave);
+    const groups = new Map<string, Contenido[]>();
+    items.forEach(item => {
+      const g = (item as any).grupo_nombre || '';
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g)!.push(item);
+    });
+    return groups;
+  }
+
   if (!sesion) return <div className="p-6 text-center text-muted-foreground">Cargando sesión...</div>;
+
+  const allTabs = [...pestanas, { id: 'quiz', sesion_id: id!, nombre: 'Quiz', clave: 'quiz', orden: 999 }];
 
   return (
     <div className="p-4 md:p-6 space-y-4">
@@ -148,128 +164,138 @@ export default function SessionDetail() {
         )}
       </AnimatePresence>
 
-      {/* Tabs */}
-      <Tabs defaultValue="teoria">
-        <TabsList className="w-full grid grid-cols-4">
-          {['teoria', 'trucos', 'ejercicios', 'quiz'].map((tab, i) => {
-            const Icon = tabIcons[i];
-            return (
-              <TabsTrigger key={tab} value={tab} className="gap-1 text-xs md:text-sm">
-                <Icon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
-              </TabsTrigger>
-            );
-          })}
+      {/* Dynamic Tabs */}
+      <Tabs value={activeTab || allTabs[0]?.clave} onValueChange={setActiveTab}>
+        <TabsList className="w-full flex-wrap h-auto">
+          {allTabs.map(tab => (
+            <TabsTrigger key={tab.clave} value={tab.clave} className="gap-1 text-xs md:text-sm">
+              {tab.clave === 'quiz' && <Brain className="w-3.5 h-3.5" />}
+              {tab.nombre}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        {/* Teoría */}
-        <TabsContent value="teoria" className="space-y-3 mt-4">
-          {teoria.length === 0 && <p className="text-center text-muted-foreground py-8">No hay contenido teórico aún</p>}
-          {teoria.map((item, i) => (
-            <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-              <Card className="card-elevated">
-                <CardContent className="p-4">
-                  <h3 className="font-display font-bold text-sm mb-2">{item.titulo}</h3>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{item.texto}</p>
-                  {item.imagen_url && <img src={item.imagen_url} alt={item.titulo} className="mt-3 rounded-lg max-w-full h-auto" />}
-                  {item.url && (
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-secondary underline">Ver recurso →</a>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </TabsContent>
+        {/* Dynamic content tabs */}
+        {pestanas.map(tab => {
+          const groups = getGroupedContent(tab.clave);
+          const hasExercises = tab.clave === 'ejercicio';
 
-        {/* Trucos */}
-        <TabsContent value="trucos" className="space-y-3 mt-4">
-          {trucos.length === 0 && <p className="text-center text-muted-foreground py-8">No hay trucos aún</p>}
-          <div className="grid gap-3 sm:grid-cols-2">
-            {trucos.map((item, i) => (
-              <motion.div key={item.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }}>
-                <Card className="card-elevated neon-border h-full">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-2">
-                      <Lightbulb className="w-5 h-5 text-neon-orange shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        <h3 className="font-display font-bold text-sm">{item.titulo}</h3>
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap break-words">{item.texto}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </TabsContent>
+          return (
+            <TabsContent key={tab.clave} value={tab.clave} className="space-y-3 mt-4">
+              {Array.from(groups.entries()).map(([groupName, items]) => {
+                if (!groupName) {
+                  return items.map((item, i) => (
+                    <ContentItem key={item.id} item={item} index={i}
+                      showSolutions={showSolutions}
+                      onToggleSolution={(id) => setShowSolutions(prev => ({ ...prev, [id]: !prev[id] }))} />
+                  ));
+                }
+                return (
+                  <Collapsible key={groupName} defaultOpen>
+                    <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
+                      <ChevronDown className="w-4 h-4 transition-transform" />
+                      <span className="font-semibold text-sm">{groupName}</span>
+                      <span className="text-xs text-muted-foreground">({items.length})</span>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-2 pl-4 border-l-2 border-muted ml-2 mt-1">
+                      {items.map((item, i) => (
+                        <ContentItem key={item.id} item={item} index={i}
+                          showSolutions={showSolutions}
+                          onToggleSolution={(id) => setShowSolutions(prev => ({ ...prev, [id]: !prev[id] }))} />
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
 
-        {/* Ejercicios */}
-        <TabsContent value="ejercicios" className="space-y-3 mt-4">
-          {ejercicios.length === 0 && <p className="text-center text-muted-foreground py-8">No hay ejercicios aún</p>}
-          {ejercicios.map((item, i) => (
-            <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-              <Card className="card-elevated">
-                <CardContent className="p-4">
-                  <h3 className="font-display font-bold text-sm mb-2">{item.titulo}</h3>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{item.texto}</p>
-                  {item.imagen_url && <img src={item.imagen_url} alt={item.titulo} className="mt-3 rounded-lg max-w-full h-auto" />}
-                  <Button variant="outline" size="sm"
-                    onClick={() => setShowSolutions({ ...showSolutions, [item.id]: !showSolutions[item.id] })}
-                    className="mt-3 gap-2">
-                    {showSolutions[item.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    {showSolutions[item.id] ? 'Ocultar solución' : 'Ver solución'}
+              {Array.from(groups.values()).flat().length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No hay contenido aún</p>
+              )}
+
+              {/* AI Exercise Generation - show on ejercicio tab */}
+              {hasExercises && (
+                <>
+                  <Button onClick={generateAIExercise} disabled={aiLoading} variant="outline" className="w-full gap-2 neon-border">
+                    {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-neon-fuchsia" />}
+                    {aiLoading ? 'Generando...' : 'Generar ejercicio con IA'}
                   </Button>
                   <AnimatePresence>
-                    {showSolutions[item.id] && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                        className="mt-2 p-3 rounded-lg bg-accent/10 text-sm overflow-hidden break-words max-w-full">
-                        {(item as any).solucion || item.url || 'Solución no disponible'}
+                    {aiExercise && (
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                        <Card className="card-elevated neon-border">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Sparkles className="w-4 h-4 text-neon-fuchsia" />
+                              <h3 className="font-display font-bold text-sm">🤖 {aiExercise.titulo}</h3>
+                            </div>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{aiExercise.enunciado}</p>
+                            <Button variant="outline" size="sm" onClick={() => setShowAiSolution(!showAiSolution)} className="mt-3 gap-2">
+                              {showAiSolution ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              {showAiSolution ? 'Ocultar' : 'Ver solución'}
+                            </Button>
+                            {showAiSolution && (
+                              <div className="mt-2 p-3 rounded-lg bg-accent/10 text-sm whitespace-pre-wrap break-words max-w-full">
+                                {aiExercise.solucion}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                </>
+              )}
+            </TabsContent>
+          );
+        })}
 
-          {/* AI Exercise Generation */}
-          <Button onClick={generateAIExercise} disabled={aiLoading} variant="outline" className="w-full gap-2 neon-border">
-            {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-neon-fuchsia" />}
-            {aiLoading ? 'Generando...' : 'Generar ejercicio con IA'}
-          </Button>
-
-          {/* AI Generated Exercise */}
-          <AnimatePresence>
-            {aiExercise && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                <Card className="card-elevated neon-border">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="w-4 h-4 text-neon-fuchsia" />
-                      <h3 className="font-display font-bold text-sm">🤖 {aiExercise.titulo}</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{aiExercise.enunciado}</p>
-                    <Button variant="outline" size="sm" onClick={() => setShowAiSolution(!showAiSolution)} className="mt-3 gap-2">
-                      {showAiSolution ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      {showAiSolution ? 'Ocultar' : 'Ver solución'}
-                    </Button>
-                    {showAiSolution && (
-                      <div className="mt-2 p-3 rounded-lg bg-accent/10 text-sm whitespace-pre-wrap break-words max-w-full">
-                        {aiExercise.solucion}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </TabsContent>
-
-        {/* Quiz */}
+        {/* Quiz Tab */}
         <TabsContent value="quiz" className="mt-4">
           {id && user && <QuizComponent sesionId={id} userId={user.id} />}
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// Extracted content item component for reuse across tabs
+function ContentItem({ item, index, showSolutions, onToggleSolution }: {
+  item: Contenido; index: number;
+  showSolutions: Record<string, boolean>;
+  onToggleSolution: (id: string) => void;
+}) {
+  const hasSolution = !!(item.solucion);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }}>
+      <Card className="card-elevated">
+        <CardContent className="p-4">
+          <h3 className="font-display font-bold text-sm mb-2">{item.titulo}</h3>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{item.texto}</p>
+          {item.imagen_url && <img src={item.imagen_url} alt={item.titulo} className="mt-3 rounded-lg max-w-full h-auto" />}
+          {item.url && (
+            <a href={item.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-secondary underline">Ver recurso →</a>
+          )}
+          {hasSolution && (
+            <>
+              <Button variant="outline" size="sm"
+                onClick={() => onToggleSolution(item.id)}
+                className="mt-3 gap-2">
+                {showSolutions[item.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {showSolutions[item.id] ? 'Ocultar solución' : 'Ver solución'}
+              </Button>
+              <AnimatePresence>
+                {showSolutions[item.id] && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                    className="mt-2 p-3 rounded-lg bg-accent/10 text-sm overflow-hidden break-words max-w-full whitespace-pre-wrap">
+                    {item.solucion}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
