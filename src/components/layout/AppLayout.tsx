@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, Settings, LogOut,
-  Moon, Sun, GraduationCap, FlaskConical, Brain, Library
+  Moon, Sun, GraduationCap, FlaskConical, Brain, Library, MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AvatarUpload from '@/components/AvatarUpload';
@@ -17,6 +17,7 @@ const adminLinks = [
   { path: '/admin/content', icon: BookOpen, label: 'Contenido' },
   { path: '/admin/quiz', icon: Brain, label: 'Quiz' },
   { path: '/admin/library', icon: Library, label: 'Biblioteca' },
+  { path: '/admin/mensajes', icon: MessageSquare, label: 'Mensajes' },
   { path: '/admin/settings', icon: Settings, label: 'Roles' },
 ];
 
@@ -24,6 +25,7 @@ const studentLinks = [
   { path: '/student', icon: LayoutDashboard, label: 'Inicio' },
   { path: '/student/sessions', icon: BookOpen, label: 'Sesiones' },
   { path: '/student/library', icon: Library, label: 'Biblioteca' },
+  { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes' },
   { path: '/student/profile', icon: GraduationCap, label: 'Perfil' },
 ];
 
