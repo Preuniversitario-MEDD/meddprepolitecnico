@@ -44,6 +44,7 @@ export type Database = {
       contenido: {
         Row: {
           created_at: string
+          grupo_nombre: string | null
           id: string
           imagen_url: string | null
           orden: number
@@ -56,6 +57,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          grupo_nombre?: string | null
           id?: string
           imagen_url?: string | null
           orden?: number
@@ -68,6 +70,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          grupo_nombre?: string | null
           id?: string
           imagen_url?: string | null
           orden?: number
@@ -117,6 +120,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      pestanas_sesion: {
+        Row: {
+          clave: string
+          created_at: string | null
+          id: string
+          nombre: string
+          orden: number | null
+          sesion_id: string
+        }
+        Insert: {
+          clave: string
+          created_at?: string | null
+          id?: string
+          nombre: string
+          orden?: number | null
+          sesion_id: string
+        }
+        Update: {
+          clave?: string
+          created_at?: string | null
+          id?: string
+          nombre?: string
+          orden?: number | null
+          sesion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pestanas_sesion_sesion_id_fkey"
+            columns: ["sesion_id"]
+            isOneToOne: false
+            referencedRelation: "sesiones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
