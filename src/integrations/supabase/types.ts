@@ -91,6 +91,53 @@ export type Database = {
           },
         ]
       }
+      conversacion_participantes: {
+        Row: {
+          conversacion_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          conversacion_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          conversacion_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversacion_participantes_conversacion_id_fkey"
+            columns: ["conversacion_id"]
+            isOneToOne: false
+            referencedRelation: "conversaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversaciones: {
+        Row: {
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       examenes: {
         Row: {
           aprobado: boolean | null
@@ -120,6 +167,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      mensajes: {
+        Row: {
+          contenido: string
+          conversacion_id: string
+          created_at: string | null
+          id: string
+          leido: boolean | null
+          sender_id: string
+        }
+        Insert: {
+          contenido: string
+          conversacion_id: string
+          created_at?: string | null
+          id?: string
+          leido?: boolean | null
+          sender_id: string
+        }
+        Update: {
+          contenido?: string
+          conversacion_id?: string
+          created_at?: string | null
+          id?: string
+          leido?: boolean | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensajes_conversacion_id_fkey"
+            columns: ["conversacion_id"]
+            isOneToOne: false
+            referencedRelation: "conversaciones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pestanas_sesion: {
         Row: {

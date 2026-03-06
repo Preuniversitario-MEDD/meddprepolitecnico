@@ -19,6 +19,8 @@ import StudentProfile from "./pages/student/StudentProfile";
 import SessionDetail from "./pages/student/SessionDetail";
 import SectionExam from "./pages/student/SectionExam";
 import Library from "./pages/student/Library";
+import Mensajes from "./pages/student/Mensajes";
+import AdminMensajes from "./pages/admin/AdminMensajes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +49,7 @@ function AppRoutes() {
       <Route path="/admin/quiz" element={<ProtectedRoute requiredRole="admin"><AdminQuiz /></ProtectedRoute>} />
       <Route path="/admin/library" element={<ProtectedRoute requiredRole="admin"><AdminLibrary /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
+      <Route path="/admin/mensajes" element={<ProtectedRoute requiredRole="admin"><AdminMensajes /></ProtectedRoute>} />
 
       {/* Student Routes */}
       <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
@@ -54,6 +57,7 @@ function AppRoutes() {
       <Route path="/student/session/:id" element={<ProtectedRoute><SessionDetail /></ProtectedRoute>} />
       <Route path="/student/exam/:tipo" element={<ProtectedRoute><SectionExam /></ProtectedRoute>} />
       <Route path="/student/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
+      <Route path="/student/mensajes" element={<ProtectedRoute><Mensajes /></ProtectedRoute>} />
       <Route path="/student/profile" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
