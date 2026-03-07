@@ -34,11 +34,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile, role, signOut, refreshProfile } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
+  const unreadCount = useUnreadMessages();
   const location = useLocation();
   const navigate = useNavigate();
 
   const links = role === 'admin' ? adminLinks : studentLinks;
   const initials = profile ? (profile.nombre?.[0] || '') + (profile.apellidos?.[0] || '') : '?';
+
+  const getMensajesPath = role === 'admin' ? '/admin/mensajes' : '/student/mensajes';
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
