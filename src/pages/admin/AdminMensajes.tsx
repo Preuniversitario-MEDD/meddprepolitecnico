@@ -370,8 +370,37 @@ export default function AdminMensajes() {
           <>
             <div className="p-3 border-b border-border flex items-center gap-3">
               <button onClick={() => setSelectedConv(null)} className="md:hidden p-1"><ArrowLeft className="w-5 h-5 text-foreground" /></button>
-              <span className="font-medium text-sm text-foreground truncate">{getChatTitle()}</span>
-              {tab === 'all' && !adminIsParticipant && <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full ml-auto">Solo lectura</span>}
+              <div className="flex-1 min-w-0">
+                <span className="font-medium text-sm text-foreground truncate block">{getChatTitle()}</span>
+                {(() => {
+                  const presences = getParticipantPresence();
+                  if (!presences?.length) return null;
+                  return (
+                    <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                      {presences.map(p => (
+                        <TooltipProvider key={p.user_id}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                <span className={`w-1.5 h-1.5 rounded-full ${isOnline(p.last_seen_at) ? 'bg-green-500' : 'bg-muted-foreground/40'}`} />
+                                {getDeviceIcon(p.device_type)}
+                                <span>{formatLastSeen(p.last_seen_at)}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-xs">
+                              <p><strong>{p.nombre} {p.apellidos}</strong></p>
+                              <p>IP: {p.ip_address || 'Desconocida'}</p>
+                              <p>Dispositivo: {p.device_type || 'Desconocido'}</p>
+                              <p>Última conexión: {p.last_seen_at ? new Date(p.last_seen_at).toLocaleString('es') : 'Nunca'}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+              {tab === 'all' && !adminIsParticipant && <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">Solo lectura</span>}
             </div>
 
             <ScrollArea className="flex-1 p-4">
