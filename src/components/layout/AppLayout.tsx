@@ -60,12 +60,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <nav className="flex-1 p-3 space-y-1">
             {links.map(link => {
               const active = location.pathname === link.path;
+              const showBadge = link.path === getMensajesPath && unreadCount > 0;
               return (
                 <button key={link.path} onClick={() => navigate(link.path)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative ${
                     active ? 'gradient-primary text-primary-foreground glow-primary' : 'text-sidebar-foreground hover:bg-sidebar-accent'}`}>
                   <link.icon className="w-4 h-4" />
                   {link.label}
+                  {showBadge && (
+                    <span className="ml-auto w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-bold">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
