@@ -67,9 +67,10 @@ export default function AdminMensajes() {
         .in('conversacion_id', convIds);
 
       const uids = [...new Set(allParts?.map(p => p.user_id) || [])];
-      const { data: profiles } = await supabase.from('profiles').select('user_id, nombre, apellidos, avatar_url').in('user_id', uids);
+      const { data: profiles } = await supabase.from('profiles').select('user_id, nombre, apellidos, avatar_url, last_seen_at, device_type, ip_address').in('user_id', uids);
       const pMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
       setProfileMap(pMap);
+      setPresenceMap(new Map(profiles?.map(p => [p.user_id, { last_seen_at: p.last_seen_at || '', device_type: p.device_type || '', ip_address: p.ip_address || '' }]) || []));
 
       const convList: Conversation[] = convIds.map(cid => ({
         id: cid,
@@ -93,9 +94,10 @@ export default function AdminMensajes() {
       const convIds = allConvs.map(c => c.id);
       const { data: allParts } = await supabase.from('conversacion_participantes').select('conversacion_id, user_id').in('conversacion_id', convIds);
       const uids = [...new Set(allParts?.map(p => p.user_id) || [])];
-      const { data: profiles } = await supabase.from('profiles').select('user_id, nombre, apellidos, avatar_url').in('user_id', uids);
+      const { data: profiles } = await supabase.from('profiles').select('user_id, nombre, apellidos, avatar_url, last_seen_at, device_type, ip_address').in('user_id', uids);
       const pMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
       setProfileMap(pMap);
+      setPresenceMap(new Map(profiles?.map(p => [p.user_id, { last_seen_at: p.last_seen_at || '', device_type: p.device_type || '', ip_address: p.ip_address || '' }]) || []));
 
       const convList: Conversation[] = convIds.map(cid => ({
         id: cid,
