@@ -265,7 +265,10 @@ export default function AdminMensajes() {
             <h2 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" /> Mensajes
             </h2>
-            <Button size="sm" variant="outline" onClick={loadUsers}><Plus className="w-4 h-4" /></Button>
+            <div className="flex gap-1">
+              <Button size="sm" variant="outline" onClick={() => setShowBulk(true)} title="Mensaje masivo"><Megaphone className="w-4 h-4" /></Button>
+              <Button size="sm" variant="outline" onClick={loadUsers}><Plus className="w-4 h-4" /></Button>
+            </div>
           </div>
           <Tabs value={tab} onValueChange={v => { setTab(v as any); setSelectedConv(null); }}>
             <TabsList className="w-full">
