@@ -3,12 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare, Send, Plus, ArrowLeft, Search, Eye, Shield } from 'lucide-react';
+import { MessageSquare, Send, Plus, ArrowLeft, Search, Eye, Shield, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface Conversation {
   id: string;
@@ -193,6 +195,68 @@ export default function AdminMensajes() {
       .then(({ data }) => setAdminIsParticipant(!!(data && data.length > 0)));
   }, [selectedConv, user]);
 
+  const [showBulk, setShowBulk] = useState(false);
+  const [bulkMessage, setBulkMessage] = useState('');
+  const [sendingBulk, setSendingBulk] = useState(false);
+
+  const sendBulkMessage = async () => {
+    if (!bulkMessage.trim() || !user) return;
+    setSendingBulk(true);
+    try {
+      // Get all active students
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('activo', true)
+        .neq('user_id', user.id);
+
+      if (!students?.length) { toast({ title: 'Sin destinatarios', description: 'No hay estudiantes activos' }); setSendingBulk(false); return; }
+
+      for (const student of students) {
+        // Find or create conversation
+        const { data: myConvs } = await supabase
+          .from('conversacion_participantes')
+          .select('conversacion_id')
+          .eq('user_id', user.id);
+
+        let convId: string | null = null;
+
+        if (myConvs?.length) {
+          const { data: existing } = await supabase
+            .from('conversacion_participantes')
+            .select('conversacion_id')
+            .eq('user_id', student.user_id)
+            .in('conversacion_id', myConvs.map(c => c.conversacion_id));
+          if (existing?.length) convId = existing[0].conversacion_id;
+        }
+
+        if (!convId) {
+          const { data: conv } = await supabase.from('conversaciones').insert({}).select().single();
+          if (!conv) continue;
+          await supabase.from('conversacion_participantes').insert([
+            { conversacion_id: conv.id, user_id: user.id },
+            { conversacion_id: conv.id, user_id: student.user_id },
+          ]);
+          convId = conv.id;
+        }
+
+        await supabase.from('mensajes').insert({
+          conversacion_id: convId,
+          sender_id: user.id,
+          contenido: bulkMessage.trim(),
+        });
+      }
+
+      toast({ title: 'Enviado', description: `Mensaje enviado a ${students.length} estudiantes` });
+      setBulkMessage('');
+      setShowBulk(false);
+      fetchConversations();
+    } catch (err) {
+      toast({ title: 'Error', description: 'No se pudo enviar el mensaje masivo', variant: 'destructive' });
+    }
+    setSendingBulk(false);
+  };
+
   return (
     <div className="h-[calc(100vh-4rem)] md:h-screen flex">
       <div className={`${selectedConv ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card`}>
@@ -201,7 +265,10 @@ export default function AdminMensajes() {
             <h2 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" /> Mensajes
             </h2>
-            <Button size="sm" variant="outline" onClick={loadUsers}><Plus className="w-4 h-4" /></Button>
+            <div className="flex gap-1">
+              <Button size="sm" variant="outline" onClick={() => setShowBulk(true)} title="Mensaje masivo"><Megaphone className="w-4 h-4" /></Button>
+              <Button size="sm" variant="outline" onClick={loadUsers}><Plus className="w-4 h-4" /></Button>
+            </div>
           </div>
           <Tabs value={tab} onValueChange={v => { setTab(v as any); setSelectedConv(null); }}>
             <TabsList className="w-full">
@@ -313,6 +380,22 @@ export default function AdminMensajes() {
           </div>
         )}
       </div>
+
+      <Dialog open={showBulk} onOpenChange={setShowBulk}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mensaje masivo</DialogTitle>
+            <DialogDescription>Envía un mensaje a todos los estudiantes activos. Se creará una conversación individual con cada uno.</DialogDescription>
+          </DialogHeader>
+          <Textarea value={bulkMessage} onChange={e => setBulkMessage(e.target.value)} placeholder="Escribe tu mensaje para todos los estudiantes..." rows={4} maxLength={2000} />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setShowBulk(false)}>Cancelar</Button>
+            <Button onClick={sendBulkMessage} disabled={!bulkMessage.trim() || sendingBulk}>
+              <Megaphone className="w-4 h-4 mr-2" />{sendingBulk ? 'Enviando...' : 'Enviar a todos'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

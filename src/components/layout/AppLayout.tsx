@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -33,11 +34,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile, role, signOut, refreshProfile } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
+  const unreadCount = useUnreadMessages();
   const location = useLocation();
   const navigate = useNavigate();
 
   const links = role === 'admin' ? adminLinks : studentLinks;
   const initials = profile ? (profile.nombre?.[0] || '') + (profile.apellidos?.[0] || '') : '?';
+
+  const getMensajesPath = role === 'admin' ? '/admin/mensajes' : '/student/mensajes';
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
@@ -56,12 +60,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <nav className="flex-1 p-3 space-y-1">
             {links.map(link => {
               const active = location.pathname === link.path;
+              const showBadge = link.path === getMensajesPath && unreadCount > 0;
               return (
                 <button key={link.path} onClick={() => navigate(link.path)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative ${
                     active ? 'gradient-primary text-primary-foreground glow-primary' : 'text-sidebar-foreground hover:bg-sidebar-accent'}`}>
                   <link.icon className="w-4 h-4" />
                   {link.label}
+                  {showBadge && (
+                    <span className="ml-auto w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-bold">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -113,10 +123,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex justify-around py-2">
             {links.slice(0, 4).map(link => {
               const active = location.pathname === link.path;
+              const showBadge = link.path === getMensajesPath && unreadCount > 0;
               return (
                 <button key={link.path} onClick={() => navigate(link.path)}
-                  className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg transition-all ${active ? 'text-primary' : 'text-muted-foreground'}`}>
-                  <link.icon className={`w-5 h-5 ${active ? 'text-primary' : ''}`} />
+                  className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg transition-all relative ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+                  <div className="relative">
+                    <link.icon className={`w-5 h-5 ${active ? 'text-primary' : ''}`} />
+                    {showBadge && (
+                      <span className="absolute -top-1 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[8px] flex items-center justify-center font-bold">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-[10px] font-medium">{link.label}</span>
                   {active && <motion.div layoutId="bottomnav" className="absolute -top-0.5 w-8 h-1 rounded-full gradient-primary" />}
                 </button>
