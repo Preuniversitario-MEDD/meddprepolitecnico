@@ -192,6 +192,36 @@ export default function AdminMensajes() {
     return prof ? `${prof.nombre} ${prof.apellidos}` : '';
   };
 
+  const getDeviceIcon = (type: string) => {
+    if (type === 'phone') return <Smartphone className="w-3 h-3" />;
+    if (type === 'tablet') return <Tablet className="w-3 h-3" />;
+    return <Monitor className="w-3 h-3" />;
+  };
+
+  const isOnline = (lastSeen: string) => {
+    if (!lastSeen) return false;
+    return Date.now() - new Date(lastSeen).getTime() < 2 * 60 * 1000; // 2 minutes
+  };
+
+  const formatLastSeen = (lastSeen: string) => {
+    if (!lastSeen) return 'Nunca';
+    const d = new Date(lastSeen);
+    const diff = Date.now() - d.getTime();
+    if (diff < 60000) return 'Ahora';
+    if (diff < 3600000) return `Hace ${Math.floor(diff / 60000)} min`;
+    if (diff < 86400000) return `Hace ${Math.floor(diff / 3600000)}h`;
+    return d.toLocaleDateString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getParticipantPresence = () => {
+    if (!selectedConversation) return null;
+    const others = selectedConversation.participants.filter(p => p.user_id !== user?.id);
+    return others.map(p => {
+      const presence = presenceMap.get(p.user_id);
+      return { ...p, ...(presence || { last_seen_at: '', device_type: '', ip_address: '' }) };
+    });
+  };
+
   // Check if admin is participant in selected conversation
   const [adminIsParticipant, setAdminIsParticipant] = useState(false);
   useEffect(() => {
