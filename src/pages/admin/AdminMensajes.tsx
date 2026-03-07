@@ -6,11 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare, Send, Plus, ArrowLeft, Search, Eye, Shield, Megaphone } from 'lucide-react';
+import { MessageSquare, Send, Plus, ArrowLeft, Search, Eye, Shield, Megaphone, Smartphone, Tablet, Monitor, Wifi } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Conversation {
   id: string;
@@ -42,6 +43,7 @@ export default function AdminMensajes() {
   const [users, setUsers] = useState<any[]>([]);
   const [searchUser, setSearchUser] = useState('');
   const [profileMap, setProfileMap] = useState<Map<string, any>>(new Map());
+  const [presenceMap, setPresenceMap] = useState<Map<string, { last_seen_at: string; device_type: string; ip_address: string }>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchConversations = useCallback(async () => {
