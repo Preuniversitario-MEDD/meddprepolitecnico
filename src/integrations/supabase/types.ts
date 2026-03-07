@@ -245,8 +245,11 @@ export type Database = {
           avatar_url: string | null
           cedula: string
           created_at: string
+          device_type: string | null
           fecha_nacimiento: string | null
           id: string
+          ip_address: string | null
+          last_seen_at: string | null
           nombre: string
           primera_vez: boolean
           updated_at: string
@@ -259,8 +262,11 @@ export type Database = {
           avatar_url?: string | null
           cedula: string
           created_at?: string
+          device_type?: string | null
           fecha_nacimiento?: string | null
           id?: string
+          ip_address?: string | null
+          last_seen_at?: string | null
           nombre?: string
           primera_vez?: boolean
           updated_at?: string
@@ -273,8 +279,11 @@ export type Database = {
           avatar_url?: string | null
           cedula?: string
           created_at?: string
+          device_type?: string | null
           fecha_nacimiento?: string | null
           id?: string
+          ip_address?: string | null
+          last_seen_at?: string | null
           nombre?: string
           primera_vez?: boolean
           updated_at?: string

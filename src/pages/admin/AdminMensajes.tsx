@@ -6,11 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare, Send, Plus, ArrowLeft, Search, Eye, Shield, Megaphone } from 'lucide-react';
+import { MessageSquare, Send, Plus, ArrowLeft, Search, Eye, Shield, Megaphone, Smartphone, Tablet, Monitor, Wifi } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Conversation {
   id: string;
@@ -42,6 +44,7 @@ export default function AdminMensajes() {
   const [users, setUsers] = useState<any[]>([]);
   const [searchUser, setSearchUser] = useState('');
   const [profileMap, setProfileMap] = useState<Map<string, any>>(new Map());
+  const [presenceMap, setPresenceMap] = useState<Map<string, { last_seen_at: string; device_type: string; ip_address: string }>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchConversations = useCallback(async () => {
@@ -64,9 +67,10 @@ export default function AdminMensajes() {
         .in('conversacion_id', convIds);
 
       const uids = [...new Set(allParts?.map(p => p.user_id) || [])];
-      const { data: profiles } = await supabase.from('profiles').select('user_id, nombre, apellidos, avatar_url').in('user_id', uids);
+      const { data: profiles } = await supabase.from('profiles').select('user_id, nombre, apellidos, avatar_url, last_seen_at, device_type, ip_address').in('user_id', uids);
       const pMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
       setProfileMap(pMap);
+      setPresenceMap(new Map(profiles?.map(p => [p.user_id, { last_seen_at: p.last_seen_at || '', device_type: p.device_type || '', ip_address: p.ip_address || '' }]) || []));
 
       const convList: Conversation[] = convIds.map(cid => ({
         id: cid,
@@ -90,9 +94,10 @@ export default function AdminMensajes() {
       const convIds = allConvs.map(c => c.id);
       const { data: allParts } = await supabase.from('conversacion_participantes').select('conversacion_id, user_id').in('conversacion_id', convIds);
       const uids = [...new Set(allParts?.map(p => p.user_id) || [])];
-      const { data: profiles } = await supabase.from('profiles').select('user_id, nombre, apellidos, avatar_url').in('user_id', uids);
+      const { data: profiles } = await supabase.from('profiles').select('user_id, nombre, apellidos, avatar_url, last_seen_at, device_type, ip_address').in('user_id', uids);
       const pMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
       setProfileMap(pMap);
+      setPresenceMap(new Map(profiles?.map(p => [p.user_id, { last_seen_at: p.last_seen_at || '', device_type: p.device_type || '', ip_address: p.ip_address || '' }]) || []));
 
       const convList: Conversation[] = convIds.map(cid => ({
         id: cid,
@@ -185,6 +190,36 @@ export default function AdminMensajes() {
   const getSenderName = (senderId: string) => {
     const prof = profileMap.get(senderId);
     return prof ? `${prof.nombre} ${prof.apellidos}` : '';
+  };
+
+  const getDeviceIcon = (type: string) => {
+    if (type === 'phone') return <Smartphone className="w-3 h-3" />;
+    if (type === 'tablet') return <Tablet className="w-3 h-3" />;
+    return <Monitor className="w-3 h-3" />;
+  };
+
+  const isOnline = (lastSeen: string) => {
+    if (!lastSeen) return false;
+    return Date.now() - new Date(lastSeen).getTime() < 2 * 60 * 1000; // 2 minutes
+  };
+
+  const formatLastSeen = (lastSeen: string) => {
+    if (!lastSeen) return 'Nunca';
+    const d = new Date(lastSeen);
+    const diff = Date.now() - d.getTime();
+    if (diff < 60000) return 'Ahora';
+    if (diff < 3600000) return `Hace ${Math.floor(diff / 60000)} min`;
+    if (diff < 86400000) return `Hace ${Math.floor(diff / 3600000)}h`;
+    return d.toLocaleDateString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getParticipantPresence = () => {
+    if (!selectedConversation) return null;
+    const others = selectedConversation.participants.filter(p => p.user_id !== user?.id);
+    return others.map(p => {
+      const presence = presenceMap.get(p.user_id);
+      return { ...p, ...(presence || { last_seen_at: '', device_type: '', ip_address: '' }) };
+    });
   };
 
   // Check if admin is participant in selected conversation
@@ -335,8 +370,37 @@ export default function AdminMensajes() {
           <>
             <div className="p-3 border-b border-border flex items-center gap-3">
               <button onClick={() => setSelectedConv(null)} className="md:hidden p-1"><ArrowLeft className="w-5 h-5 text-foreground" /></button>
-              <span className="font-medium text-sm text-foreground truncate">{getChatTitle()}</span>
-              {tab === 'all' && !adminIsParticipant && <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full ml-auto">Solo lectura</span>}
+              <div className="flex-1 min-w-0">
+                <span className="font-medium text-sm text-foreground truncate block">{getChatTitle()}</span>
+                {(() => {
+                  const presences = getParticipantPresence();
+                  if (!presences?.length) return null;
+                  return (
+                    <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                      {presences.map(p => (
+                        <TooltipProvider key={p.user_id}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                <span className={`w-1.5 h-1.5 rounded-full ${isOnline(p.last_seen_at) ? 'bg-green-500' : 'bg-muted-foreground/40'}`} />
+                                {getDeviceIcon(p.device_type)}
+                                <span>{formatLastSeen(p.last_seen_at)}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-xs">
+                              <p><strong>{p.nombre} {p.apellidos}</strong></p>
+                              <p>IP: {p.ip_address || 'Desconocida'}</p>
+                              <p>Dispositivo: {p.device_type || 'Desconocido'}</p>
+                              <p>Última conexión: {p.last_seen_at ? new Date(p.last_seen_at).toLocaleString('es') : 'Nunca'}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+              {tab === 'all' && !adminIsParticipant && <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">Solo lectura</span>}
             </div>
 
             <ScrollArea className="flex-1 p-4">
