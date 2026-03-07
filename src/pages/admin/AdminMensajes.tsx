@@ -188,12 +188,67 @@ export default function AdminMensajes() {
   };
 
   // Check if admin is participant in selected conversation
-  const [adminIsParticipant, setAdminIsParticipant] = useState(false);
-  useEffect(() => {
-    if (!selectedConv || !user) { setAdminIsParticipant(false); return; }
-    supabase.from('conversacion_participantes').select('id').eq('conversacion_id', selectedConv).eq('user_id', user.id).limit(1)
-      .then(({ data }) => setAdminIsParticipant(!!(data && data.length > 0)));
-  }, [selectedConv, user]);
+  const [showBulk, setShowBulk] = useState(false);
+  const [bulkMessage, setBulkMessage] = useState('');
+  const [sendingBulk, setSendingBulk] = useState(false);
+
+  const sendBulkMessage = async () => {
+    if (!bulkMessage.trim() || !user) return;
+    setSendingBulk(true);
+    try {
+      // Get all active students
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('activo', true)
+        .neq('user_id', user.id);
+
+      if (!students?.length) { toast({ title: 'Sin destinatarios', description: 'No hay estudiantes activos' }); setSendingBulk(false); return; }
+
+      for (const student of students) {
+        // Find or create conversation
+        const { data: myConvs } = await supabase
+          .from('conversacion_participantes')
+          .select('conversacion_id')
+          .eq('user_id', user.id);
+
+        let convId: string | null = null;
+
+        if (myConvs?.length) {
+          const { data: existing } = await supabase
+            .from('conversacion_participantes')
+            .select('conversacion_id')
+            .eq('user_id', student.user_id)
+            .in('conversacion_id', myConvs.map(c => c.conversacion_id));
+          if (existing?.length) convId = existing[0].conversacion_id;
+        }
+
+        if (!convId) {
+          const { data: conv } = await supabase.from('conversaciones').insert({}).select().single();
+          if (!conv) continue;
+          await supabase.from('conversacion_participantes').insert([
+            { conversacion_id: conv.id, user_id: user.id },
+            { conversacion_id: conv.id, user_id: student.user_id },
+          ]);
+          convId = conv.id;
+        }
+
+        await supabase.from('mensajes').insert({
+          conversacion_id: convId,
+          sender_id: user.id,
+          contenido: bulkMessage.trim(),
+        });
+      }
+
+      toast({ title: 'Enviado', description: `Mensaje enviado a ${students.length} estudiantes` });
+      setBulkMessage('');
+      setShowBulk(false);
+      fetchConversations();
+    } catch (err) {
+      toast({ title: 'Error', description: 'No se pudo enviar el mensaje masivo', variant: 'destructive' });
+    }
+    setSendingBulk(false);
+  };
 
   return (
     <div className="h-[calc(100vh-4rem)] md:h-screen flex">
