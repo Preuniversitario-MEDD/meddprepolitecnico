@@ -36,6 +36,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
   const unreadCount = useUnreadMessages();
+  usePresenceTracker();
   const location = useLocation();
   const navigate = useNavigate();
 
