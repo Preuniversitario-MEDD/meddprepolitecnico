@@ -188,6 +188,13 @@ export default function AdminMensajes() {
   };
 
   // Check if admin is participant in selected conversation
+  const [adminIsParticipant, setAdminIsParticipant] = useState(false);
+  useEffect(() => {
+    if (!selectedConv || !user) { setAdminIsParticipant(false); return; }
+    supabase.from('conversacion_participantes').select('id').eq('conversacion_id', selectedConv).eq('user_id', user.id).limit(1)
+      .then(({ data }) => setAdminIsParticipant(!!(data && data.length > 0)));
+  }, [selectedConv, user]);
+
   const [showBulk, setShowBulk] = useState(false);
   const [bulkMessage, setBulkMessage] = useState('');
   const [sendingBulk, setSendingBulk] = useState(false);
