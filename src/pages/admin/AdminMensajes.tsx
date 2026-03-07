@@ -380,6 +380,22 @@ export default function AdminMensajes() {
           </div>
         )}
       </div>
+
+      <Dialog open={showBulk} onOpenChange={setShowBulk}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mensaje masivo</DialogTitle>
+            <DialogDescription>Envía un mensaje a todos los estudiantes activos. Se creará una conversación individual con cada uno.</DialogDescription>
+          </DialogHeader>
+          <Textarea value={bulkMessage} onChange={e => setBulkMessage(e.target.value)} placeholder="Escribe tu mensaje para todos los estudiantes..." rows={4} maxLength={2000} />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setShowBulk(false)}>Cancelar</Button>
+            <Button onClick={sendBulkMessage} disabled={!bulkMessage.trim() || sendingBulk}>
+              <Megaphone className="w-4 h-4 mr-2" />{sendingBulk ? 'Enviando...' : 'Enviar a todos'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
