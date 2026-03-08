@@ -128,8 +128,10 @@ export default function StudentCompetencia() {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
           setAnswered(true);
+          playIncorrect();
           return 0;
         }
+        if (prev <= 6) playCountdown();
         return prev - 1;
       });
     }, 1000);
