@@ -28,7 +28,25 @@ export default function StudentDashboard() {
   const [exams, setExams] = useState<Record<string, { aprobado: boolean; puntaje: number }>>({});
   const [liveCompCount, setLiveCompCount] = useState(0);
 
-  useEffect(() => { loadData(); }, [user]);
+  useEffect(() => { loadData(); loadLiveComps(); }, [user]);
+
+  // Realtime: listen for new/updated competitions
+  useEffect(() => {
+    const ch = supabase.channel('live-comp-notif')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'competencias' }, () => {
+        loadLiveComps();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  async function loadLiveComps() {
+    const { count } = await supabase
+      .from('competencias')
+      .select('*', { count: 'exact', head: true })
+      .in('estado', ['lobby', 'en_curso']);
+    setLiveCompCount(count || 0);
+  }
 
   async function loadData() {
     const { data: ses } = await supabase.from('sesiones').select('*').order('numero');
