@@ -22,6 +22,9 @@ import SectionExam from "./pages/student/SectionExam";
 import Library from "./pages/student/Library";
 import Mensajes from "./pages/student/Mensajes";
 import AdminMensajes from "./pages/admin/AdminMensajes";
+import AdminCompetencias from "./pages/admin/AdminCompetencias";
+import AdminCompetenciaLive from "./pages/admin/AdminCompetenciaLive";
+import StudentCompetencia from "./pages/student/StudentCompetencia";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
