@@ -27,6 +27,7 @@ export default function StudentDashboard() {
   const [globalProgress, setGlobalProgress] = useState(0);
   const [exams, setExams] = useState<Record<string, { aprobado: boolean; puntaje: number }>>({});
   const [liveCompCount, setLiveCompCount] = useState(0);
+  const [sessionOverrides, setSessionOverrides] = useState<Record<string, boolean>>({});
 
   useEffect(() => { loadData(); loadLiveComps(); }, [user]);
 
@@ -49,8 +50,16 @@ export default function StudentDashboard() {
   }
 
   async function loadData() {
-    const { data: ses } = await supabase.from('sesiones').select('*').order('numero');
+    const [{ data: ses }, overridesRes] = await Promise.all([
+      supabase.from('sesiones').select('*').order('numero'),
+      user ? supabase.from('sesion_estudiante').select('*').eq('user_id', user.id) : Promise.resolve({ data: null }),
+    ]);
     setSesiones(ses || []);
+
+    // Build per-student overrides
+    const oMap: Record<string, boolean> = {};
+    overridesRes?.data?.forEach((o: any) => { oMap[o.sesion_id] = o.desbloqueada; });
+    setSessionOverrides(oMap);
 
     if (user) {
       const { data: prog } = await supabase.from('progreso_estudiante').select('*').eq('user_id', user.id);
@@ -83,7 +92,10 @@ export default function StudentDashboard() {
   const firstName = profile?.nombre?.split(' ')[0] || 'Estudiante';
 
   const getSessionStatus = (sesion: Sesion) => {
-    if (sesion.estado === 'bloqueada') return 'locked';
+    // Per-student override takes priority
+    const override = sessionOverrides[sesion.id];
+    const isBlocked = override !== undefined ? !override : sesion.estado === 'bloqueada';
+    if (isBlocked) return 'locked';
     const p = progress[sesion.id];
     if (p?.completada) return 'completed';
     if (p) return 'in-progress';
