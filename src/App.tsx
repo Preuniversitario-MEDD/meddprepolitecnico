@@ -24,6 +24,7 @@ import Mensajes from "./pages/student/Mensajes";
 import AdminMensajes from "./pages/admin/AdminMensajes";
 import AdminCompetencias from "./pages/admin/AdminCompetencias";
 import AdminCompetenciaLive from "./pages/admin/AdminCompetenciaLive";
+import AdminProfile from "./pages/admin/AdminProfile";
 import StudentCompetencia from "./pages/student/StudentCompetencia";
 import NotFound from "./pages/NotFound";
 
@@ -57,6 +58,7 @@ function AppRoutes() {
       <Route path="/admin/mensajes" element={<ProtectedRoute requiredRole="admin"><AdminMensajes /></ProtectedRoute>} />
       <Route path="/admin/competencias" element={<ProtectedRoute requiredRole="admin"><AdminCompetencias /></ProtectedRoute>} />
       <Route path="/admin/competencia/:id" element={<ProtectedRoute requiredRole="admin"><AdminCompetenciaLive /></ProtectedRoute>} />
+      <Route path="/admin/profile" element={<ProtectedRoute requiredRole="admin"><AdminProfile /></ProtectedRoute>} />
 
       {/* Student Routes */}
       <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
