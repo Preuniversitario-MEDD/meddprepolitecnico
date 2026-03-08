@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import AvatarUpload from '@/components/AvatarUpload';
 import type { Tables } from '@/integrations/supabase/types';
 
-type Profile = Tables<'profiles'>;
+type Profile = Tables<'profiles'> & { colegio?: string };
 
 function generateUsuario(nombre: string, apellidos: string): string {
   const n = nombre.toLowerCase().replace(/\s+/g, ' ').trim().split(' ');
@@ -28,7 +28,11 @@ function calcAge(birth: string) {
   let d = now.getDate() - b.getDate();
   if (d < 0) { m--; d += 30; }
   if (m < 0) { y--; m += 12; }
-  return `${y} años, ${m} meses, ${d} días`;
+  return `${y}a ${m}m`;
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export default function AdminStudents() {
@@ -36,7 +40,7 @@ export default function AdminStudents() {
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [editStudent, setEditStudent] = useState<Profile | null>(null);
-  const [form, setForm] = useState({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '' });
+  const [form, setForm] = useState({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '', colegio: '' });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -45,7 +49,7 @@ export default function AdminStudents() {
 
   async function loadStudents() {
     const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (data) setStudents(data);
+    if (data) setStudents(data as Profile[]);
   }
 
   async function addStudent() {
@@ -77,11 +81,12 @@ export default function AdminStudents() {
         fecha_nacimiento: form.fechaNacimiento || null,
         usuario,
         primera_vez: true,
-      }).eq('user_id', data.user.id);
+        colegio: form.colegio,
+      } as any).eq('user_id', data.user.id);
     }
 
     toast({ title: '¡Éxito!', description: `Estudiante ${form.nombre} agregado. Cédula: ${form.cedula}, Clave: 123*789*h` });
-    setForm({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '' });
+    setForm({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '', colegio: '' });
     setAddOpen(false);
     setLoading(false);
     loadStudents();
@@ -114,14 +119,15 @@ export default function AdminStudents() {
       apellidos: form.apellidos,
       fecha_nacimiento: form.fechaNacimiento || null,
       usuario,
-    }).eq('id', editStudent.id);
+      colegio: form.colegio,
+    } as any).eq('id', editStudent.id);
     toast({ title: 'Actualizado', description: `Datos de ${form.nombre} actualizados` });
     setEditStudent(null);
     loadStudents();
   }
 
   const filtered = students.filter(s =>
-    `${s.nombre} ${s.apellidos} ${s.cedula} ${s.usuario}`.toLowerCase().includes(search.toLowerCase())
+    `${s.nombre} ${s.apellidos} ${s.cedula} ${s.usuario} ${(s as any).colegio || ''}`.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -143,6 +149,7 @@ export default function AdminStudents() {
               <div><Label>Apellidos</Label><Input value={form.apellidos} onChange={e => setForm({ ...form, apellidos: e.target.value })} placeholder="Apellidos" /></div>
               <div><Label>Cédula (10 dígitos)</Label><Input value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value.replace(/\D/g, '').slice(0, 10) })} maxLength={10} /></div>
               <div><Label>Fecha de Nacimiento</Label><Input type="date" value={form.fechaNacimiento} onChange={e => setForm({ ...form, fechaNacimiento: e.target.value })} /></div>
+              <div><Label>Colegio</Label><Input value={form.colegio} onChange={e => setForm({ ...form, colegio: e.target.value })} placeholder="Nombre del colegio" /></div>
               {form.nombre && form.apellidos && (
                 <div className="text-sm text-muted-foreground space-y-1">
                   <p>Usuario: <span className="font-mono text-primary font-semibold">{generateUsuario(form.nombre, form.apellidos)}</span></p>
@@ -176,6 +183,7 @@ export default function AdminStudents() {
             <div><Label>Nombre</Label><Input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} /></div>
             <div><Label>Apellidos</Label><Input value={form.apellidos} onChange={e => setForm({ ...form, apellidos: e.target.value })} /></div>
             <div><Label>Fecha de Nacimiento</Label><Input type="date" value={form.fechaNacimiento} onChange={e => setForm({ ...form, fechaNacimiento: e.target.value })} /></div>
+            <div><Label>Colegio</Label><Input value={form.colegio} onChange={e => setForm({ ...form, colegio: e.target.value })} placeholder="Nombre del colegio" /></div>
             {form.nombre && form.apellidos && (
               <p className="text-sm text-muted-foreground">Usuario generado: <span className="font-mono text-primary font-semibold">{generateUsuario(form.nombre, form.apellidos)}</span></p>
             )}
@@ -187,7 +195,7 @@ export default function AdminStudents() {
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Buscar por nombre, cédula o usuario..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+        <Input placeholder="Buscar por nombre, cédula, usuario o colegio..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
       </div>
 
       {/* Student List */}
@@ -208,9 +216,10 @@ export default function AdminStudents() {
                     <p className="font-semibold truncate text-foreground">{student.nombre} {student.apellidos}</p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
                       <span>📋 {student.cedula}</span>
-                      <span>👤 {student.cedula}-{student.nombre} {student.apellidos}</span>
                       <span>🔑 {student.usuario || '-'}</span>
+                      {(student as any).colegio && <span>🏫 {(student as any).colegio}</span>}
                       {student.fecha_nacimiento && <span>🎂 {calcAge(student.fecha_nacimiento)}</span>}
+                      <span>📅 {formatDate(student.created_at)}</span>
                       <span className={student.activo ? 'text-[hsl(var(--neon-mint))]' : 'text-destructive'}>
                         {student.activo ? '● Activo' : '● Bloqueado'}
                       </span>
@@ -222,7 +231,7 @@ export default function AdminStudents() {
                     </Button>
                     <Button variant="ghost" size="icon" title="Editar" onClick={() => {
                       setEditStudent(student);
-                      setForm({ nombre: student.nombre, apellidos: student.apellidos, cedula: student.cedula, fechaNacimiento: student.fecha_nacimiento || '' });
+                      setForm({ nombre: student.nombre, apellidos: student.apellidos, cedula: student.cedula, fechaNacimiento: student.fecha_nacimiento || '', colegio: (student as any).colegio || '' });
                     }}><Edit className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" title={student.activo ? 'Bloquear' : 'Activar'} onClick={() => toggleActive(student)}>
                       {student.activo ? <Ban className="w-4 h-4 text-destructive" /> : <CheckCircle className="w-4 h-4 text-[hsl(var(--neon-mint))]" />}

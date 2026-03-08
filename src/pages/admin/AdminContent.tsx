@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2 } from 'lucide-react';
+import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2, Copy } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
@@ -40,6 +40,7 @@ export default function AdminContent() {
   const [tabDialogOpen, setTabDialogOpen] = useState(false);
   const [editingTab, setEditingTab] = useState<Pestana | null>(null);
   const [tabForm, setTabForm] = useState({ nombre: '', clave: '' });
+  const [duplicating, setDuplicating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => { loadSesiones(); }, []);
@@ -161,6 +162,59 @@ export default function AdminContent() {
     loadPestanas();
   }
 
+  async function duplicateSesion(sesion: Sesion) {
+    if (!confirm(`¿Duplicar la sesión "${sesion.titulo}" con todo su contenido?`)) return;
+    setDuplicating(true);
+    try {
+      const newNumero = Math.max(...sesiones.map(s => s.numero)) + 1;
+      const { data: newSesion, error: sesErr } = await supabase.from('sesiones').insert({
+        numero: newNumero,
+        titulo: `${sesion.titulo} (copia)`,
+        descripcion: sesion.descripcion,
+        estado: 'bloqueada',
+      }).select().single();
+
+      if (sesErr || !newSesion) throw sesErr;
+
+      // Copy tabs
+      const { data: tabs } = await supabase.from('pestanas_sesion').select('*').eq('sesion_id', sesion.id);
+      if (tabs && tabs.length > 0) {
+        await supabase.from('pestanas_sesion').insert(
+          tabs.map((t: any) => ({ sesion_id: newSesion.id, nombre: t.nombre, clave: t.clave, orden: t.orden }))
+        );
+      }
+
+      // Copy content
+      const { data: content } = await supabase.from('contenido').select('*').eq('sesion_id', sesion.id);
+      if (content && content.length > 0) {
+        await supabase.from('contenido').insert(
+          content.map((c: any) => ({
+            sesion_id: newSesion.id, tipo: c.tipo, titulo: c.titulo, texto: c.texto,
+            url: c.url, imagen_url: c.imagen_url, orden: c.orden, grupo_nombre: c.grupo_nombre, solucion: c.solucion,
+          }))
+        );
+      }
+
+      // Copy quiz questions
+      const { data: quiz } = await supabase.from('quiz_preguntas').select('*').eq('sesion_id', sesion.id);
+      if (quiz && quiz.length > 0) {
+        await supabase.from('quiz_preguntas').insert(
+          quiz.map((q: any) => ({
+            sesion_id: newSesion.id, pregunta: q.pregunta, opciones: q.opciones,
+            respuesta_correcta: q.respuesta_correcta, imagen_url: q.imagen_url, grupo: q.grupo,
+          }))
+        );
+      }
+
+      toast({ title: '¡Duplicada!', description: `Sesión S${newNumero}: ${sesion.titulo} (copia) creada` });
+      loadSesiones();
+      setSelectedSesion(newSesion.id);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err?.message || 'No se pudo duplicar', variant: 'destructive' });
+    }
+    setDuplicating(false);
+  }
+
   const currentSesion = sesiones.find(s => s.id === selectedSesion);
 
   // Group content by grupo_nombre within active tab
@@ -190,6 +244,9 @@ export default function AdminContent() {
             <span className="text-sm flex items-center gap-1">
               {currentSesion.estado === 'abierta' ? <><Unlock className="w-4 h-4 text-accent" /> Abierta</> : <><Lock className="w-4 h-4 text-muted-foreground" /> Bloqueada</>}
             </span>
+            <Button variant="outline" size="sm" className="gap-1 ml-2" onClick={() => duplicateSesion(currentSesion)} disabled={duplicating}>
+              <Copy className="w-3 h-3" /> {duplicating ? 'Duplicando...' : 'Duplicar'}
+            </Button>
           </div>
         )}
       </div>
