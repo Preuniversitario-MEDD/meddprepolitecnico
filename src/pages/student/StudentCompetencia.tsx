@@ -106,6 +106,7 @@ export default function StudentCompetencia() {
         }
         if (updated.estado === 'finalizada') {
           confetti({ particleCount: 200, spread: 100 });
+          playPodium();
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'competencia_participantes', filter: `competencia_id=eq.${comp.id}` }, () => {
