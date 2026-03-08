@@ -8,10 +8,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, Settings, LogOut,
-  Moon, Sun, GraduationCap, FlaskConical, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, Shield
+  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, Shield, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AvatarUpload from '@/components/AvatarUpload';
+import { supabase } from '@/integrations/supabase/client';
+import meddLogo from '@/assets/medd-logo.png';
 
 const adminLinks = [
   { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
