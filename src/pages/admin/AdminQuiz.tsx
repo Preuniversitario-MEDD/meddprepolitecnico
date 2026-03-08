@@ -491,6 +491,63 @@ export default function AdminQuiz() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Import from Session Dialog */}
+      <Dialog open={importSessionDialogOpen} onOpenChange={setImportSessionDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader><DialogTitle className="font-display">Importar desde otra Sesión</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Sesión origen</Label>
+              <Select value={importSourceSesion} onValueChange={loadImportSourcePreguntas}>
+                <SelectTrigger><SelectValue placeholder="Selecciona una sesión" /></SelectTrigger>
+                <SelectContent>
+                  {sesiones.filter(s => s.id !== selectedSesion).map(s => (
+                    <SelectItem key={s.id} value={s.id}>S{s.numero}: {s.titulo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {importSourcePreguntas.length > 0 && (
+              <>
+                <div className="flex items-center justify-between">
+                  <button onClick={toggleAllImport} className="text-sm text-primary hover:underline">
+                    {importSelectedIds.size === importSourcePreguntas.length ? 'Deseleccionar todo' : 'Seleccionar todo'}
+                  </button>
+                  <span className="text-xs text-muted-foreground">{importSelectedIds.size}/{importSourcePreguntas.length} seleccionadas</span>
+                </div>
+                <div className="space-y-1.5 max-h-60 overflow-y-auto border rounded-md p-2">
+                  {importSourcePreguntas.map((p, i) => (
+                    <label key={p.id} className="flex items-start gap-2 p-1.5 rounded hover:bg-muted cursor-pointer">
+                      <Checkbox checked={importSelectedIds.has(p.id)} onCheckedChange={() => toggleImportSelection(p.id)} className="mt-0.5" />
+                      <div className="min-w-0">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium mr-1">G{p.grupo}</span>
+                        <span className="text-sm line-clamp-2">{p.pregunta}</span>
+                        <div className="flex gap-1 mt-0.5 flex-wrap">
+                          {p.opciones.map((o, j) => (
+                            <span key={j} className={`text-[10px] px-1 py-0.5 rounded ${j === p.respuesta_correcta ? 'bg-accent/20 text-accent font-bold' : 'bg-muted text-muted-foreground'}`}>
+                              {String.fromCharCode(65 + j)}. {o.slice(0, 25)}{o.length > 25 ? '…' : ''}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {importSourceSesion && importSourcePreguntas.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No hay preguntas en esa sesión</p>
+            )}
+
+            <Button onClick={importFromSession} disabled={importSelectedIds.size === 0 || loadingImport} className="w-full gradient-primary text-primary-foreground">
+              <Copy className="w-4 h-4 mr-2" /> Importar {importSelectedIds.size > 0 ? `${importSelectedIds.size} preguntas` : ''}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
