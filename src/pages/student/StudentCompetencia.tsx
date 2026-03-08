@@ -12,6 +12,7 @@ import { Zap, Trophy, Crown, Medal, Award, Timer } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { useGameSounds } from '@/hooks/useGameSounds';
 
 interface Competencia {
   id: string; titulo: string; pin: string; modo: string; estado: string;
