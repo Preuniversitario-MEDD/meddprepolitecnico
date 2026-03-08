@@ -244,6 +244,9 @@ export default function AdminContent() {
             <span className="text-sm flex items-center gap-1">
               {currentSesion.estado === 'abierta' ? <><Unlock className="w-4 h-4 text-accent" /> Abierta</> : <><Lock className="w-4 h-4 text-muted-foreground" /> Bloqueada</>}
             </span>
+            <Button variant="outline" size="sm" className="gap-1 ml-2" onClick={() => duplicateSesion(currentSesion)} disabled={duplicating}>
+              <Copy className="w-3 h-3" /> {duplicating ? 'Duplicando...' : 'Duplicar'}
+            </Button>
           </div>
         )}
       </div>
