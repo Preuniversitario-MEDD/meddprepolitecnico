@@ -41,6 +41,187 @@ export type Database = {
         }
         Relationships: []
       }
+      competencia_participantes: {
+        Row: {
+          avatar_url: string | null
+          competencia_id: string
+          created_at: string | null
+          id: string
+          mejor_racha: number | null
+          nombre: string
+          powerups: Json | null
+          puntaje: number | null
+          racha: number | null
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          competencia_id: string
+          created_at?: string | null
+          id?: string
+          mejor_racha?: number | null
+          nombre?: string
+          powerups?: Json | null
+          puntaje?: number | null
+          racha?: number | null
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          competencia_id?: string
+          created_at?: string | null
+          id?: string
+          mejor_racha?: number | null
+          nombre?: string
+          powerups?: Json | null
+          puntaje?: number | null
+          racha?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competencia_participantes_competencia_id_fkey"
+            columns: ["competencia_id"]
+            isOneToOne: false
+            referencedRelation: "competencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competencia_preguntas: {
+        Row: {
+          competencia_id: string
+          id: string
+          imagen_url: string | null
+          opciones: Json
+          orden: number | null
+          pregunta: string
+          respuesta_correcta: number | null
+          tiempo: number | null
+        }
+        Insert: {
+          competencia_id: string
+          id?: string
+          imagen_url?: string | null
+          opciones?: Json
+          orden?: number | null
+          pregunta: string
+          respuesta_correcta?: number | null
+          tiempo?: number | null
+        }
+        Update: {
+          competencia_id?: string
+          id?: string
+          imagen_url?: string | null
+          opciones?: Json
+          orden?: number | null
+          pregunta?: string
+          respuesta_correcta?: number | null
+          tiempo?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competencia_preguntas_competencia_id_fkey"
+            columns: ["competencia_id"]
+            isOneToOne: false
+            referencedRelation: "competencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competencia_respuestas: {
+        Row: {
+          competencia_id: string
+          correcta: boolean | null
+          created_at: string | null
+          id: string
+          powerup_usado: string | null
+          pregunta_id: string
+          puntaje: number | null
+          respuesta: number
+          tiempo_ms: number | null
+          user_id: string
+        }
+        Insert: {
+          competencia_id: string
+          correcta?: boolean | null
+          created_at?: string | null
+          id?: string
+          powerup_usado?: string | null
+          pregunta_id: string
+          puntaje?: number | null
+          respuesta: number
+          tiempo_ms?: number | null
+          user_id: string
+        }
+        Update: {
+          competencia_id?: string
+          correcta?: boolean | null
+          created_at?: string | null
+          id?: string
+          powerup_usado?: string | null
+          pregunta_id?: string
+          puntaje?: number | null
+          respuesta?: number
+          tiempo_ms?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competencia_respuestas_competencia_id_fkey"
+            columns: ["competencia_id"]
+            isOneToOne: false
+            referencedRelation: "competencias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competencia_respuestas_pregunta_id_fkey"
+            columns: ["pregunta_id"]
+            isOneToOne: false
+            referencedRelation: "competencia_preguntas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competencias: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          estado: string
+          id: string
+          modo: string
+          pin: string
+          pregunta_actual: number | null
+          tiempo_por_pregunta: number | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          estado?: string
+          id?: string
+          modo?: string
+          pin: string
+          pregunta_actual?: number | null
+          tiempo_por_pregunta?: number | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          estado?: string
+          id?: string
+          modo?: string
+          pin?: string
+          pregunta_actual?: number | null
+          tiempo_por_pregunta?: number | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       contenido: {
         Row: {
           created_at: string

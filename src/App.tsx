@@ -22,6 +22,9 @@ import SectionExam from "./pages/student/SectionExam";
 import Library from "./pages/student/Library";
 import Mensajes from "./pages/student/Mensajes";
 import AdminMensajes from "./pages/admin/AdminMensajes";
+import AdminCompetencias from "./pages/admin/AdminCompetencias";
+import AdminCompetenciaLive from "./pages/admin/AdminCompetenciaLive";
+import StudentCompetencia from "./pages/student/StudentCompetencia";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +55,8 @@ function AppRoutes() {
       <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
       <Route path="/admin/student-view/:userId" element={<ProtectedRoute requiredRole="admin"><AdminStudentView /></ProtectedRoute>} />
       <Route path="/admin/mensajes" element={<ProtectedRoute requiredRole="admin"><AdminMensajes /></ProtectedRoute>} />
+      <Route path="/admin/competencias" element={<ProtectedRoute requiredRole="admin"><AdminCompetencias /></ProtectedRoute>} />
+      <Route path="/admin/competencia/:id" element={<ProtectedRoute requiredRole="admin"><AdminCompetenciaLive /></ProtectedRoute>} />
 
       {/* Student Routes */}
       <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
@@ -61,6 +66,7 @@ function AppRoutes() {
       <Route path="/student/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
       <Route path="/student/mensajes" element={<ProtectedRoute><Mensajes /></ProtectedRoute>} />
       <Route path="/student/profile" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
+      <Route path="/student/competencia" element={<ProtectedRoute><StudentCompetencia /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
