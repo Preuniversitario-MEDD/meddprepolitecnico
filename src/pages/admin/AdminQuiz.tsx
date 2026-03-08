@@ -76,6 +76,11 @@ export default function AdminQuiz() {
   const [uploading, setUploading] = useState(false);
   const [pasteDialogOpen, setPasteDialogOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
+  const [importSessionDialogOpen, setImportSessionDialogOpen] = useState(false);
+  const [importSourceSesion, setImportSourceSesion] = useState('');
+  const [importSourcePreguntas, setImportSourcePreguntas] = useState<QuizPregunta[]>([]);
+  const [importSelectedIds, setImportSelectedIds] = useState<Set<string>>(new Set());
+  const [loadingImport, setLoadingImport] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => { loadSesiones(); }, []);
