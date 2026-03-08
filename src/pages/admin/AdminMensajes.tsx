@@ -162,6 +162,7 @@ export default function AdminMensajes() {
           setMessages(prev => [...prev, msg]);
           // Auto-mark as read if we're viewing this conversation
           if (msg.sender_id !== user.id) {
+            playNotification();
             supabase.from('mensajes').update({ leido: true }).eq('id', msg.id);
           }
         })
