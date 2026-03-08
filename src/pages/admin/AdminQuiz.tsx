@@ -381,6 +381,9 @@ export default function AdminQuiz() {
           </Button>
           <input type="file" accept=".docx,.doc" onChange={importWord} className="hidden" />
         </label>
+        <Button variant="outline" size="sm" onClick={() => { setImportSourceSesion(''); setImportSourcePreguntas([]); setImportSelectedIds(new Set()); setImportSessionDialogOpen(true); }} className="gap-1">
+          <Copy className="w-3 h-3" /> Importar desde Sesión
+        </Button>
       </div>
 
       <div className="space-y-2">
