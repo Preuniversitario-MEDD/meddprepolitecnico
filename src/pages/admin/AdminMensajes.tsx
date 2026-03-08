@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MessageAttachment } from '@/components/messaging/MessageAttachment';
 import { FileUploadButton } from '@/components/messaging/FileUploadButton';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 interface Conversation {
   id: string;
@@ -39,6 +40,7 @@ interface Message {
 export default function AdminMensajes() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { play: playNotification } = useNotificationSound();
   const [tab, setTab] = useState<'mine' | 'all'>('mine');
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<string | null>(null);
@@ -160,6 +162,7 @@ export default function AdminMensajes() {
           setMessages(prev => [...prev, msg]);
           // Auto-mark as read if we're viewing this conversation
           if (msg.sender_id !== user.id) {
+            playNotification();
             supabase.from('mensajes').update({ leido: true }).eq('id', msg.id);
           }
         })

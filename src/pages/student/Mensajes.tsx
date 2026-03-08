@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { MessageAttachment } from '@/components/messaging/MessageAttachment';
 import { FileUploadButton } from '@/components/messaging/FileUploadButton';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 interface Conversation {
   id: string;
@@ -34,6 +35,7 @@ interface Message {
 export default function Mensajes() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { play: playNotification } = useNotificationSound();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -136,6 +138,7 @@ export default function Mensajes() {
           const msg = payload.new as Message;
           setMessages(prev => [...prev, msg]);
           if (msg.sender_id !== user?.id) {
+            playNotification();
             supabase.from('mensajes').update({ leido: true }).eq('id', msg.id);
           }
         })
