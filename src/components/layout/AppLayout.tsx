@@ -69,17 +69,29 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2">
             <Eye className="w-4 h-4" />
             <span className="font-display font-bold">MODO VISTA ESTUDIANTE</span>
-            <Shield className="w-3 h-3 opacity-60" />
-            <span className="opacity-80">Navegando como admin</span>
           </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-6 text-xs gap-1 bg-background/20 hover:bg-background/30 text-primary-foreground border-0"
-            onClick={() => navigate('/admin')}
-          >
-            <ArrowLeft className="w-3 h-3" /> Volver al Admin
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={selectedStudent} onValueChange={(val) => setSelectedStudent(val)}>
+              <SelectTrigger className="h-6 text-xs bg-background/20 border-0 text-primary-foreground w-[160px]">
+                <SelectValue placeholder="Ver como…" />
+              </SelectTrigger>
+              <SelectContent>
+                {students.map(s => (
+                  <SelectItem key={s.user_id} value={s.user_id} className="text-xs">
+                    {s.nombre} {s.apellidos}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-6 text-xs gap-1 bg-background/20 hover:bg-background/30 text-primary-foreground border-0"
+              onClick={() => navigate('/admin')}
+            >
+              <ArrowLeft className="w-3 h-3" /> Volver
+            </Button>
+          </div>
         </div>
       )}
 
