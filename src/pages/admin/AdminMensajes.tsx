@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare, Send, Plus, ArrowLeft, Search, Eye, Shield, Megaphone, Smartphone, Tablet, Monitor, Wifi } from 'lucide-react';
+import { MessageSquare, Send, Plus, ArrowLeft, Search, Eye, Shield, Megaphone, Smartphone, Tablet, Monitor, Wifi, CheckCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -59,7 +59,6 @@ export default function AdminMensajes() {
     setLoading(true);
 
     if (tab === 'mine') {
-      // Same as student: only my conversations
       const { data: myParts } = await supabase
         .from('conversacion_participantes')
         .select('conversacion_id')
@@ -88,13 +87,19 @@ export default function AdminMensajes() {
       }));
 
       for (const conv of convList) {
-        const { data: lastMsg } = await supabase.from('mensajes').select('contenido, created_at').eq('conversacion_id', conv.id).order('created_at', { ascending: false }).limit(1);
-        if (lastMsg?.[0]) { conv.lastMessage = lastMsg[0].contenido; conv.lastMessageAt = lastMsg[0].created_at; }
+        const { data: lastMsg } = await supabase.from('mensajes').select('contenido, created_at, archivo_nombre').eq('conversacion_id', conv.id).order('created_at', { ascending: false }).limit(1);
+        if (lastMsg?.[0]) {
+          conv.lastMessage = lastMsg[0].archivo_nombre ? `📎 ${lastMsg[0].archivo_nombre}` : lastMsg[0].contenido;
+          conv.lastMessageAt = lastMsg[0].created_at;
+        }
+        // Count unread messages not sent by admin
+        const { count } = await supabase.from('mensajes').select('*', { count: 'exact', head: true })
+          .eq('conversacion_id', conv.id).eq('leido', false).neq('sender_id', user.id);
+        conv.unread = count || 0;
       }
       convList.sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''));
       setConversations(convList);
     } else {
-      // Admin: view ALL conversations
       const { data: allConvs } = await supabase.from('conversaciones').select('id').order('updated_at', { ascending: false });
       if (!allConvs?.length) { setConversations([]); setLoading(false); return; }
 
@@ -115,8 +120,11 @@ export default function AdminMensajes() {
       }));
 
       for (const conv of convList) {
-        const { data: lastMsg } = await supabase.from('mensajes').select('contenido, created_at').eq('conversacion_id', conv.id).order('created_at', { ascending: false }).limit(1);
-        if (lastMsg?.[0]) { conv.lastMessage = lastMsg[0].contenido; conv.lastMessageAt = lastMsg[0].created_at; }
+        const { data: lastMsg } = await supabase.from('mensajes').select('contenido, created_at, archivo_nombre').eq('conversacion_id', conv.id).order('created_at', { ascending: false }).limit(1);
+        if (lastMsg?.[0]) {
+          conv.lastMessage = lastMsg[0].archivo_nombre ? `📎 ${lastMsg[0].archivo_nombre}` : lastMsg[0].contenido;
+          conv.lastMessageAt = lastMsg[0].created_at;
+        }
       }
       convList.sort((a, b) => (b.lastMessageAt || '').localeCompare(a.lastMessageAt || ''));
       setConversations(convList);
@@ -126,21 +134,38 @@ export default function AdminMensajes() {
 
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
 
+  // Mark messages as read when opening a conversation
   useEffect(() => {
-    if (!selectedConv) return;
+    if (!selectedConv || !user) return;
     const load = async () => {
       const { data } = await supabase.from('mensajes').select('*').eq('conversacion_id', selectedConv).order('created_at', { ascending: true });
       setMessages(data || []);
+
+      // Mark unread messages as read
+      await supabase.from('mensajes').update({ leido: true })
+        .eq('conversacion_id', selectedConv)
+        .neq('sender_id', user.id)
+        .eq('leido', false);
+
+      // Update unread count in sidebar
+      setConversations(prev => prev.map(c => c.id === selectedConv ? { ...c, unread: 0 } : c));
     };
     load();
 
     const channel = supabase
       .channel(`admin-msg-${selectedConv}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `conversacion_id=eq.${selectedConv}` },
-        (payload) => setMessages(prev => [...prev, payload.new as Message]))
+        (payload) => {
+          const msg = payload.new as Message;
+          setMessages(prev => [...prev, msg]);
+          // Auto-mark as read if we're viewing this conversation
+          if (msg.sender_id !== user.id) {
+            supabase.from('mensajes').update({ leido: true }).eq('id', msg.id);
+          }
+        })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [selectedConv]);
+  }, [selectedConv, user]);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
@@ -204,9 +229,7 @@ export default function AdminMensajes() {
   };
 
   const selectedConversation = conversations.find(c => c.id === selectedConv);
-  const isViewOnly = tab === 'all' && selectedConversation && !selectedConversation.participants.some(p => p.user_id === user?.id) === false;
 
-  // For "all" tab, show all participants' names
   const getChatTitle = () => {
     if (!selectedConversation) return 'Chat';
     if (tab === 'all') {
@@ -231,7 +254,7 @@ export default function AdminMensajes() {
 
   const isOnline = (lastSeen: string) => {
     if (!lastSeen) return false;
-    return Date.now() - new Date(lastSeen).getTime() < 2 * 60 * 1000; // 2 minutes
+    return Date.now() - new Date(lastSeen).getTime() < 2 * 60 * 1000;
   };
 
   const formatLastSeen = (lastSeen: string) => {
@@ -253,7 +276,6 @@ export default function AdminMensajes() {
     });
   };
 
-  // Check if admin is participant in selected conversation
   const [adminIsParticipant, setAdminIsParticipant] = useState(false);
   useEffect(() => {
     if (!selectedConv || !user) { setAdminIsParticipant(false); return; }
@@ -269,7 +291,6 @@ export default function AdminMensajes() {
     if (!bulkMessage.trim() || !user) return;
     setSendingBulk(true);
     try {
-      // Get all active students
       const { data: students } = await supabase
         .from('profiles')
         .select('user_id')
@@ -279,7 +300,6 @@ export default function AdminMensajes() {
       if (!students?.length) { toast({ title: 'Sin destinatarios', description: 'No hay estudiantes activos' }); setSendingBulk(false); return; }
 
       for (const student of students) {
-        // Find or create conversation
         const { data: myConvs } = await supabase
           .from('conversacion_participantes')
           .select('conversacion_id')
@@ -323,6 +343,9 @@ export default function AdminMensajes() {
     setSendingBulk(false);
   };
 
+  // Total unread across all my conversations
+  const totalUnread = conversations.reduce((sum, c) => sum + (c.unread || 0), 0);
+
   return (
     <div className="h-[calc(100vh-4rem)] md:h-screen flex">
       <div className={`${selectedConv ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card`}>
@@ -330,6 +353,9 @@ export default function AdminMensajes() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" /> Mensajes
+              {totalUnread > 0 && (
+                <span className="w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">{totalUnread}</span>
+              )}
             </h2>
             <div className="flex gap-1">
               <Button size="sm" variant="outline" onClick={() => setShowBulk(true)} title="Mensaje masivo"><Megaphone className="w-4 h-4" /></Button>
@@ -377,18 +403,29 @@ export default function AdminMensajes() {
                 ? conv.participants.map(p => `${p.nombre} ${p.apellidos}`).join(' ↔ ')
                 : conv.participants[0] ? `${conv.participants[0].nombre} ${conv.participants[0].apellidos}` : 'Usuario';
               const initials = conv.participants[0] ? (conv.participants[0].nombre?.[0] || '') + (conv.participants[0].apellidos?.[0] || '') : '?';
+              const presence = conv.participants[0] ? presenceMap.get(conv.participants[0].user_id) : null;
               return (
                 <button key={conv.id} onClick={() => setSelectedConv(conv.id)}
                   className={`w-full flex items-center gap-3 p-3 border-b border-border/50 hover:bg-accent/50 transition-colors ${selectedConv === conv.id ? 'bg-accent' : ''}`}>
-                  <Avatar className="w-10 h-10">
-                    {conv.participants[0]?.avatar_url && <AvatarImage src={conv.participants[0].avatar_url} />}
-                    <AvatarFallback className="bg-primary/20 text-primary text-sm">{initials}</AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="w-10 h-10">
+                      {conv.participants[0]?.avatar_url && <AvatarImage src={conv.participants[0].avatar_url} />}
+                      <AvatarFallback className="bg-primary/20 text-primary text-sm">{initials}</AvatarFallback>
+                    </Avatar>
+                    {presence && isOnline(presence.last_seen_at) && (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-card" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0 text-left">
                     <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
                     <p className="text-xs text-muted-foreground truncate">{conv.lastMessage || 'Sin mensajes'}</p>
                   </div>
-                  {tab === 'all' && <Eye className="w-3 h-3 text-muted-foreground" />}
+                  <div className="flex flex-col items-end gap-1">
+                    {(conv.unread || 0) > 0 && (
+                      <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">{conv.unread}</span>
+                    )}
+                    {tab === 'all' && <Eye className="w-3 h-3 text-muted-foreground" />}
+                  </div>
                 </button>
               );
             })
@@ -450,9 +487,12 @@ export default function AdminMensajes() {
                           {msg.archivo_url && msg.archivo_nombre && msg.archivo_tipo && (
                             <MessageAttachment url={msg.archivo_url} nombre={msg.archivo_nombre} tipo={msg.archivo_tipo} isMine={isMine} />
                           )}
-                          <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
-                            {new Date(msg.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                          <div className={`flex items-center gap-1 mt-1 ${isMine ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
+                            <p className="text-[10px]">
+                              {new Date(msg.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            {isMine && <CheckCheck className={`w-3 h-3 ${msg.leido ? 'text-accent' : ''}`} />}
+                          </div>
                         </div>
                       </motion.div>
                     );

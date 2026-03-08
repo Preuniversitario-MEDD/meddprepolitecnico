@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit, ExternalLink, ChevronDown, Image } from 'lucide-react';
+import { Plus, Trash2, Edit, ExternalLink, ChevronDown } from 'lucide-react';
 
 interface BibliotecaItem {
   id: string;
@@ -24,7 +24,7 @@ export default function AdminLibrary() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<BibliotecaItem | null>(null);
   const [form, setForm] = useState({ titulo: '', descripcion: '', url: '', categoria: '' });
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => { load(); }, []);
@@ -55,24 +55,6 @@ export default function AdminLibrary() {
     load();
   }
 
-  const toggleGroup = (cat: string) => {
-    setOpenGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat); else next.add(cat);
-      return next;
-    });
-  };
-
-  // Group by category
-  const grouped = new Map<string, BibliotecaItem[]>();
-  items.forEach(item => {
-    const cat = item.categoria || 'Sin categoría';
-    if (!grouped.has(cat)) grouped.set(cat, []);
-    grouped.get(cat)!.push(item);
-  });
-
-  const categories = [...new Set(items.map(i => i.categoria).filter(Boolean))];
-
   // Handle paste image
   async function handlePasteImage(e: React.ClipboardEvent) {
     const clipboardItems = e.clipboardData?.items;
@@ -92,6 +74,15 @@ export default function AdminLibrary() {
     }
   }
 
+  const grouped = new Map<string, BibliotecaItem[]>();
+  items.forEach(item => {
+    const cat = item.categoria || 'Sin categoría';
+    if (!grouped.has(cat)) grouped.set(cat, []);
+    grouped.get(cat)!.push(item);
+  });
+
+  const categories = [...new Set(items.map(i => i.categoria).filter(Boolean))];
+
   return (
     <div className="p-4 md:p-6 space-y-4" onPaste={handlePasteImage}>
       <div className="flex items-center justify-between">
@@ -102,38 +93,41 @@ export default function AdminLibrary() {
       </div>
 
       <div className="space-y-2">
-        {Array.from(grouped.entries()).map(([cat, catItems]) => (
-          <Collapsible key={cat} open={openGroups.has(cat)} onOpenChange={() => toggleGroup(cat)}>
-            <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 rounded-lg bg-card border border-border hover:bg-muted/50 transition-colors">
-              <ChevronDown className={`w-4 h-4 transition-transform ${openGroups.has(cat) ? 'rotate-0' : '-rotate-90'}`} />
-              <span className="font-display font-bold text-sm">{cat}</span>
-              <span className="text-xs text-muted-foreground ml-auto">{catItems.length} recursos</span>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-2 pl-4 border-l-2 border-primary/20 ml-2 mt-1">
-              {catItems.map(item => (
-                <Card key={item.id} className="card-elevated">
-                  <CardContent className="p-3 flex justify-between items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm">{item.titulo}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{item.descripcion}</p>
-                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-xs text-secondary flex items-center gap-1 mt-1">
-                        <ExternalLink className="w-3 h-3" /> {item.url.slice(0, 50)}...
-                      </a>
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" onClick={() => { setEditItem(item); setForm({ titulo: item.titulo, descripcion: item.descripcion, url: item.url, categoria: item.categoria }); setDialogOpen(true); }}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => deleteItem(item.id)}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </CollapsibleContent>
-          </Collapsible>
-        ))}
+        {Array.from(grouped.entries()).map(([cat, catItems]) => {
+          const isOpen = openGroup === cat;
+          return (
+            <Collapsible key={cat} open={isOpen} onOpenChange={(open) => setOpenGroup(open ? cat : null)}>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 rounded-lg bg-card border border-border hover:bg-muted/50 transition-colors">
+                <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
+                <span className="font-display font-bold text-sm">{cat}</span>
+                <span className="text-xs text-muted-foreground ml-auto">{catItems.length} recursos</span>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 pl-4 border-l-2 border-primary/20 ml-2 mt-1">
+                {catItems.map(item => (
+                  <Card key={item.id} className="card-elevated">
+                    <CardContent className="p-3 flex justify-between items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm">{item.titulo}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{item.descripcion}</p>
+                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-xs text-secondary flex items-center gap-1 mt-1">
+                          <ExternalLink className="w-3 h-3" /> {item.url.slice(0, 50)}...
+                        </a>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" onClick={() => { setEditItem(item); setForm({ titulo: item.titulo, descripcion: item.descripcion, url: item.url, categoria: item.categoria }); setDialogOpen(true); }}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteItem(item.id)}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })}
         {items.length === 0 && <p className="text-center text-muted-foreground py-8">No hay recursos aún</p>}
       </div>
 

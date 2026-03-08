@@ -17,7 +17,7 @@ interface BibliotecaItem {
 export default function Library() {
   const [items, setItems] = useState<BibliotecaItem[]>([]);
   const [search, setSearch] = useState('');
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from('biblioteca').select('*').order('created_at', { ascending: false })
@@ -28,21 +28,12 @@ export default function Library() {
     !search || i.titulo.toLowerCase().includes(search.toLowerCase()) || i.descripcion.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Group by category
   const grouped = new Map<string, BibliotecaItem[]>();
   filtered.forEach(item => {
     const cat = item.categoria || 'Sin categoría';
     if (!grouped.has(cat)) grouped.set(cat, []);
     grouped.get(cat)!.push(item);
   });
-
-  const toggleGroup = (cat: string) => {
-    setOpenGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat); else next.add(cat);
-      return next;
-    });
-  };
 
   return (
     <div className="p-4 md:p-6 space-y-4">
@@ -57,32 +48,35 @@ export default function Library() {
       </div>
 
       <div className="space-y-2">
-        {Array.from(grouped.entries()).map(([cat, catItems]) => (
-          <Collapsible key={cat} open={openGroups.has(cat)} onOpenChange={() => toggleGroup(cat)}>
-            <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 rounded-lg bg-card border border-border hover:bg-muted/50 transition-colors">
-              <ChevronDown className={`w-4 h-4 transition-transform ${openGroups.has(cat) ? 'rotate-0' : '-rotate-90'}`} />
-              <span className="font-display font-bold text-sm">{cat}</span>
-              <span className="text-xs text-muted-foreground ml-auto">{catItems.length} recursos</span>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-2 pl-4 border-l-2 border-primary/20 ml-2 mt-1">
-              {catItems.map((item, i) => (
-                <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <a href={item.url} target="_blank" rel="noopener noreferrer">
-                    <Card className="card-elevated hover:glow-primary transition-all cursor-pointer">
-                      <CardContent className="p-4">
-                        <h3 className="font-display font-bold text-sm">{item.titulo}</h3>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.descripcion}</p>
-                        <div className="flex items-center gap-1 text-xs text-secondary mt-2">
-                          <ExternalLink className="w-3 h-3" /> Abrir recurso
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </a>
-                </motion.div>
-              ))}
-            </CollapsibleContent>
-          </Collapsible>
-        ))}
+        {Array.from(grouped.entries()).map(([cat, catItems]) => {
+          const isOpen = openGroup === cat;
+          return (
+            <Collapsible key={cat} open={isOpen} onOpenChange={(open) => setOpenGroup(open ? cat : null)}>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 rounded-lg bg-card border border-border hover:bg-muted/50 transition-colors">
+                <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
+                <span className="font-display font-bold text-sm">{cat}</span>
+                <span className="text-xs text-muted-foreground ml-auto">{catItems.length} recursos</span>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 pl-4 border-l-2 border-primary/20 ml-2 mt-1">
+                {catItems.map((item, i) => (
+                  <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                    <a href={item.url} target="_blank" rel="noopener noreferrer">
+                      <Card className="card-elevated hover:glow-primary transition-all cursor-pointer">
+                        <CardContent className="p-4">
+                          <h3 className="font-display font-bold text-sm">{item.titulo}</h3>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.descripcion}</p>
+                          <div className="flex items-center gap-1 text-xs text-secondary mt-2">
+                            <ExternalLink className="w-3 h-3" /> Abrir recurso
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </a>
+                  </motion.div>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })}
       </div>
       {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">No se encontraron recursos</p>}
     </div>

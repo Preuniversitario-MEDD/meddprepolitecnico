@@ -23,7 +23,7 @@ export default function StudentDashboard() {
   const { profile, user } = useAuth();
   const navigate = useNavigate();
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
-  const [progress, setProgress] = useState<Record<string, { completada: boolean; puntaje: number; correctasTotal: number }>>({});
+  const [progress, setProgress] = useState<Record<string, { completada: boolean; puntaje: number; correctasTotal: number; erroresTotal: number }>>({});
   const [globalProgress, setGlobalProgress] = useState(0);
   const [exams, setExams] = useState<Record<string, { aprobado: boolean; puntaje: number }>>({});
 
@@ -35,19 +35,23 @@ export default function StudentDashboard() {
 
     if (user) {
       const { data: prog } = await supabase.from('progreso_estudiante').select('*').eq('user_id', user.id);
-      const map: Record<string, { completada: boolean; puntaje: number; correctasTotal: number }> = {};
+      const map: Record<string, { completada: boolean; puntaje: number; correctasTotal: number; erroresTotal: number }> = {};
       let totalProgress = 0;
       prog?.forEach((p: any) => {
         const ejerciciosP = Math.min((p.ejercicios_correctos || 0) / 20, 1) * 40;
         const quizP = Math.min((p.preguntas_correctas_total || 0) / 150, 1) * 60;
         const sessionP = ejerciciosP + quizP;
         totalProgress += sessionP;
-        map[p.sesion_id] = { completada: p.completada, puntaje: Number(p.puntaje_quiz) || 0, correctasTotal: p.preguntas_correctas_total || 0 };
+        map[p.sesion_id] = {
+          completada: p.completada,
+          puntaje: Number(p.puntaje_quiz) || 0,
+          correctasTotal: p.preguntas_correctas_total || 0,
+          erroresTotal: p.errores_quiz || 0,
+        };
       });
       setProgress(map);
       setGlobalProgress(Math.round(totalProgress / 14));
 
-      // Load exams
       const { data: examData } = await supabase.from('examenes').select('*').eq('user_id', user.id);
       const examMap: Record<string, { aprobado: boolean; puntaje: number }> = {};
       examData?.forEach((e: any) => {
@@ -79,10 +83,17 @@ export default function StudentDashboard() {
     'from-neon-orange to-neon-pink', 'from-neon-mint to-neon-blue', 'from-neon-fuchsia to-neon-violet', 'from-neon-orange to-neon-violet',
   ];
 
+  // Exam unlocks when ALL sessions in the block have >= 80% quiz accuracy
   function isExamUnlocked(block: typeof EXAM_BLOCKS[0]) {
     return block.sessions.every(num => {
       const sesion = sesiones.find(s => s.numero === num);
-      return sesion && progress[sesion.id]?.completada;
+      if (!sesion) return false;
+      const p = progress[sesion.id];
+      if (!p) return false;
+      const totalAnswered = p.correctasTotal + p.erroresTotal;
+      if (totalAnswered === 0) return false;
+      const accuracy = p.correctasTotal / totalAnswered;
+      return accuracy >= 0.8;
     });
   }
 
@@ -93,7 +104,6 @@ export default function StudentDashboard() {
         <p className="text-muted-foreground text-sm">Sigue avanzando en tu preparación de Química</p>
       </motion.div>
 
-      {/* Global Progress */}
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
         <Card className="card-elevated neon-border overflow-hidden">
           <CardContent className="p-4">
@@ -109,7 +119,6 @@ export default function StudentDashboard() {
         </Card>
       </motion.div>
 
-      {/* Sessions Grid */}
       <div>
         <h2 className="font-display font-bold text-lg mb-3 text-neon-pink">Sesiones de Química</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -127,6 +136,12 @@ export default function StudentDashboard() {
                     </div>
                     <p className="font-display font-bold text-sm">S{sesion.numero}</p>
                     <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{sesion.titulo}</p>
+                    {/* Show quiz accuracy if has progress */}
+                    {progress[sesion.id] && (progress[sesion.id].correctasTotal + progress[sesion.id].erroresTotal) > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Quiz: {Math.round((progress[sesion.id].correctasTotal / (progress[sesion.id].correctasTotal + progress[sesion.id].erroresTotal)) * 100)}% aciertos
+                      </p>
+                    )}
                     <span className={`inline-block mt-2 text-[10px] font-medium px-2 py-0.5 rounded-full ${
                       status === 'completed' ? 'bg-accent/20 text-accent' : status === 'in-progress' ? 'bg-neon-orange/20 text-neon-orange' :
                       status === 'locked' ? 'bg-muted text-muted-foreground' : 'bg-primary/20 text-primary'}`}>
@@ -140,9 +155,9 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Exams Section */}
       <div>
         <h2 className="font-display font-bold text-lg mb-3 text-neon-fuchsia">Exámenes por Bloque</h2>
+        <p className="text-xs text-muted-foreground mb-2">Se desbloquean al alcanzar ≥80% de aciertos en el quiz de cada sesión del bloque</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {EXAM_BLOCKS.map(block => {
             const unlocked = isExamUnlocked(block);
@@ -155,6 +170,18 @@ export default function StudentDashboard() {
                     <div>
                       <p className="text-sm font-medium">{block.label}</p>
                       {exam && <p className="text-xs text-muted-foreground">{exam.puntaje}/100 {exam.aprobado ? '✅' : '❌'}</p>}
+                      {!unlocked && (
+                        <p className="text-[10px] text-muted-foreground">
+                          {block.sessions.map(num => {
+                            const ses = sesiones.find(s => s.numero === num);
+                            if (!ses) return null;
+                            const p = progress[ses.id];
+                            const total = p ? p.correctasTotal + p.erroresTotal : 0;
+                            const acc = total > 0 ? Math.round((p!.correctasTotal / total) * 100) : 0;
+                            return `S${num}: ${acc}%`;
+                          }).filter(Boolean).join(' · ')}
+                        </p>
+                      )}
                     </div>
                   </div>
                   {unlocked && !exam?.aprobado && (
