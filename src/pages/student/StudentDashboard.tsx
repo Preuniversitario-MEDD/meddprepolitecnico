@@ -92,7 +92,10 @@ export default function StudentDashboard() {
   const firstName = profile?.nombre?.split(' ')[0] || 'Estudiante';
 
   const getSessionStatus = (sesion: Sesion) => {
-    if (sesion.estado === 'bloqueada') return 'locked';
+    // Per-student override takes priority
+    const override = sessionOverrides[sesion.id];
+    const isBlocked = override !== undefined ? !override : sesion.estado === 'bloqueada';
+    if (isBlocked) return 'locked';
     const p = progress[sesion.id];
     if (p?.completada) return 'completed';
     if (p) return 'in-progress';
