@@ -160,9 +160,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {isMobile && (
           <header className={`sticky ${isAdminOnStudentView ? 'top-9' : 'top-0'} z-40 glass border-b border-border px-4 py-3 flex items-center justify-between`}>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg gradient-neon flex items-center justify-center">
-                <FlaskConical className="w-4 h-4 text-primary-foreground" />
-              </div>
+              <img src={meddLogo} alt="MEDD Logo" className="w-8 h-8 rounded-lg object-contain" />
               <span className="font-display font-bold text-sm">ESPOLMEDD</span>
             </div>
             <div className="flex items-center gap-2">
