@@ -138,6 +138,7 @@ export default function Mensajes() {
           const msg = payload.new as Message;
           setMessages(prev => [...prev, msg]);
           if (msg.sender_id !== user?.id) {
+            playNotification();
             supabase.from('mensajes').update({ leido: true }).eq('id', msg.id);
           }
         })
