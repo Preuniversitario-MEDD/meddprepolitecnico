@@ -22,6 +22,7 @@ const adminLinks = [
   { path: '/admin/mensajes', icon: MessageSquare, label: 'Mensajes' },
   { path: '/admin/competencias', icon: Zap, label: 'Competencias' },
   { path: '/admin/settings', icon: Settings, label: 'Roles' },
+  { path: '/admin/profile', icon: GraduationCap, label: 'Mi Perfil' },
 ];
 
 const studentLinks = [
