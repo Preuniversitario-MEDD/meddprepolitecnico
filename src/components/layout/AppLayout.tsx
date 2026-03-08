@@ -103,8 +103,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <img src={meddLogo} alt="MEDD Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-sm text-sidebar-foreground">ESPOLMEDD</h2>
-              <p className="text-xs text-muted-foreground capitalize">{isAdminOnStudentView ? 'Vista Estudiante' : role}</p>
+              <h2 className="font-display font-bold text-sm text-sidebar-foreground">MEDD</h2>
             </div>
           </div>
 
