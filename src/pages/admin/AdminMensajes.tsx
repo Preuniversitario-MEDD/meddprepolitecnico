@@ -13,6 +13,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { MessageAttachment } from '@/components/messaging/MessageAttachment';
+import { FileUploadButton } from '@/components/messaging/FileUploadButton';
 
 interface Conversation {
   id: string;
@@ -29,6 +31,9 @@ interface Message {
   contenido: string;
   leido: boolean;
   created_at: string;
+  archivo_url?: string | null;
+  archivo_nombre?: string | null;
+  archivo_tipo?: string | null;
 }
 
 export default function AdminMensajes() {
@@ -45,6 +50,8 @@ export default function AdminMensajes() {
   const [searchUser, setSearchUser] = useState('');
   const [profileMap, setProfileMap] = useState<Map<string, any>>(new Map());
   const [presenceMap, setPresenceMap] = useState<Map<string, { last_seen_at: string; device_type: string; ip_address: string }>>(new Map());
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchConversations = useCallback(async () => {
@@ -137,15 +144,39 @@ export default function AdminMensajes() {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
+  const uploadFile = async (file: File): Promise<{ url: string; nombre: string; tipo: string } | null> => {
+    if (!user) return null;
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('message-attachments').upload(path, file);
+    if (error) { toast({ title: 'Error al subir archivo', description: error.message, variant: 'destructive' }); return null; }
+    const { data: { publicUrl } } = supabase.storage.from('message-attachments').getPublicUrl(path);
+    return { url: publicUrl, nombre: file.name, tipo: file.type };
+  };
+
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConv || !user) return;
-    // Admin can only send in own conversations
-    const isParticipant = conversations.find(c => c.id === selectedConv)?.participants.some(() => true);
+    if ((!newMessage.trim() && !attachedFile) || !selectedConv || !user) return;
     const { data: myPart } = await supabase.from('conversacion_participantes').select('id').eq('conversacion_id', selectedConv).eq('user_id', user.id).limit(1);
     if (!myPart?.length) { toast({ title: 'Solo lectura', description: 'No eres participante de esta conversación', variant: 'destructive' }); return; }
 
-    await supabase.from('mensajes').insert({ conversacion_id: selectedConv, sender_id: user.id, contenido: newMessage.trim() });
+    setSending(true);
+    let fileData: { url: string; nombre: string; tipo: string } | null = null;
+    if (attachedFile) {
+      fileData = await uploadFile(attachedFile);
+      if (!fileData) { setSending(false); return; }
+    }
+
+    await supabase.from('mensajes').insert({
+      conversacion_id: selectedConv,
+      sender_id: user.id,
+      contenido: newMessage.trim() || (fileData ? fileData.nombre : ''),
+      archivo_url: fileData?.url || null,
+      archivo_nombre: fileData?.nombre || null,
+      archivo_tipo: fileData?.tipo || null,
+    });
     setNewMessage('');
+    setAttachedFile(null);
+    setSending(false);
   };
 
   const startNewConversation = async (targetUserId: string) => {
@@ -413,7 +444,12 @@ export default function AdminMensajes() {
                         className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${isMine ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'}`}>
                           {tab === 'all' && !isMine && <p className="text-[10px] font-medium mb-1 opacity-70">{getSenderName(msg.sender_id)}</p>}
-                          <p className="break-words">{msg.contenido}</p>
+                          {msg.contenido && (!msg.archivo_url || msg.contenido !== msg.archivo_nombre) && (
+                            <p className="break-words">{msg.contenido}</p>
+                          )}
+                          {msg.archivo_url && msg.archivo_nombre && msg.archivo_tipo && (
+                            <MessageAttachment url={msg.archivo_url} nombre={msg.archivo_nombre} tipo={msg.archivo_tipo} isMine={isMine} />
+                          )}
                           <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
                             {new Date(msg.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
                           </p>
@@ -428,9 +464,10 @@ export default function AdminMensajes() {
 
             {adminIsParticipant && (
               <div className="p-3 border-t border-border">
-                <form onSubmit={e => { e.preventDefault(); sendMessage(); }} className="flex gap-2">
+                <form onSubmit={e => { e.preventDefault(); sendMessage(); }} className="flex gap-2 items-center">
+                  <FileUploadButton file={attachedFile} onFileSelect={setAttachedFile} disabled={sending} />
                   <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Escribe un mensaje..." className="flex-1" maxLength={2000} />
-                  <Button type="submit" size="icon" disabled={!newMessage.trim()}><Send className="w-4 h-4" /></Button>
+                  <Button type="submit" size="icon" disabled={(!newMessage.trim() && !attachedFile) || sending}><Send className="w-4 h-4" /></Button>
                 </form>
               </div>
             )}

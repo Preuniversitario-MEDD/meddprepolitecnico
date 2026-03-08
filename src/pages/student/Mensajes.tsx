@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { MessageSquare, Send, Plus, ArrowLeft, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
+import { MessageAttachment } from '@/components/messaging/MessageAttachment';
+import { FileUploadButton } from '@/components/messaging/FileUploadButton';
 
 interface Conversation {
   id: string;
@@ -24,6 +26,9 @@ interface Message {
   contenido: string;
   leido: boolean;
   created_at: string;
+  archivo_url?: string | null;
+  archivo_nombre?: string | null;
+  archivo_tipo?: string | null;
 }
 
 export default function Mensajes() {
@@ -37,11 +42,12 @@ export default function Mensajes() {
   const [showNewChat, setShowNewChat] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [searchUser, setSearchUser] = useState('');
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchConversations = useCallback(async () => {
     if (!user) return;
-    // Get participant entries for current user
     const { data: myParticipations } = await supabase
       .from('conversacion_participantes')
       .select('conversacion_id')
@@ -51,13 +57,11 @@ export default function Mensajes() {
 
     const convIds = myParticipations.map(p => p.conversacion_id);
 
-    // Get all participants for these conversations
     const { data: allParticipants } = await supabase
       .from('conversacion_participantes')
       .select('conversacion_id, user_id')
       .in('conversacion_id', convIds);
 
-    // Get profiles for all participants
     const userIds = [...new Set(allParticipants?.map(p => p.user_id) || [])];
     const { data: profiles } = await supabase
       .from('profiles')
@@ -66,7 +70,6 @@ export default function Mensajes() {
 
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
-    // Get last message per conversation
     const convList: Conversation[] = convIds.map(cid => {
       const parts = allParticipants?.filter(p => p.conversacion_id === cid && p.user_id !== user.id) || [];
       return {
@@ -78,18 +81,16 @@ export default function Mensajes() {
       };
     });
 
-    // Fetch last messages
     for (const conv of convList) {
       const { data: lastMsg } = await supabase
         .from('mensajes')
-        .select('contenido, created_at, leido, sender_id')
+        .select('contenido, created_at, leido, sender_id, archivo_nombre')
         .eq('conversacion_id', conv.id)
         .order('created_at', { ascending: false })
         .limit(1);
       if (lastMsg?.[0]) {
-        conv.lastMessage = lastMsg[0].contenido;
+        conv.lastMessage = lastMsg[0].archivo_nombre ? `📎 ${lastMsg[0].archivo_nombre}` : lastMsg[0].contenido;
         conv.lastMessageAt = lastMsg[0].created_at;
-        // Count unread
         const { count } = await supabase
           .from('mensajes')
           .select('*', { count: 'exact', head: true })
@@ -107,7 +108,6 @@ export default function Mensajes() {
 
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
 
-  // Load messages for selected conversation
   useEffect(() => {
     if (!selectedConv) return;
     const loadMessages = async () => {
@@ -118,7 +118,6 @@ export default function Mensajes() {
         .order('created_at', { ascending: true });
       setMessages(data || []);
 
-      // Mark as read
       if (user) {
         await supabase
           .from('mensajes')
@@ -130,7 +129,6 @@ export default function Mensajes() {
     };
     loadMessages();
 
-    // Realtime subscription
     const channel = supabase
       .channel(`messages-${selectedConv}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `conversacion_id=eq.${selectedConv}` },
@@ -148,20 +146,42 @@ export default function Mensajes() {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
+  const uploadFile = async (file: File): Promise<{ url: string; nombre: string; tipo: string } | null> => {
+    if (!user) return null;
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('message-attachments').upload(path, file);
+    if (error) { toast({ title: 'Error al subir archivo', description: error.message, variant: 'destructive' }); return null; }
+    const { data: { publicUrl } } = supabase.storage.from('message-attachments').getPublicUrl(path);
+    return { url: publicUrl, nombre: file.name, tipo: file.type };
+  };
+
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConv || !user) return;
+    if ((!newMessage.trim() && !attachedFile) || !selectedConv || !user) return;
+    setSending(true);
+
+    let fileData: { url: string; nombre: string; tipo: string } | null = null;
+    if (attachedFile) {
+      fileData = await uploadFile(attachedFile);
+      if (!fileData) { setSending(false); return; }
+    }
+
     const { error } = await supabase.from('mensajes').insert({
       conversacion_id: selectedConv,
       sender_id: user.id,
-      contenido: newMessage.trim(),
+      contenido: newMessage.trim() || (fileData ? fileData.nombre : ''),
+      archivo_url: fileData?.url || null,
+      archivo_nombre: fileData?.nombre || null,
+      archivo_tipo: fileData?.tipo || null,
     });
-    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); }
     setNewMessage('');
+    setAttachedFile(null);
+    setSending(false);
   };
 
   const startNewConversation = async (targetUserId: string) => {
     if (!user) return;
-    // Check if conversation already exists
     const { data: myConvs } = await supabase
       .from('conversacion_participantes')
       .select('conversacion_id')
@@ -181,7 +201,6 @@ export default function Mensajes() {
       }
     }
 
-    // Create new conversation
     const { data: conv, error } = await supabase.from('conversaciones').insert({}).select().single();
     if (error || !conv) { toast({ title: 'Error', description: 'No se pudo crear la conversación', variant: 'destructive' }); return; }
 
@@ -216,7 +235,7 @@ export default function Mensajes() {
 
   return (
     <div className="h-[calc(100vh-4rem)] md:h-screen flex">
-      {/* Sidebar - conversation list */}
+      {/* Sidebar */}
       <div className={`${selectedConv ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card`}>
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
@@ -308,7 +327,12 @@ export default function Mensajes() {
                       <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                         className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${isMine ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'}`}>
-                          <p className="break-words">{msg.contenido}</p>
+                          {msg.contenido && (!msg.archivo_url || msg.contenido !== msg.archivo_nombre) && (
+                            <p className="break-words">{msg.contenido}</p>
+                          )}
+                          {msg.archivo_url && msg.archivo_nombre && msg.archivo_tipo && (
+                            <MessageAttachment url={msg.archivo_url} nombre={msg.archivo_nombre} tipo={msg.archivo_tipo} isMine={isMine} />
+                          )}
                           <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
                             {new Date(msg.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
                           </p>
@@ -322,9 +346,10 @@ export default function Mensajes() {
             </ScrollArea>
 
             <div className="p-3 border-t border-border">
-              <form onSubmit={e => { e.preventDefault(); sendMessage(); }} className="flex gap-2">
+              <form onSubmit={e => { e.preventDefault(); sendMessage(); }} className="flex gap-2 items-center">
+                <FileUploadButton file={attachedFile} onFileSelect={setAttachedFile} disabled={sending} />
                 <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Escribe un mensaje..." className="flex-1" maxLength={2000} />
-                <Button type="submit" size="icon" disabled={!newMessage.trim()}>
+                <Button type="submit" size="icon" disabled={(!newMessage.trim() && !attachedFile) || sending}>
                   <Send className="w-4 h-4" />
                 </Button>
               </form>
