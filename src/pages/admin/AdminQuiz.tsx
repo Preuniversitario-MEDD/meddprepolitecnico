@@ -411,8 +411,14 @@ export default function AdminQuiz() {
         </div>
       </div>
 
-      {/* Filter + Import/Export row */}
+      {/* Search + Filter + Import/Export row */}
       <div className="flex gap-2 flex-wrap items-center">
+        <Input 
+          placeholder="Buscar pregunta..." 
+          value={searchText} 
+          onChange={e => setSearchText(e.target.value)} 
+          className="h-8 w-40 text-xs"
+        />
         {grupos.length > 1 && (
           <Select value={filterGrupo} onValueChange={setFilterGrupo}>
             <SelectTrigger className="w-36 h-8 text-xs">
@@ -425,8 +431,11 @@ export default function AdminQuiz() {
             </SelectContent>
           </Select>
         )}
+        <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1" disabled={filteredPreguntas.length === 0}>
+          <Download className="w-3 h-3" /> CSV
+        </Button>
         <Button variant="outline" size="sm" onClick={exportQuestions} className="gap-1" disabled={preguntas.length === 0}>
-          <Download className="w-3 h-3" /> Exportar JSON
+          <Download className="w-3 h-3" /> JSON
         </Button>
         <label>
           <Button variant="outline" size="sm" className="gap-1" asChild>
