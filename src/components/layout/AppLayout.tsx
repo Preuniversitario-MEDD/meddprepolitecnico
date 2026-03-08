@@ -20,6 +20,7 @@ const adminLinks = [
   { path: '/admin/quiz', icon: Brain, label: 'Quiz' },
   { path: '/admin/library', icon: Library, label: 'Biblioteca' },
   { path: '/admin/mensajes', icon: MessageSquare, label: 'Mensajes' },
+  { path: '/admin/competencias', icon: Zap, label: 'Competencias' },
   { path: '/admin/settings', icon: Settings, label: 'Roles' },
 ];
 
