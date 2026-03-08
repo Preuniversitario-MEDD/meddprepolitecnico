@@ -50,8 +50,16 @@ export default function StudentDashboard() {
   }
 
   async function loadData() {
-    const { data: ses } = await supabase.from('sesiones').select('*').order('numero');
+    const [{ data: ses }, overridesRes] = await Promise.all([
+      supabase.from('sesiones').select('*').order('numero'),
+      user ? supabase.from('sesion_estudiante').select('*').eq('user_id', user.id) : Promise.resolve({ data: null }),
+    ]);
     setSesiones(ses || []);
+
+    // Build per-student overrides
+    const oMap: Record<string, boolean> = {};
+    overridesRes?.data?.forEach((o: any) => { oMap[o.sesion_id] = o.desbloqueada; });
+    setSessionOverrides(oMap);
 
     if (user) {
       const { data: prog } = await supabase.from('progreso_estudiante').select('*').eq('user_id', user.id);
