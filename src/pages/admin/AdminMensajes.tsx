@@ -13,6 +13,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { MessageAttachment } from '@/components/messaging/MessageAttachment';
+import { FileUploadButton } from '@/components/messaging/FileUploadButton';
 
 interface Conversation {
   id: string;
@@ -29,6 +31,9 @@ interface Message {
   contenido: string;
   leido: boolean;
   created_at: string;
+  archivo_url?: string | null;
+  archivo_nombre?: string | null;
+  archivo_tipo?: string | null;
 }
 
 export default function AdminMensajes() {
