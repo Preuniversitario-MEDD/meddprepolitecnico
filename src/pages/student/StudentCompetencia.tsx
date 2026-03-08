@@ -40,6 +40,7 @@ export default function StudentCompetencia() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const { play: playSound } = useNotificationSound();
+  const { playCorrect, playIncorrect, playPodium, playCountdown, playPowerup } = useGameSounds();
   const navigate = useNavigate();
   const [pin, setPin] = useState('');
   const [comp, setComp] = useState<Competencia | null>(null);
