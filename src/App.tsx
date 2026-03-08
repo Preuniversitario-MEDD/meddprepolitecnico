@@ -24,6 +24,7 @@ import Mensajes from "./pages/student/Mensajes";
 import AdminMensajes from "./pages/admin/AdminMensajes";
 import AdminCompetencias from "./pages/admin/AdminCompetencias";
 import AdminCompetenciaLive from "./pages/admin/AdminCompetenciaLive";
+import AdminProfile from "./pages/admin/AdminProfile";
 import StudentCompetencia from "./pages/student/StudentCompetencia";
 import NotFound from "./pages/NotFound";
 
