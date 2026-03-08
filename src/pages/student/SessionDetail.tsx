@@ -191,7 +191,7 @@ export default function SessionDetail() {
                   ));
                 }
                 return (
-                  <Collapsible key={groupName} defaultOpen>
+                  <Collapsible key={groupName}>
                     <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
                       <ChevronDown className="w-4 h-4 transition-transform" />
                       <span className="font-semibold text-sm">{groupName}</span>
