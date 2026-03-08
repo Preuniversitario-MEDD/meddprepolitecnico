@@ -233,6 +233,23 @@ export default function AdminQuiz() {
     URL.revokeObjectURL(url);
   }
 
+  function exportCSV() {
+    const sesion = sesiones.find(s => s.id === selectedSesion);
+    const header = 'Grupo,Pregunta,Opción A,Opción B,Opción C,Opción D,Opción E,Opción F,Respuesta Correcta';
+    const rows = filteredPreguntas.map(p => {
+      const ops = [...p.opciones];
+      while (ops.length < 6) ops.push('');
+      const correctLetter = String.fromCharCode(65 + p.respuesta_correcta);
+      return [p.grupo, p.pregunta, ...ops, correctLetter].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+    });
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `quiz_${sesion ? `S${sesion.numero}` : selectedSesion.slice(0, 8)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function importJSON(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
