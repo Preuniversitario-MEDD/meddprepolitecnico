@@ -40,6 +40,7 @@ interface Message {
 export default function AdminMensajes() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { play: playNotification } = useNotificationSound();
   const [tab, setTab] = useState<'mine' | 'all'>('mine');
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<string | null>(null);
