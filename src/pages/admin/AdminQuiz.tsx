@@ -82,6 +82,7 @@ export default function AdminQuiz() {
   const [loadingImport, setLoadingImport] = useState(false);
   const [importMoveMode, setImportMoveMode] = useState(false);
   const [filterGrupo, setFilterGrupo] = useState<string>('all');
+  const [searchText, setSearchText] = useState('');
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiQuantity, setAiQuantity] = useState(5);
   const [aiGrupo, setAiGrupo] = useState(1);
