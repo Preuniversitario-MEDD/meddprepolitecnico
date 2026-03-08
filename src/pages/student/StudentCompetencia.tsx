@@ -168,7 +168,10 @@ export default function StudentCompetencia() {
 
     setShowResult(true);
     if (correcta) {
+      playCorrect();
       confetti({ particleCount: 30, spread: 60, origin: { y: 0.7 } });
+    } else {
+      playIncorrect();
     }
   }
 
