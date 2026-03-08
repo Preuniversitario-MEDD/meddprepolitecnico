@@ -23,7 +23,7 @@ interface Pregunta {
 }
 interface Participante {
   id: string; user_id: string; nombre: string; puntaje: number;
-  racha: number; mejor_racha: number; powerups: { freeze: number; fifty: number; x2: number };
+  racha: number; mejor_racha: number; powerups: any;
 }
 
 const OPTION_COLORS = [
