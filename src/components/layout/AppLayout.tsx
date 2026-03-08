@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -8,10 +8,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, Settings, LogOut,
-  Moon, Sun, GraduationCap, FlaskConical, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, Shield
+  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, Shield, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AvatarUpload from '@/components/AvatarUpload';
+import { supabase } from '@/integrations/supabase/client';
+import meddLogo from '@/assets/medd-logo.png';
 
 const adminLinks = [
   { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
@@ -42,8 +45,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   usePresenceTracker();
   const location = useLocation();
   const navigate = useNavigate();
+  const [students, setStudents] = useState<{ user_id: string; nombre: string; apellidos: string }[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<string>('');
 
   const isAdminOnStudentView = role === 'admin' && location.pathname.startsWith('/student');
+
+  useEffect(() => {
+    if (role === 'admin') {
+      supabase.from('profiles').select('user_id, nombre, apellidos').then(({ data }) => {
+        if (data) setStudents(data.filter(s => s.user_id !== profile?.user_id));
+      });
+    }
+  }, [role, profile?.user_id]);
   const links = isAdminOnStudentView ? studentLinks : (role === 'admin' ? adminLinks : studentLinks);
   const initials = profile ? (profile.nombre?.[0] || '') + (profile.apellidos?.[0] || '') : '?';
   const getMensajesPath = role === 'admin' && !isAdminOnStudentView ? '/admin/mensajes' : '/student/mensajes';
@@ -56,26 +69,36 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2">
             <Eye className="w-4 h-4" />
             <span className="font-display font-bold">MODO VISTA ESTUDIANTE</span>
-            <Shield className="w-3 h-3 opacity-60" />
-            <span className="opacity-80">Navegando como admin</span>
           </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-6 text-xs gap-1 bg-background/20 hover:bg-background/30 text-primary-foreground border-0"
-            onClick={() => navigate('/admin')}
-          >
-            <ArrowLeft className="w-3 h-3" /> Volver al Admin
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={selectedStudent} onValueChange={(val) => setSelectedStudent(val)}>
+              <SelectTrigger className="h-6 text-xs bg-background/20 border-0 text-primary-foreground w-[160px]">
+                <SelectValue placeholder="Ver como…" />
+              </SelectTrigger>
+              <SelectContent>
+                {students.map(s => (
+                  <SelectItem key={s.user_id} value={s.user_id} className="text-xs">
+                    {s.nombre} {s.apellidos}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-6 text-xs gap-1 bg-background/20 hover:bg-background/30 text-primary-foreground border-0"
+              onClick={() => navigate('/admin')}
+            >
+              <ArrowLeft className="w-3 h-3" /> Volver
+            </Button>
+          </div>
         </div>
       )}
 
       {!isMobile && (
         <motion.aside initial={{ x: -80 }} animate={{ x: 0 }} className={`w-64 border-r border-border bg-sidebar flex flex-col ${isAdminOnStudentView ? 'pt-9' : ''}`}>
           <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
-            <div className="w-10 h-10 rounded-xl gradient-neon flex items-center justify-center">
-              <FlaskConical className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img src={meddLogo} alt="MEDD Logo" className="w-10 h-10 rounded-xl object-contain" />
             <div>
               <h2 className="font-display font-bold text-sm text-sidebar-foreground">ESPOLMEDD</h2>
               <p className="text-xs text-muted-foreground capitalize">{isAdminOnStudentView ? 'Vista Estudiante' : role}</p>
@@ -137,9 +160,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {isMobile && (
           <header className={`sticky ${isAdminOnStudentView ? 'top-9' : 'top-0'} z-40 glass border-b border-border px-4 py-3 flex items-center justify-between`}>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg gradient-neon flex items-center justify-center">
-                <FlaskConical className="w-4 h-4 text-primary-foreground" />
-              </div>
+              <img src={meddLogo} alt="MEDD Logo" className="w-8 h-8 rounded-lg object-contain" />
               <span className="font-display font-bold text-sm">ESPOLMEDD</span>
             </div>
             <div className="flex items-center gap-2">
