@@ -4,13 +4,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, CheckCircle, Clock, Lock, FlaskConical, FileText, Trophy, Target, AlertTriangle, Timer, Smartphone, Tablet, Monitor } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { FileText, Unlock, Lock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import StudentHeader from '@/components/admin/StudentHeader';
+import SessionManagementCard from '@/components/admin/SessionManagementCard';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
 type Profile = Tables<'profiles'>;
+
+interface SessionProgress {
+  completada: boolean;
+  puntaje: number;
+  correctasTotal: number;
+  erroresTotal: number;
+  intentos: number;
+  tiempo: number;
+}
 
 const EXAM_BLOCKS = [
   { tipo: 'exam_1_3', sessions: [1, 2, 3], label: 'Examen Secciones 1-3' },
@@ -23,30 +33,37 @@ const EXAM_BLOCKS = [
 export default function AdminStudentView() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
-  const [progress, setProgress] = useState<Record<string, { completada: boolean; puntaje: number; correctasTotal: number; erroresTotal: number; intentos: number; tiempo: number }>>({});
+  const [progress, setProgress] = useState<Record<string, SessionProgress>>({});
   const [globalProgress, setGlobalProgress] = useState(0);
   const [exams, setExams] = useState<Record<string, { aprobado: boolean; puntaje: number }>>({});
+  const [sessionOverrides, setSessionOverrides] = useState<Record<string, boolean>>({});
 
   useEffect(() => { if (userId) loadData(); }, [userId]);
 
   async function loadData() {
-    const [{ data: prof }, { data: ses }] = await Promise.all([
+    const [{ data: prof }, { data: ses }, { data: overrides }] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId!).single(),
       supabase.from('sesiones').select('*').order('numero'),
+      supabase.from('sesion_estudiante').select('*').eq('user_id', userId!),
     ]);
     setProfile(prof);
     setSesiones(ses || []);
 
+    // Build overrides map
+    const overrideMap: Record<string, boolean> = {};
+    overrides?.forEach((o: any) => { overrideMap[o.sesion_id] = o.desbloqueada; });
+    setSessionOverrides(overrideMap);
+
     const { data: prog } = await supabase.from('progreso_estudiante').select('*').eq('user_id', userId!);
-    const map: Record<string, any> = {};
+    const map: Record<string, SessionProgress> = {};
     let totalProgress = 0;
     prog?.forEach((p: any) => {
       const ejerciciosP = Math.min((p.ejercicios_correctos || 0) / 20, 1) * 40;
       const quizP = Math.min((p.preguntas_correctas_total || 0) / 150, 1) * 60;
-      const sessionP = ejerciciosP + quizP;
-      totalProgress += sessionP;
+      totalProgress += ejerciciosP + quizP;
       map[p.sesion_id] = {
         completada: p.completada,
         puntaje: Number(p.puntaje_quiz) || 0,
@@ -67,49 +84,67 @@ export default function AdminStudentView() {
     setExams(examMap);
   }
 
-  const formatTime = (s: number) => { const m = Math.floor(s / 60); return m > 0 ? `${m}m ${s % 60}s` : `${s}s`; };
+  async function handleToggleUnlock(sesionId: string, currentOverride: boolean | null) {
+    const newState = currentOverride === null
+      ? true // first override: unlock
+      : !currentOverride; // toggle
 
-  const getDeviceIcon = (type: string) => {
-    if (type === 'phone') return <Smartphone className="w-4 h-4" />;
-    if (type === 'tablet') return <Tablet className="w-4 h-4" />;
-    return <Monitor className="w-4 h-4" />;
-  };
+    const { error } = await supabase.from('sesion_estudiante').upsert({
+      user_id: userId!,
+      sesion_id: sesionId,
+      desbloqueada: newState,
+    }, { onConflict: 'user_id,sesion_id' });
 
-  const isOnline = (lastSeen: string | null) => {
-    if (!lastSeen) return false;
-    return Date.now() - new Date(lastSeen).getTime() < 2 * 60 * 1000;
-  };
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: newState ? '🔓 Desbloqueada' : '🔒 Bloqueada', description: `Sesión actualizada para este estudiante` });
+    setSessionOverrides(prev => ({ ...prev, [sesionId]: newState }));
+  }
+
+  async function handleResetProgress(sesionId: string, sesionNumero: number) {
+    if (!confirm(`¿Reiniciar todo el progreso de la Sesión ${sesionNumero}? Esta acción no se puede deshacer.`)) return;
+
+    const { error } = await supabase.from('progreso_estudiante')
+      .delete()
+      .eq('user_id', userId!)
+      .eq('sesion_id', sesionId);
+
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: '♻️ Progreso reiniciado', description: `Sesión ${sesionNumero} reiniciada` });
+    setProgress(prev => {
+      const next = { ...prev };
+      delete next[sesionId];
+      return next;
+    });
+  }
+
+  async function bulkUnlockAll() {
+    if (!confirm('¿Desbloquear TODAS las sesiones para este estudiante?')) return;
+    const inserts = sesiones.map(s => ({ user_id: userId!, sesion_id: s.id, desbloqueada: true }));
+    await supabase.from('sesion_estudiante').upsert(inserts, { onConflict: 'user_id,sesion_id' });
+    toast({ title: '🔓 Todas desbloqueadas' });
+    const map: Record<string, boolean> = {};
+    sesiones.forEach(s => { map[s.id] = true; });
+    setSessionOverrides(map);
+  }
+
+  async function bulkRemoveOverrides() {
+    if (!confirm('¿Quitar todas las asignaciones individuales y volver al estado global?')) return;
+    await supabase.from('sesion_estudiante').delete().eq('user_id', userId!);
+    toast({ title: '🔄 Asignaciones eliminadas' });
+    setSessionOverrides({});
+  }
 
   if (!profile) return <div className="p-6 text-center text-muted-foreground">Cargando...</div>;
 
-  const initials = (profile.nombre?.[0] || '') + (profile.apellidos?.[0] || '');
-
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/admin/students')}><ArrowLeft className="w-5 h-5" /></Button>
-        <Avatar className="w-12 h-12">
-          {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
-          <AvatarFallback className="bg-primary/20 text-primary">{initials}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-display font-bold truncate">{profile.nombre} {profile.apellidos}</h1>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span>📋 {profile.cedula}</span>
-            <span>🔑 {profile.usuario}</span>
-            <span className="flex items-center gap-1">
-              <span className={`w-2 h-2 rounded-full ${isOnline(profile.last_seen_at) ? 'bg-green-500' : 'bg-muted-foreground/40'}`} />
-              {getDeviceIcon(profile.device_type || '')}
-              {profile.last_seen_at ? new Date(profile.last_seen_at).toLocaleString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Nunca'}
-            </span>
-            {profile.ip_address && <span>🌐 {profile.ip_address}</span>}
-          </div>
-        </div>
-        <span className={`text-xs px-2 py-1 rounded-full ${profile.activo ? 'bg-accent/20 text-accent' : 'bg-destructive/20 text-destructive'}`}>
-          {profile.activo ? 'Activo' : 'Bloqueado'}
-        </span>
-      </div>
+      <StudentHeader profile={profile} onBack={() => navigate('/admin/students')} />
 
       {/* Global Progress */}
       <Card className="card-elevated">
@@ -125,58 +160,32 @@ export default function AdminStudentView() {
         </CardContent>
       </Card>
 
-      {/* Session Progress Grid */}
+      {/* Session Management */}
       <div>
-        <h2 className="font-display font-bold text-lg mb-3">Progreso por Sesión</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-display font-bold text-lg">Gestión de Sesiones</h2>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="text-xs gap-1" onClick={bulkUnlockAll}>
+              <Unlock className="w-3 h-3" /> Desbloquear todas
+            </Button>
+            {Object.keys(sessionOverrides).length > 0 && (
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={bulkRemoveOverrides}>
+                Quitar individuales
+              </Button>
+            )}
+          </div>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {sesiones.map(sesion => {
-            const p = progress[sesion.id];
-            const totalAnswered = p ? p.correctasTotal + p.erroresTotal : 0;
-            const accuracy = totalAnswered > 0 ? Math.round((p.correctasTotal / totalAnswered) * 100) : 0;
-            const ejerciciosP = p ? Math.min((p.correctasTotal || 0) / 150, 1) * 100 : 0;
-
-            return (
-              <Card key={sesion.id} className={`card-elevated ${p?.completada ? 'border-l-4 border-accent' : sesion.estado === 'bloqueada' ? 'opacity-50' : ''}`}>
-                <CardContent className="p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="font-display font-bold text-sm">S{sesion.numero}: {sesion.titulo}</p>
-                    {p?.completada ? <CheckCircle className="w-4 h-4 text-accent" /> : sesion.estado === 'bloqueada' ? <Lock className="w-4 h-4 text-muted-foreground" /> : <Clock className="w-4 h-4 text-neon-orange" />}
-                  </div>
-                  {p ? (
-                    <>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center gap-1">
-                          <Target className="w-3 h-3 text-primary" />
-                          <span>{p.intentos} intentos</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Trophy className="w-3 h-3 text-accent" />
-                          <span>{p.correctasTotal}/150 correctas</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3 text-destructive" />
-                          <span>{p.erroresTotal} errores</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Timer className="w-3 h-3 text-neon-orange" />
-                          <span>{formatTime(p.tiempo)}</span>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] text-muted-foreground">
-                          <span>Aciertos: {accuracy}%</span>
-                          <span className={accuracy >= 80 ? 'text-accent font-bold' : 'text-destructive'}>{accuracy >= 80 ? '✅ Desbloquea examen' : '❌ < 80%'}</span>
-                        </div>
-                        <Progress value={accuracy} className="h-1.5" />
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Sin progreso</p>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+          {sesiones.map(sesion => (
+            <SessionManagementCard
+              key={sesion.id}
+              sesion={sesion}
+              progress={progress[sesion.id]}
+              isUnlocked={sessionOverrides[sesion.id] ?? null}
+              onToggleUnlock={handleToggleUnlock}
+              onResetProgress={handleResetProgress}
+            />
+          ))}
         </div>
       </div>
 
