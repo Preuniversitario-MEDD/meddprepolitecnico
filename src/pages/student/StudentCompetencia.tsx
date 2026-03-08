@@ -191,6 +191,7 @@ export default function StudentCompetencia() {
       toast({ title: '🎯 50/50 activado' });
     } else if (type === 'x2') {
       setX2Active(true);
+      playPowerup();
       toast({ title: '✨ x2 activado para esta pregunta' });
     } else if (type === 'freeze') {
       setTimer(prev => prev + 5);
