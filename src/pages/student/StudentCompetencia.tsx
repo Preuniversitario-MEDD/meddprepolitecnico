@@ -78,10 +78,10 @@ export default function StudentCompetencia() {
       supabase.from('competencia_preguntas').select('*').eq('competencia_id', compId).order('orden'),
       supabase.from('competencia_participantes').select('*').eq('competencia_id', compId).order('puntaje', { ascending: false }),
     ]);
-    setPreguntas((q as Pregunta[]) || []);
-    setParticipantes((p as Participante[]) || []);
+    setPreguntas((q as unknown as Pregunta[]) || []);
+    setParticipantes((p as unknown as Participante[]) || []);
     if (user) {
-      const me = (p as Participante[])?.find(x => x.user_id === user.id);
+      const me = (p as unknown as Participante[])?.find(x => x.user_id === user.id);
       setMyParticipant(me || null);
     }
   }, [user]);
