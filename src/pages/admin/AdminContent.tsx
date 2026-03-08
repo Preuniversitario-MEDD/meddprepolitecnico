@@ -40,6 +40,7 @@ export default function AdminContent() {
   const [tabDialogOpen, setTabDialogOpen] = useState(false);
   const [editingTab, setEditingTab] = useState<Pestana | null>(null);
   const [tabForm, setTabForm] = useState({ nombre: '', clave: '' });
+  const [duplicating, setDuplicating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => { loadSesiones(); }, []);
