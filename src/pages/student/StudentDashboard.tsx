@@ -123,6 +123,23 @@ export default function StudentDashboard() {
         <p className="text-muted-foreground text-sm">Sigue avanzando en tu preparación de Química</p>
       </motion.div>
 
+      {liveCompCount > 0 && (
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="cursor-pointer" onClick={() => navigate('/student/competencia')}>
+          <Card className="border-2 border-[hsl(var(--neon-orange))] bg-[hsl(var(--neon-orange))]/10 hover:bg-[hsl(var(--neon-orange))]/20 transition-colors">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[hsl(var(--neon-orange))]/20 flex items-center justify-center animate-pulse">
+                <Zap className="w-5 h-5 text-[hsl(var(--neon-orange))]" />
+              </div>
+              <div className="flex-1">
+                <p className="font-display font-bold text-sm">🔴 {liveCompCount} competencia{liveCompCount > 1 ? 's' : ''} en vivo</p>
+                <p className="text-xs text-muted-foreground">¡Toca para unirte ahora!</p>
+              </div>
+              <Button size="sm" className="gradient-primary text-primary-foreground">Unirse</Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
         <Card className="card-elevated neon-border overflow-hidden">
           <CardContent className="p-4">
