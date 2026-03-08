@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2 } from 'lucide-react';
+import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2, Copy } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
