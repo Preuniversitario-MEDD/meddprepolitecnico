@@ -112,6 +112,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <span className="font-display font-bold text-sm">ESPOLMEDD</span>
             </div>
             <div className="flex items-center gap-2">
+              <AvatarUpload userId={profile?.user_id || ''} avatarUrl={profile?.avatar_url || null} initials={initials} size="sm" editable={false} />
               <button onClick={toggleTheme} className="p-2">{theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>
               <button onClick={signOut} className="p-2 text-destructive"><LogOut className="w-4 h-4" /></button>
             </div>
