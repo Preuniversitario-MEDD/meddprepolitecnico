@@ -13,6 +13,7 @@ import AdminContent from "./pages/admin/AdminContent";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminQuiz from "./pages/admin/AdminQuiz";
 import AdminLibrary from "./pages/admin/AdminLibrary";
+import AdminStudentView from "./pages/admin/AdminStudentView";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentSessions from "./pages/student/StudentSessions";
 import StudentProfile from "./pages/student/StudentProfile";
