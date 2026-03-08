@@ -8,7 +8,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, Settings, LogOut,
-  Moon, Sun, GraduationCap, FlaskConical, Brain, Library, MessageSquare, Zap
+  Moon, Sun, GraduationCap, FlaskConical, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AvatarUpload from '@/components/AvatarUpload';
@@ -43,22 +43,42 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const links = role === 'admin' ? adminLinks : studentLinks;
+  const isAdminOnStudentView = role === 'admin' && location.pathname.startsWith('/student');
+  const links = isAdminOnStudentView ? studentLinks : (role === 'admin' ? adminLinks : studentLinks);
   const initials = profile ? (profile.nombre?.[0] || '') + (profile.apellidos?.[0] || '') : '?';
-
-  const getMensajesPath = role === 'admin' ? '/admin/mensajes' : '/student/mensajes';
+  const getMensajesPath = role === 'admin' && !isAdminOnStudentView ? '/admin/mensajes' : '/student/mensajes';
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Admin-as-Student floating banner */}
+      {isAdminOnStudentView && (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-[hsl(var(--neon-orange))] text-primary-foreground px-4 py-1.5 flex items-center justify-between text-xs font-medium shadow-lg">
+          <div className="flex items-center gap-2">
+            <Eye className="w-4 h-4" />
+            <span className="font-display font-bold">MODO VISTA ESTUDIANTE</span>
+            <Shield className="w-3 h-3 opacity-60" />
+            <span className="opacity-80">Navegando como admin</span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="h-6 text-xs gap-1 bg-background/20 hover:bg-background/30 text-primary-foreground border-0"
+            onClick={() => navigate('/admin')}
+          >
+            <ArrowLeft className="w-3 h-3" /> Volver al Admin
+          </Button>
+        </div>
+      )}
+
       {!isMobile && (
-        <motion.aside initial={{ x: -80 }} animate={{ x: 0 }} className="w-64 border-r border-border bg-sidebar flex flex-col">
+        <motion.aside initial={{ x: -80 }} animate={{ x: 0 }} className={`w-64 border-r border-border bg-sidebar flex flex-col ${isAdminOnStudentView ? 'pt-9' : ''}`}>
           <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
             <div className="w-10 h-10 rounded-xl gradient-neon flex items-center justify-center">
               <FlaskConical className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
               <h2 className="font-display font-bold text-sm text-sidebar-foreground">ESPOLMEDD</h2>
-              <p className="text-xs text-muted-foreground capitalize">{role}</p>
+              <p className="text-xs text-muted-foreground capitalize">{isAdminOnStudentView ? 'Vista Estudiante' : role}</p>
             </div>
           </div>
 
@@ -80,6 +100,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </button>
               );
             })}
+
+            {/* Admin: link to student view */}
+            {role === 'admin' && !isAdminOnStudentView && (
+              <button
+                onClick={() => navigate('/student')}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-[hsl(var(--neon-orange))] hover:bg-[hsl(var(--neon-orange))]/10 border border-dashed border-[hsl(var(--neon-orange))]/30 mt-2"
+              >
+                <Eye className="w-4 h-4" />
+                Vista Estudiante
+              </button>
+            )}
           </nav>
 
           <div className="p-3 border-t border-sidebar-border space-y-2">
@@ -102,9 +133,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </motion.aside>
       )}
 
-      <main className="flex-1 overflow-auto pb-20 md:pb-0">
+      <main className={`flex-1 overflow-auto pb-20 md:pb-0 ${isAdminOnStudentView ? 'pt-9 md:pt-0' : ''}`}>
         {isMobile && (
-          <header className="sticky top-0 z-40 glass border-b border-border px-4 py-3 flex items-center justify-between">
+          <header className={`sticky ${isAdminOnStudentView ? 'top-9' : 'top-0'} z-40 glass border-b border-border px-4 py-3 flex items-center justify-between`}>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg gradient-neon flex items-center justify-center">
                 <FlaskConical className="w-4 h-4 text-primary-foreground" />
