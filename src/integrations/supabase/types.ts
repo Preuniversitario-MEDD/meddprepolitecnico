@@ -579,6 +579,38 @@ export type Database = {
           },
         ]
       }
+      sesion_estudiante: {
+        Row: {
+          created_at: string
+          desbloqueada: boolean
+          id: string
+          sesion_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          desbloqueada?: boolean
+          id?: string
+          sesion_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          desbloqueada?: boolean
+          id?: string
+          sesion_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sesion_estudiante_sesion_id_fkey"
+            columns: ["sesion_id"]
+            isOneToOne: false
+            referencedRelation: "sesiones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sesiones: {
         Row: {
           created_at: string
