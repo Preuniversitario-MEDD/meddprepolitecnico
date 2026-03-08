@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Lock, CheckCircle, Clock, FlaskConical, FileText, PartyPopper } from 'lucide-react';
+import { Lock, CheckCircle, Clock, FlaskConical, FileText, PartyPopper, Zap } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
@@ -26,8 +26,27 @@ export default function StudentDashboard() {
   const [progress, setProgress] = useState<Record<string, { completada: boolean; puntaje: number; correctasTotal: number; erroresTotal: number }>>({});
   const [globalProgress, setGlobalProgress] = useState(0);
   const [exams, setExams] = useState<Record<string, { aprobado: boolean; puntaje: number }>>({});
+  const [liveCompCount, setLiveCompCount] = useState(0);
 
-  useEffect(() => { loadData(); }, [user]);
+  useEffect(() => { loadData(); loadLiveComps(); }, [user]);
+
+  // Realtime: listen for new/updated competitions
+  useEffect(() => {
+    const ch = supabase.channel('live-comp-notif')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'competencias' }, () => {
+        loadLiveComps();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  async function loadLiveComps() {
+    const { count } = await supabase
+      .from('competencias')
+      .select('*', { count: 'exact', head: true })
+      .in('estado', ['lobby', 'en_curso']);
+    setLiveCompCount(count || 0);
+  }
 
   async function loadData() {
     const { data: ses } = await supabase.from('sesiones').select('*').order('numero');
@@ -103,6 +122,23 @@ export default function StudentDashboard() {
         <h1 className="text-2xl md:text-3xl font-display font-bold text-neon-mint">¡Hola, <span className="text-gradient-primary text-neon-mint">{firstName}</span>! 👋</h1>
         <p className="text-muted-foreground text-sm">Sigue avanzando en tu preparación de Química</p>
       </motion.div>
+
+      {liveCompCount > 0 && (
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="cursor-pointer" onClick={() => navigate('/student/competencia')}>
+          <Card className="border-2 border-[hsl(var(--neon-orange))] bg-[hsl(var(--neon-orange))]/10 hover:bg-[hsl(var(--neon-orange))]/20 transition-colors">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[hsl(var(--neon-orange))]/20 flex items-center justify-center animate-pulse">
+                <Zap className="w-5 h-5 text-[hsl(var(--neon-orange))]" />
+              </div>
+              <div className="flex-1">
+                <p className="font-display font-bold text-sm">🔴 {liveCompCount} competencia{liveCompCount > 1 ? 's' : ''} en vivo</p>
+                <p className="text-xs text-muted-foreground">¡Toca para unirte ahora!</p>
+              </div>
+              <Button size="sm" className="gradient-primary text-primary-foreground">Unirse</Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
         <Card className="card-elevated neon-border overflow-hidden">

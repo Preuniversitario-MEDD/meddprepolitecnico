@@ -12,6 +12,7 @@ import { Zap, Trophy, Crown, Medal, Award, Timer } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { useGameSounds } from '@/hooks/useGameSounds';
 
 interface Competencia {
   id: string; titulo: string; pin: string; modo: string; estado: string;
@@ -39,6 +40,7 @@ export default function StudentCompetencia() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const { play: playSound } = useNotificationSound();
+  const { playCorrect, playIncorrect, playPodium, playCountdown, playPowerup } = useGameSounds();
   const navigate = useNavigate();
   const [pin, setPin] = useState('');
   const [comp, setComp] = useState<Competencia | null>(null);
@@ -104,6 +106,7 @@ export default function StudentCompetencia() {
         }
         if (updated.estado === 'finalizada') {
           confetti({ particleCount: 200, spread: 100 });
+          playPodium();
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'competencia_participantes', filter: `competencia_id=eq.${comp.id}` }, () => {
@@ -125,8 +128,10 @@ export default function StudentCompetencia() {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
           setAnswered(true);
+          playIncorrect();
           return 0;
         }
+        if (prev <= 6) playCountdown();
         return prev - 1;
       });
     }, 1000);
@@ -165,7 +170,10 @@ export default function StudentCompetencia() {
 
     setShowResult(true);
     if (correcta) {
+      playCorrect();
       confetti({ particleCount: 30, spread: 60, origin: { y: 0.7 } });
+    } else {
+      playIncorrect();
     }
   }
 
@@ -181,12 +189,15 @@ export default function StudentCompetencia() {
       const wrongIndices = currentQ.opciones.map((_, i) => i).filter(i => i !== currentQ.respuesta_correcta);
       const toHide = wrongIndices.sort(() => Math.random() - 0.5).slice(0, Math.ceil(wrongIndices.length / 2));
       setHiddenOptions(toHide);
+      playPowerup();
       toast({ title: '🎯 50/50 activado' });
     } else if (type === 'x2') {
       setX2Active(true);
+      playPowerup();
       toast({ title: '✨ x2 activado para esta pregunta' });
     } else if (type === 'freeze') {
       setTimer(prev => prev + 5);
+      playPowerup();
       toast({ title: '❄️ +5 segundos' });
     }
 
