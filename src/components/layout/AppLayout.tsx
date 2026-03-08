@@ -175,9 +175,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </header>
         )}
 
-        <motion.div key={location.pathname} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-          {children}
-        </motion.div>
+        <ViewAsStudentContext.Provider value={{ viewAsStudentId: isAdminOnStudentView && selectedStudent ? selectedStudent : null }}>
+          <motion.div key={location.pathname} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+            {children}
+          </motion.div>
+        </ViewAsStudentContext.Provider>
       </main>
 
       {isMobile && (
