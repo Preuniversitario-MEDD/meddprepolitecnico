@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
+import { useViewAsStudent } from '@/hooks/useViewAsStudent';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -21,6 +22,8 @@ const EXAM_BLOCKS = [
 
 export default function StudentDashboard() {
   const { profile, user } = useAuth();
+  const { viewAsStudentId } = useViewAsStudent();
+  const effectiveUserId = viewAsStudentId || user?.id;
   const navigate = useNavigate();
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [progress, setProgress] = useState<Record<string, { completada: boolean; puntaje: number; correctasTotal: number; erroresTotal: number }>>({});
@@ -28,8 +31,9 @@ export default function StudentDashboard() {
   const [exams, setExams] = useState<Record<string, { aprobado: boolean; puntaje: number }>>({});
   const [liveCompCount, setLiveCompCount] = useState(0);
   const [sessionOverrides, setSessionOverrides] = useState<Record<string, boolean>>({});
+  const [viewedProfile, setViewedProfile] = useState<Tables<'profiles'> | null>(null);
 
-  useEffect(() => { loadData(); loadLiveComps(); }, [user]);
+  useEffect(() => { loadData(); loadLiveComps(); }, [effectiveUserId]);
 
   // Realtime: listen for new/updated competitions
   useEffect(() => {
@@ -50,46 +54,54 @@ export default function StudentDashboard() {
   }
 
   async function loadData() {
+    if (!effectiveUserId) return;
+
+    // If viewing as another student, load their profile
+    if (viewAsStudentId) {
+      const { data: vp } = await supabase.from('profiles').select('*').eq('user_id', viewAsStudentId).single();
+      setViewedProfile(vp);
+    } else {
+      setViewedProfile(null);
+    }
+
     const [{ data: ses }, overridesRes] = await Promise.all([
       supabase.from('sesiones').select('*').order('numero'),
-      user ? supabase.from('sesion_estudiante').select('*').eq('user_id', user.id) : Promise.resolve({ data: null }),
+      supabase.from('sesion_estudiante').select('*').eq('user_id', effectiveUserId),
     ]);
     setSesiones(ses || []);
 
-    // Build per-student overrides
     const oMap: Record<string, boolean> = {};
     overridesRes?.data?.forEach((o: any) => { oMap[o.sesion_id] = o.desbloqueada; });
     setSessionOverrides(oMap);
 
-    if (user) {
-      const { data: prog } = await supabase.from('progreso_estudiante').select('*').eq('user_id', user.id);
-      const map: Record<string, { completada: boolean; puntaje: number; correctasTotal: number; erroresTotal: number }> = {};
-      let totalProgress = 0;
-      prog?.forEach((p: any) => {
-        const ejerciciosP = Math.min((p.ejercicios_correctos || 0) / 20, 1) * 40;
-        const quizP = Math.min((p.preguntas_correctas_total || 0) / 150, 1) * 60;
-        const sessionP = ejerciciosP + quizP;
-        totalProgress += sessionP;
-        map[p.sesion_id] = {
-          completada: p.completada,
-          puntaje: Number(p.puntaje_quiz) || 0,
-          correctasTotal: p.preguntas_correctas_total || 0,
-          erroresTotal: p.errores_quiz || 0,
-        };
-      });
-      setProgress(map);
-      setGlobalProgress(Math.round(totalProgress / 14));
+    const { data: prog } = await supabase.from('progreso_estudiante').select('*').eq('user_id', effectiveUserId);
+    const map: Record<string, { completada: boolean; puntaje: number; correctasTotal: number; erroresTotal: number }> = {};
+    let totalProgress = 0;
+    prog?.forEach((p: any) => {
+      const ejerciciosP = Math.min((p.ejercicios_correctos || 0) / 20, 1) * 40;
+      const quizP = Math.min((p.preguntas_correctas_total || 0) / 150, 1) * 60;
+      const sessionP = ejerciciosP + quizP;
+      totalProgress += sessionP;
+      map[p.sesion_id] = {
+        completada: p.completada,
+        puntaje: Number(p.puntaje_quiz) || 0,
+        correctasTotal: p.preguntas_correctas_total || 0,
+        erroresTotal: p.errores_quiz || 0,
+      };
+    });
+    setProgress(map);
+    setGlobalProgress(Math.round(totalProgress / 14));
 
-      const { data: examData } = await supabase.from('examenes').select('*').eq('user_id', user.id);
-      const examMap: Record<string, { aprobado: boolean; puntaje: number }> = {};
-      examData?.forEach((e: any) => {
-        if (!examMap[e.tipo] || e.aprobado) examMap[e.tipo] = { aprobado: e.aprobado, puntaje: Number(e.puntaje) };
-      });
-      setExams(examMap);
-    }
+    const { data: examData } = await supabase.from('examenes').select('*').eq('user_id', effectiveUserId);
+    const examMap: Record<string, { aprobado: boolean; puntaje: number }> = {};
+    examData?.forEach((e: any) => {
+      if (!examMap[e.tipo] || e.aprobado) examMap[e.tipo] = { aprobado: e.aprobado, puntaje: Number(e.puntaje) };
+    });
+    setExams(examMap);
   }
 
-  const firstName = profile?.nombre?.split(' ')[0] || 'Estudiante';
+  const displayProfile = viewedProfile || profile;
+  const firstName = displayProfile?.nombre?.split(' ')[0] || 'Estudiante';
 
   const getSessionStatus = (sesion: Sesion) => {
     // Per-student override takes priority

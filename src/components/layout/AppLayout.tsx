@@ -4,11 +4,12 @@ import { useTheme } from '@/hooks/useTheme';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { usePresenceTracker } from '@/hooks/usePresenceTracker';
+import { ViewAsStudentContext } from '@/hooks/useViewAsStudent';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, Settings, LogOut,
-  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, Shield, ChevronDown
+  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -98,10 +99,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {!isMobile && (
         <motion.aside initial={{ x: -80 }} animate={{ x: 0 }} className={`w-64 border-r border-border bg-sidebar flex flex-col ${isAdminOnStudentView ? 'pt-9' : ''}`}>
           <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
-            <img src={meddLogo} alt="MEDD Logo" className="w-10 h-10 rounded-xl object-contain" />
+            <div className="w-10 h-10 rounded-full ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.3)] overflow-hidden bg-background">
+              <img src={meddLogo} alt="MEDD Logo" className="w-full h-full object-cover" />
+            </div>
             <div>
-              <h2 className="font-display font-bold text-sm text-sidebar-foreground">ESPOLMEDD</h2>
-              <p className="text-xs text-muted-foreground capitalize">{isAdminOnStudentView ? 'Vista Estudiante' : role}</p>
+              <h2 className="font-display font-bold text-sm text-sidebar-foreground">MEDD</h2>
             </div>
           </div>
 
@@ -160,8 +162,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {isMobile && (
           <header className={`sticky ${isAdminOnStudentView ? 'top-9' : 'top-0'} z-40 glass border-b border-border px-4 py-3 flex items-center justify-between`}>
             <div className="flex items-center gap-2">
-              <img src={meddLogo} alt="MEDD Logo" className="w-8 h-8 rounded-lg object-contain" />
-              <span className="font-display font-bold text-sm">ESPOLMEDD</span>
+              <div className="w-8 h-8 rounded-full ring-2 ring-primary/30 shadow-[0_0_8px_hsl(var(--primary)/0.2)] overflow-hidden bg-background">
+                <img src={meddLogo} alt="MEDD Logo" className="w-full h-full object-cover" />
+              </div>
+              <span className="font-display font-bold text-sm">MEDD</span>
             </div>
             <div className="flex items-center gap-2">
               <AvatarUpload userId={profile?.user_id || ''} avatarUrl={profile?.avatar_url || null} initials={initials} size="sm" editable={false} />
@@ -171,9 +175,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </header>
         )}
 
-        <motion.div key={location.pathname} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-          {children}
-        </motion.div>
+        <ViewAsStudentContext.Provider value={{ viewAsStudentId: isAdminOnStudentView && selectedStudent ? selectedStudent : null }}>
+          <motion.div key={location.pathname} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+            {children}
+          </motion.div>
+        </ViewAsStudentContext.Provider>
       </main>
 
       {isMobile && (
