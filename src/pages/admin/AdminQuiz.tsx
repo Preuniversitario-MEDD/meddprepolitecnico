@@ -296,6 +296,50 @@ export default function AdminQuiz() {
     e.target.value = '';
   }
 
+  async function loadImportSourcePreguntas(sesionId: string) {
+    setImportSourceSesion(sesionId);
+    setImportSelectedIds(new Set());
+    if (!sesionId) { setImportSourcePreguntas([]); return; }
+    const { data } = await supabase.from('quiz_preguntas').select('*').eq('sesion_id', sesionId).order('grupo');
+    setImportSourcePreguntas((data || []).map(q => ({ ...q, opciones: (q.opciones as string[]) || [] })));
+  }
+
+  function toggleImportSelection(id: string) {
+    setImportSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllImport() {
+    if (importSelectedIds.size === importSourcePreguntas.length) {
+      setImportSelectedIds(new Set());
+    } else {
+      setImportSelectedIds(new Set(importSourcePreguntas.map(p => p.id)));
+    }
+  }
+
+  async function importFromSession() {
+    const selected = importSourcePreguntas.filter(p => importSelectedIds.has(p.id));
+    if (selected.length === 0) { toast({ title: 'Selecciona al menos una pregunta', variant: 'destructive' }); return; }
+    setLoadingImport(true);
+    const payloads = selected.map(q => ({
+      sesion_id: selectedSesion,
+      pregunta: q.pregunta,
+      opciones: q.opciones,
+      respuesta_correcta: q.respuesta_correcta,
+      grupo: q.grupo,
+      imagen_url: q.imagen_url || null,
+    }));
+    const { error } = await supabase.from('quiz_preguntas').insert(payloads);
+    setLoadingImport(false);
+    if (error) { toast({ title: 'Error al importar', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: `${selected.length} preguntas importadas` });
+    setImportSessionDialogOpen(false);
+    loadPreguntas();
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-4" onPaste={handlePasteImage}>
       <div className="flex items-center justify-between">
