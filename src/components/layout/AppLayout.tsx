@@ -8,7 +8,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, Settings, LogOut,
-  Moon, Sun, GraduationCap, FlaskConical, Brain, Library, MessageSquare
+  Moon, Sun, GraduationCap, FlaskConical, Brain, Library, MessageSquare, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AvatarUpload from '@/components/AvatarUpload';
