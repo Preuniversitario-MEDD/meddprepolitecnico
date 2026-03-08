@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit, Image } from 'lucide-react';
+import { Plus, Trash2, Edit, Image, ClipboardPaste, X } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
@@ -23,6 +23,30 @@ interface QuizPregunta {
   sesion_id: string;
 }
 
+function parseQuestionText(text: string): { pregunta: string; opciones: string[] } | null {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 3) return null;
+
+  // Find option lines matching patterns like: a) ..., A. ..., a. ..., A) ..., (a) ...
+  const optionRegex = /^[\(\[]?([a-eA-E])[\)\]\.:\-]\s*(.+)/;
+  let questionLines: string[] = [];
+  const opciones: string[] = [];
+
+  let foundFirstOption = false;
+  for (const line of lines) {
+    const match = line.match(optionRegex);
+    if (match) {
+      foundFirstOption = true;
+      opciones.push(match[2].trim());
+    } else if (!foundFirstOption) {
+      questionLines.push(line);
+    }
+  }
+
+  if (opciones.length < 2 || questionLines.length === 0) return null;
+  return { pregunta: questionLines.join('\n'), opciones };
+}
+
 export default function AdminQuiz() {
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [selectedSesion, setSelectedSesion] = useState('');
@@ -31,6 +55,8 @@ export default function AdminQuiz() {
   const [editItem, setEditItem] = useState<QuizPregunta | null>(null);
   const [form, setForm] = useState({ pregunta: '', opciones: ['', '', '', ''], respuesta_correcta: 0, grupo: 1, imagen_url: '' });
   const [uploading, setUploading] = useState(false);
+  const [pasteDialogOpen, setPasteDialogOpen] = useState(false);
+  const [pasteText, setPasteText] = useState('');
   const { toast } = useToast();
 
   useEffect(() => { loadSesiones(); }, []);
@@ -59,6 +85,41 @@ export default function AdminQuiz() {
     setUploading(false);
   }
 
+  // Handle paste image from clipboard
+  async function handlePasteImage(e: React.ClipboardEvent) {
+    const clipboardItems = e.clipboardData?.items;
+    if (!clipboardItems) return;
+    for (const item of Array.from(clipboardItems)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        setUploading(true);
+        const file = item.getAsFile();
+        if (!file) { setUploading(false); return; }
+        const path = `quiz/${Date.now()}_pasted.png`;
+        const { error } = await supabase.storage.from('quiz-images').upload(path, file);
+        if (error) { toast({ title: 'Error al subir imagen', variant: 'destructive' }); setUploading(false); return; }
+        const { data: { publicUrl } } = supabase.storage.from('quiz-images').getPublicUrl(path);
+        setForm(prev => ({ ...prev, imagen_url: publicUrl }));
+        toast({ title: 'Imagen pegada correctamente' });
+        setUploading(false);
+      }
+    }
+  }
+
+  function addOption() {
+    if (form.opciones.length >= 6) return;
+    setForm({ ...form, opciones: [...form.opciones, ''] });
+  }
+
+  function removeOption(index: number) {
+    if (form.opciones.length <= 2) return;
+    const newOpciones = form.opciones.filter((_, i) => i !== index);
+    let newCorrect = form.respuesta_correcta;
+    if (index === newCorrect) newCorrect = 0;
+    else if (index < newCorrect) newCorrect--;
+    setForm({ ...form, opciones: newOpciones, respuesta_correcta: newCorrect });
+  }
+
   async function savePregunta() {
     if (!form.pregunta.trim() || form.opciones.some(o => !o.trim())) {
       toast({ title: 'Completa todos los campos', variant: 'destructive' }); return;
@@ -80,8 +141,12 @@ export default function AdminQuiz() {
     }
     setDialogOpen(false);
     setEditItem(null);
-    setForm({ pregunta: '', opciones: ['', '', '', ''], respuesta_correcta: 0, grupo: 1, imagen_url: '' });
+    resetForm();
     loadPreguntas();
+  }
+
+  function resetForm() {
+    setForm({ pregunta: '', opciones: ['', '', '', ''], respuesta_correcta: 0, grupo: 1, imagen_url: '' });
   }
 
   async function deletePregunta(id: string) {
@@ -97,8 +162,28 @@ export default function AdminQuiz() {
     setDialogOpen(true);
   }
 
+  function handlePasteQuestion() {
+    const result = parseQuestionText(pasteText);
+    if (!result) {
+      toast({ title: 'No se pudo detectar la pregunta', description: 'Formato esperado: pregunta seguida de opciones a) b) c) d) e)', variant: 'destructive' });
+      return;
+    }
+    setForm({
+      pregunta: result.pregunta,
+      opciones: result.opciones,
+      respuesta_correcta: 0,
+      grupo: form.grupo,
+      imagen_url: form.imagen_url,
+    });
+    setPasteDialogOpen(false);
+    setPasteText('');
+    setDialogOpen(true);
+    setEditItem(null);
+    toast({ title: `Pregunta detectada con ${result.opciones.length} opciones`, description: 'Selecciona la respuesta correcta' });
+  }
+
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="p-4 md:p-6 space-y-4" onPaste={handlePasteImage}>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-display font-bold">Banco de Preguntas</h1>
         <span className="text-sm text-muted-foreground">{preguntas.length} preguntas</span>
@@ -111,9 +196,14 @@ export default function AdminQuiz() {
             {sesiones.map(s => <SelectItem key={s.id} value={s.id}>S{s.numero}: {s.titulo}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button onClick={() => { setEditItem(null); setForm({ pregunta: '', opciones: ['', '', '', ''], respuesta_correcta: 0, grupo: 1, imagen_url: '' }); setDialogOpen(true); }} className="gradient-primary text-primary-foreground gap-2">
-          <Plus className="w-4 h-4" /> Nueva Pregunta
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => { setPasteText(''); setPasteDialogOpen(true); }} variant="outline" className="gap-2">
+            <ClipboardPaste className="w-4 h-4" /> Pegar Pregunta
+          </Button>
+          <Button onClick={() => { setEditItem(null); resetForm(); setDialogOpen(true); }} className="gradient-primary text-primary-foreground gap-2">
+            <Plus className="w-4 h-4" /> Nueva Pregunta
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -147,6 +237,26 @@ export default function AdminQuiz() {
         {preguntas.length === 0 && <p className="text-center text-muted-foreground py-8">No hay preguntas en esta sesión</p>}
       </div>
 
+      {/* Paste Question Dialog */}
+      <Dialog open={pasteDialogOpen} onOpenChange={setPasteDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="font-display">Pegar Pregunta</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Pega el texto completo de la pregunta con sus opciones (a-e). Se detectarán automáticamente.</p>
+            <Textarea
+              value={pasteText}
+              onChange={e => setPasteText(e.target.value)}
+              rows={8}
+              placeholder={`Ejemplo:\n¿Cuál es el elemento más abundante?\na) Oxígeno\nb) Hidrógeno\nc) Nitrógeno\nd) Carbono\ne) Helio`}
+            />
+            <Button onClick={handlePasteQuestion} disabled={!pasteText.trim()} className="w-full gradient-primary text-primary-foreground">
+              <ClipboardPaste className="w-4 h-4 mr-2" /> Detectar y cargar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit/Create Question Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-display">{editItem ? 'Editar' : 'Nueva'} Pregunta</DialogTitle></DialogHeader>
@@ -165,19 +275,31 @@ export default function AdminQuiz() {
                 <Select value={String(form.respuesta_correcta)} onValueChange={v => setForm({ ...form, respuesta_correcta: parseInt(v) })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {['A', 'B', 'C', 'D'].map((l, i) => <SelectItem key={i} value={String(i)}>{l}</SelectItem>)}
+                    {form.opciones.map((_, i) => <SelectItem key={i} value={String(i)}>{String.fromCharCode(65 + i)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             {form.opciones.map((op, i) => (
-              <div key={i}>
-                <Label>Opción {String.fromCharCode(65 + i)} {i === form.respuesta_correcta && '✅'}</Label>
-                <Input value={op} onChange={e => { const ops = [...form.opciones]; ops[i] = e.target.value; setForm({ ...form, opciones: ops }); }} />
+              <div key={i} className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Label>Opción {String.fromCharCode(65 + i)} {i === form.respuesta_correcta && '✅'}</Label>
+                  <Input value={op} onChange={e => { const ops = [...form.opciones]; ops[i] = e.target.value; setForm({ ...form, opciones: ops }); }} />
+                </div>
+                {form.opciones.length > 2 && (
+                  <Button variant="ghost" size="icon" onClick={() => removeOption(i)} className="shrink-0 mb-0.5">
+                    <X className="w-4 h-4 text-destructive" />
+                  </Button>
+                )}
               </div>
             ))}
+            {form.opciones.length < 6 && (
+              <Button variant="outline" size="sm" onClick={addOption} className="w-full">
+                <Plus className="w-3 h-3 mr-1" /> Agregar opción {String.fromCharCode(65 + form.opciones.length)}
+              </Button>
+            )}
             <div>
-              <Label>Imagen (opcional)</Label>
+              <Label>Imagen (opcional — también puedes pegar con Ctrl+V)</Label>
               <div className="flex gap-2 items-center">
                 <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={handleImageUpload} disabled={uploading} />
                 {form.imagen_url && <img src={form.imagen_url} alt="preview" className="w-12 h-12 object-cover rounded" />}
