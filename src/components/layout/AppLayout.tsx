@@ -162,8 +162,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {isMobile && (
           <header className={`sticky ${isAdminOnStudentView ? 'top-9' : 'top-0'} z-40 glass border-b border-border px-4 py-3 flex items-center justify-between`}>
             <div className="flex items-center gap-2">
-              <img src={meddLogo} alt="MEDD Logo" className="w-8 h-8 rounded-lg object-contain" />
-              <span className="font-display font-bold text-sm">ESPOLMEDD</span>
+              <div className="w-8 h-8 rounded-full ring-2 ring-primary/30 shadow-[0_0_8px_hsl(var(--primary)/0.2)] overflow-hidden bg-background">
+                <img src={meddLogo} alt="MEDD Logo" className="w-full h-full object-cover" />
+              </div>
+              <span className="font-display font-bold text-sm">MEDD</span>
             </div>
             <div className="flex items-center gap-2">
               <AvatarUpload userId={profile?.user_id || ''} avatarUrl={profile?.avatar_url || null} initials={initials} size="sm" editable={false} />
