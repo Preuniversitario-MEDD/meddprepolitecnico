@@ -195,6 +195,7 @@ export default function StudentCompetencia() {
       toast({ title: '✨ x2 activado para esta pregunta' });
     } else if (type === 'freeze') {
       setTimer(prev => prev + 5);
+      playPowerup();
       toast({ title: '❄️ +5 segundos' });
     }
 
