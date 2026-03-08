@@ -444,7 +444,12 @@ export default function AdminMensajes() {
                         className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${isMine ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'}`}>
                           {tab === 'all' && !isMine && <p className="text-[10px] font-medium mb-1 opacity-70">{getSenderName(msg.sender_id)}</p>}
-                          <p className="break-words">{msg.contenido}</p>
+                          {msg.contenido && (!msg.archivo_url || msg.contenido !== msg.archivo_nombre) && (
+                            <p className="break-words">{msg.contenido}</p>
+                          )}
+                          {msg.archivo_url && msg.archivo_nombre && msg.archivo_tipo && (
+                            <MessageAttachment url={msg.archivo_url} nombre={msg.archivo_nombre} tipo={msg.archivo_tipo} isMine={isMine} />
+                          )}
                           <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>
                             {new Date(msg.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
                           </p>
@@ -459,9 +464,10 @@ export default function AdminMensajes() {
 
             {adminIsParticipant && (
               <div className="p-3 border-t border-border">
-                <form onSubmit={e => { e.preventDefault(); sendMessage(); }} className="flex gap-2">
+                <form onSubmit={e => { e.preventDefault(); sendMessage(); }} className="flex gap-2 items-center">
+                  <FileUploadButton file={attachedFile} onFileSelect={setAttachedFile} disabled={sending} />
                   <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Escribe un mensaje..." className="flex-1" maxLength={2000} />
-                  <Button type="submit" size="icon" disabled={!newMessage.trim()}><Send className="w-4 h-4" /></Button>
+                  <Button type="submit" size="icon" disabled={(!newMessage.trim() && !attachedFile) || sending}><Send className="w-4 h-4" /></Button>
                 </form>
               </div>
             )}
