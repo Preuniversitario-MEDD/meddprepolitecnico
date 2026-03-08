@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { MessageAttachment } from '@/components/messaging/MessageAttachment';
 import { FileUploadButton } from '@/components/messaging/FileUploadButton';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 interface Conversation {
   id: string;
