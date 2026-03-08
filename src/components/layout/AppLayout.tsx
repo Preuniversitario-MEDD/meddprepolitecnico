@@ -104,6 +104,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </div>
             <div>
               <h2 className="font-display font-bold text-sm text-sidebar-foreground">MEDD</h2>
+              <p className="text-[10px] text-muted-foreground leading-tight">Preparación de Química para la ESPOL</p>
             </div>
           </div>
 
