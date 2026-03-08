@@ -104,6 +104,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </div>
             <div>
               <h2 className="font-display font-bold text-sm text-sidebar-foreground">MEDD</h2>
+              <p className="text-[10px] text-muted-foreground leading-tight">Preparación de Química para la ESPOL</p>
             </div>
           </div>
 
@@ -165,7 +166,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <div className="w-8 h-8 rounded-full ring-2 ring-primary/30 shadow-[0_0_8px_hsl(var(--primary)/0.2)] overflow-hidden bg-background">
                 <img src={meddLogo} alt="MEDD Logo" className="w-full h-full object-cover" />
               </div>
-              <span className="font-display font-bold text-sm">MEDD</span>
+              <div>
+                <span className="font-display font-bold text-sm">MEDD</span>
+                <p className="text-[8px] text-muted-foreground leading-tight">Preparación de Química para la ESPOL</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <AvatarUpload userId={profile?.user_id || ''} avatarUrl={profile?.avatar_url || null} initials={initials} size="sm" editable={false} />
