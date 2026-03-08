@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Zap, Trophy, Crown, Medal, Award, Timer, Snowflake, Divide, X2 } from 'lucide-react';
+import { Zap, Trophy, Crown, Medal, Award, Timer } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
