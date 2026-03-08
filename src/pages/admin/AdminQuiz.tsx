@@ -82,6 +82,7 @@ export default function AdminQuiz() {
   const [loadingImport, setLoadingImport] = useState(false);
   const [importMoveMode, setImportMoveMode] = useState(false);
   const [filterGrupo, setFilterGrupo] = useState<string>('all');
+  const [searchText, setSearchText] = useState('');
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiQuantity, setAiQuantity] = useState(5);
   const [aiGrupo, setAiGrupo] = useState(1);
@@ -232,6 +233,23 @@ export default function AdminQuiz() {
     URL.revokeObjectURL(url);
   }
 
+  function exportCSV() {
+    const sesion = sesiones.find(s => s.id === selectedSesion);
+    const header = 'Grupo,Pregunta,Opción A,Opción B,Opción C,Opción D,Opción E,Opción F,Respuesta Correcta';
+    const rows = filteredPreguntas.map(p => {
+      const ops = [...p.opciones];
+      while (ops.length < 6) ops.push('');
+      const correctLetter = String.fromCharCode(65 + p.respuesta_correcta);
+      return [p.grupo, p.pregunta, ...ops, correctLetter].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+    });
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `quiz_${sesion ? `S${sesion.numero}` : selectedSesion.slice(0, 8)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function importJSON(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -360,7 +378,14 @@ export default function AdminQuiz() {
 
   // Filtered questions
   const grupos = [...new Set(preguntas.map(p => p.grupo))].sort((a, b) => a - b);
-  const filteredPreguntas = filterGrupo === 'all' ? preguntas : preguntas.filter(p => p.grupo === parseInt(filterGrupo));
+  const filteredPreguntas = preguntas.filter(p => {
+    if (filterGrupo !== 'all' && p.grupo !== parseInt(filterGrupo)) return false;
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase();
+      return p.pregunta.toLowerCase().includes(q) || p.opciones.some(o => o.toLowerCase().includes(q));
+    }
+    return true;
+  });
 
   return (
     <div className="p-4 md:p-6 space-y-4" onPaste={handlePasteImage}>
@@ -386,8 +411,14 @@ export default function AdminQuiz() {
         </div>
       </div>
 
-      {/* Filter + Import/Export row */}
+      {/* Search + Filter + Import/Export row */}
       <div className="flex gap-2 flex-wrap items-center">
+        <Input 
+          placeholder="Buscar pregunta..." 
+          value={searchText} 
+          onChange={e => setSearchText(e.target.value)} 
+          className="h-8 w-40 text-xs"
+        />
         {grupos.length > 1 && (
           <Select value={filterGrupo} onValueChange={setFilterGrupo}>
             <SelectTrigger className="w-36 h-8 text-xs">
@@ -400,8 +431,11 @@ export default function AdminQuiz() {
             </SelectContent>
           </Select>
         )}
+        <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1" disabled={filteredPreguntas.length === 0}>
+          <Download className="w-3 h-3" /> CSV
+        </Button>
         <Button variant="outline" size="sm" onClick={exportQuestions} className="gap-1" disabled={preguntas.length === 0}>
-          <Download className="w-3 h-3" /> Exportar JSON
+          <Download className="w-3 h-3" /> JSON
         </Button>
         <label>
           <Button variant="outline" size="sm" className="gap-1" asChild>
