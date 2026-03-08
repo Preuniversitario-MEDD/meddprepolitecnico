@@ -27,6 +27,7 @@ export default function StudentDashboard() {
   const [globalProgress, setGlobalProgress] = useState(0);
   const [exams, setExams] = useState<Record<string, { aprobado: boolean; puntaje: number }>>({});
   const [liveCompCount, setLiveCompCount] = useState(0);
+  const [sessionOverrides, setSessionOverrides] = useState<Record<string, boolean>>({});
 
   useEffect(() => { loadData(); loadLiveComps(); }, [user]);
 
