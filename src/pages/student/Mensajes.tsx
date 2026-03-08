@@ -35,6 +35,7 @@ interface Message {
 export default function Mensajes() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { play: playNotification } = useNotificationSound();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
