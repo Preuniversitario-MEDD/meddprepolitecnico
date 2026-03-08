@@ -127,6 +127,8 @@ export default function Mensajes() {
           .eq('conversacion_id', selectedConv)
           .neq('sender_id', user.id)
           .eq('leido', false);
+        // Update local unread count for this conversation
+        setConversations(prev => prev.map(c => c.id === selectedConv ? { ...c, unread: 0 } : c));
       }
     };
     loadMessages();

@@ -125,7 +125,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {isMobile && (
         <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border">
           <div className="flex justify-around py-2">
-            {links.slice(0, 4).map(link => {
+            {links.slice(0, 5).map(link => {
               const active = location.pathname === link.path;
               const showBadge = link.path === getMensajesPath && unreadCount > 0;
               return (
