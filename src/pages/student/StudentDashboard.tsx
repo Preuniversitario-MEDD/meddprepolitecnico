@@ -100,7 +100,8 @@ export default function StudentDashboard() {
     setExams(examMap);
   }
 
-  const firstName = profile?.nombre?.split(' ')[0] || 'Estudiante';
+  const displayProfile = viewedProfile || profile;
+  const firstName = displayProfile?.nombre?.split(' ')[0] || 'Estudiante';
 
   const getSessionStatus = (sesion: Sesion) => {
     // Per-student override takes priority
