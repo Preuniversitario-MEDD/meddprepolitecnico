@@ -7,9 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Play, SkipForward, Users, Trophy, Crown, Medal, Award, Zap, Timer } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Play, SkipForward, Users, Trophy, Crown, Medal, Award, Timer, BarChart3 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import CompetenciaStats from '@/components/competencia/CompetenciaStats';
 
 interface Competencia {
   id: string; titulo: string; pin: string; modo: string; estado: string;
@@ -35,6 +36,7 @@ export default function AdminCompetenciaLive() {
   const [timer, setTimer] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [questionAnswers, setQuestionAnswers] = useState<Record<string, { correcta: boolean; respuesta: number }>>({});
+  const [showStats, setShowStats] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadData = useCallback(async () => {
@@ -109,12 +111,14 @@ export default function AdminCompetenciaLive() {
     setComp(prev => prev ? { ...prev, pregunta_actual: next } : null);
   }
 
-  async function applyPowerup(type: string) {
-    if (!comp || !id) return;
+  function applyPowerup(type: string) {
     if (type === 'freeze') {
-      // Freeze timer - add 10 seconds
       setTimer(prev => prev + 10);
       toast({ title: '❄️ Tiempo congelado +10s para todos' });
+    } else if (type === 'fifty') {
+      toast({ title: '🎯 50/50 activado para todos — las opciones se reducirán' });
+    } else if (type === 'x2') {
+      toast({ title: '✨ x2 puntos activo para la próxima respuesta correcta' });
     } else if (type === 'x5_penalty') {
       toast({ title: '💀 x5 penalización activa para errores' });
     }
@@ -128,11 +132,26 @@ export default function AdminCompetenciaLive() {
 
   // Finished state
   if (comp.estado === 'finalizada') {
+    if (showStats) {
+      return (
+        <div className="p-4 md:p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setShowStats(false)}><ArrowLeft className="w-5 h-5" /></Button>
+            <h1 className="text-2xl font-display font-bold">📊 Estadísticas: {comp.titulo}</h1>
+          </div>
+          <CompetenciaStats competenciaId={comp.id} preguntas={preguntas} participantes={participantes} />
+        </div>
+      );
+    }
+
     return (
       <div className="p-4 md:p-6 space-y-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/admin/competencias')}><ArrowLeft className="w-5 h-5" /></Button>
-          <h1 className="text-2xl font-display font-bold">🏆 Resultados: {comp.titulo}</h1>
+          <h1 className="text-2xl font-display font-bold flex-1">🏆 Resultados: {comp.titulo}</h1>
+          <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowStats(true)}>
+            <BarChart3 className="w-4 h-4" /> Estadísticas
+          </Button>
         </div>
         {/* Podium */}
         <div className="flex justify-center items-end gap-4 py-8">
@@ -244,7 +263,7 @@ export default function AdminCompetenciaLive() {
           </div>
 
           {/* Admin controls */}
-          <div className="flex gap-2 justify-center">
+          <div className="flex flex-wrap gap-2 justify-center">
             {showResults ? (
               <Button size="lg" className="gradient-primary text-primary-foreground gap-2" onClick={nextQuestion}>
                 <SkipForward className="w-5 h-5" /> {comp.pregunta_actual + 1 >= preguntas.length ? 'Finalizar' : 'Siguiente'}
@@ -253,9 +272,35 @@ export default function AdminCompetenciaLive() {
               <>
                 <Button variant="outline" size="sm" onClick={() => setShowResults(true)}>Mostrar respuesta</Button>
                 <Button variant="outline" size="sm" className="gap-1" onClick={() => applyPowerup('freeze')}>❄️ +10s</Button>
+                <Button variant="outline" size="sm" className="gap-1" onClick={() => applyPowerup('fifty')}>🎯 50/50</Button>
+                <Button variant="outline" size="sm" className="gap-1" onClick={() => applyPowerup('x2')}>✨ x2</Button>
+                <Button variant="outline" size="sm" className="gap-1" onClick={() => applyPowerup('x5_penalty')}>💀 x5</Button>
               </>
             )}
           </div>
+
+          {/* Answer distribution */}
+          {showResults && answeredCount > 0 && (
+            <Card className="card-elevated">
+              <CardContent className="p-3">
+                <p className="font-display font-bold text-sm mb-2">📊 Distribución de respuestas</p>
+                {currentQ.opciones.map((opt, i) => {
+                  const count = Object.values(questionAnswers).filter(a => a.respuesta === i).length;
+                  const pct = answeredCount > 0 ? (count / answeredCount) * 100 : 0;
+                  const isCorrect = i === currentQ.respuesta_correcta;
+                  return (
+                    <div key={i} className="flex items-center gap-2 text-xs mb-1">
+                      <span className={`w-4 font-bold ${isCorrect ? 'text-[hsl(var(--neon-mint))]' : 'text-muted-foreground'}`}>{String.fromCharCode(65 + i)}</span>
+                      <div className="flex-1 h-4 bg-muted/30 rounded overflow-hidden">
+                        <div className={`h-full rounded ${isCorrect ? 'bg-[hsl(var(--neon-mint))]/60' : 'bg-destructive/30'}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="w-12 text-right">{count} ({Math.round(pct)}%)</span>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Live leaderboard sidebar */}
           <Card className="card-elevated">
