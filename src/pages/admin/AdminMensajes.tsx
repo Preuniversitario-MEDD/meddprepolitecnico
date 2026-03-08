@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MessageAttachment } from '@/components/messaging/MessageAttachment';
 import { FileUploadButton } from '@/components/messaging/FileUploadButton';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 interface Conversation {
   id: string;
