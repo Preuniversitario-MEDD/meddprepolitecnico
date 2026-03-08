@@ -378,7 +378,14 @@ export default function AdminQuiz() {
 
   // Filtered questions
   const grupos = [...new Set(preguntas.map(p => p.grupo))].sort((a, b) => a - b);
-  const filteredPreguntas = filterGrupo === 'all' ? preguntas : preguntas.filter(p => p.grupo === parseInt(filterGrupo));
+  const filteredPreguntas = preguntas.filter(p => {
+    if (filterGrupo !== 'all' && p.grupo !== parseInt(filterGrupo)) return false;
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase();
+      return p.pregunta.toLowerCase().includes(q) || p.opciones.some(o => o.toLowerCase().includes(q));
+    }
+    return true;
+  });
 
   return (
     <div className="p-4 md:p-6 space-y-4" onPaste={handlePasteImage}>
