@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Lock, CheckCircle, Clock, FlaskConical, FileText, PartyPopper } from 'lucide-react';
+import { Lock, CheckCircle, Clock, FlaskConical, FileText, PartyPopper, Zap } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
