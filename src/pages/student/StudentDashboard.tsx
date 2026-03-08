@@ -22,6 +22,8 @@ const EXAM_BLOCKS = [
 
 export default function StudentDashboard() {
   const { profile, user } = useAuth();
+  const { viewAsStudentId } = useViewAsStudent();
+  const effectiveUserId = viewAsStudentId || user?.id;
   const navigate = useNavigate();
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [progress, setProgress] = useState<Record<string, { completada: boolean; puntaje: number; correctasTotal: number; erroresTotal: number }>>({});
@@ -29,8 +31,9 @@ export default function StudentDashboard() {
   const [exams, setExams] = useState<Record<string, { aprobado: boolean; puntaje: number }>>({});
   const [liveCompCount, setLiveCompCount] = useState(0);
   const [sessionOverrides, setSessionOverrides] = useState<Record<string, boolean>>({});
+  const [viewedProfile, setViewedProfile] = useState<Tables<'profiles'> | null>(null);
 
-  useEffect(() => { loadData(); loadLiveComps(); }, [user]);
+  useEffect(() => { loadData(); loadLiveComps(); }, [effectiveUserId]);
 
   // Realtime: listen for new/updated competitions
   useEffect(() => {
