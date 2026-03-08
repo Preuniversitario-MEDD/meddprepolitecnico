@@ -170,6 +170,9 @@ export type Database = {
       }
       mensajes: {
         Row: {
+          archivo_nombre: string | null
+          archivo_tipo: string | null
+          archivo_url: string | null
           contenido: string
           conversacion_id: string
           created_at: string | null
@@ -178,6 +181,9 @@ export type Database = {
           sender_id: string
         }
         Insert: {
+          archivo_nombre?: string | null
+          archivo_tipo?: string | null
+          archivo_url?: string | null
           contenido: string
           conversacion_id: string
           created_at?: string | null
@@ -186,6 +192,9 @@ export type Database = {
           sender_id: string
         }
         Update: {
+          archivo_nombre?: string | null
+          archivo_tipo?: string | null
+          archivo_url?: string | null
           contenido?: string
           conversacion_id?: string
           created_at?: string | null
