@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Ban, CheckCircle, KeyRound, Search, Edit } from 'lucide-react';
+import { UserPlus, Trash2, Ban, CheckCircle, KeyRound, Search, Edit, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import AvatarUpload from '@/components/AvatarUpload';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -38,6 +39,7 @@ export default function AdminStudents() {
   const [form, setForm] = useState({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '' });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => { loadStudents(); }, []);
 
@@ -215,6 +217,9 @@ export default function AdminStudents() {
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" title="Ver como estudiante" onClick={() => navigate(`/admin/student-view/${student.user_id}`)}>
+                      <Eye className="w-4 h-4 text-primary" />
+                    </Button>
                     <Button variant="ghost" size="icon" title="Editar" onClick={() => {
                       setEditStudent(student);
                       setForm({ nombre: student.nombre, apellidos: student.apellidos, cedula: student.cedula, fechaNacimiento: student.fecha_nacimiento || '' });
