@@ -187,6 +187,7 @@ export default function StudentCompetencia() {
       const wrongIndices = currentQ.opciones.map((_, i) => i).filter(i => i !== currentQ.respuesta_correcta);
       const toHide = wrongIndices.sort(() => Math.random() - 0.5).slice(0, Math.ceil(wrongIndices.length / 2));
       setHiddenOptions(toHide);
+      playPowerup();
       toast({ title: '🎯 50/50 activado' });
     } else if (type === 'x2') {
       setX2Active(true);
