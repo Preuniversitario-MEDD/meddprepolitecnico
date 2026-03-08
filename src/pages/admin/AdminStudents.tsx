@@ -217,6 +217,9 @@ export default function AdminStudents() {
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" title="Ver como estudiante" onClick={() => navigate(`/admin/student-view/${student.user_id}`)}>
+                      <Eye className="w-4 h-4 text-primary" />
+                    </Button>
                     <Button variant="ghost" size="icon" title="Editar" onClick={() => {
                       setEditStudent(student);
                       setForm({ nombre: student.nombre, apellidos: student.apellidos, cedula: student.cedula, fechaNacimiento: student.fecha_nacimiento || '' });
