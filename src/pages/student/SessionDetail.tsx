@@ -35,8 +35,13 @@ export default function SessionDetail() {
   const [stats, setStats] = useState({ intentos: 0, errores: 0, tiempo: 0, correctasTotal: 0 });
   const [sessionProgress, setSessionProgress] = useState(0);
   const [show80Message, setShow80Message] = useState(false);
+  // Accordion: only one group open at a time
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
 
   useEffect(() => { if (id) loadData(); }, [id]);
+
+  // Reset open group when tab changes
+  useEffect(() => { setOpenGroup(null); }, [activeTab]);
 
   async function loadData() {
     const [{ data: s }, { data: c }, { data: tabs }] = await Promise.all([
@@ -49,7 +54,6 @@ export default function SessionDetail() {
     
     const tabList = (tabs || []) as Pestana[];
     setPestanas(tabList);
-    // Default to first tab, or keep quiz as extra
     if (tabList.length > 0 && !activeTab) setActiveTab(tabList[0].clave);
 
     if (user) {
@@ -88,7 +92,6 @@ export default function SessionDetail() {
 
   const formatTime = (s: number) => { const m = Math.floor(s / 60); return m > 0 ? `${m}m ${s % 60}s` : `${s}s`; };
 
-  // Group content by grupo_nombre for a given tab clave
   function getGroupedContent(clave: string) {
     const items = contenido.filter(c => c.tipo === clave);
     const groups = new Map<string, Contenido[]>();
@@ -106,7 +109,6 @@ export default function SessionDetail() {
 
   return (
     <div className="p-4 md:p-6 space-y-4">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5" /></Button>
         <div className="flex-1 min-w-0">
@@ -115,7 +117,6 @@ export default function SessionDetail() {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
           { icon: Target, label: 'Intentos Quiz', value: stats.intentos, color: 'text-primary' },
@@ -133,7 +134,6 @@ export default function SessionDetail() {
         ))}
       </div>
 
-      {/* Session Progress */}
       <Card className="card-elevated">
         <CardContent className="p-3">
           <div className="flex items-center justify-between mb-2">
@@ -148,7 +148,6 @@ export default function SessionDetail() {
         </CardContent>
       </Card>
 
-      {/* 80% Message */}
       <AnimatePresence>
         {show80Message && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -164,7 +163,6 @@ export default function SessionDetail() {
         )}
       </AnimatePresence>
 
-      {/* Dynamic Tabs */}
       <Tabs value={activeTab || allTabs[0]?.clave} onValueChange={setActiveTab}>
         <TabsList className="w-full flex-wrap h-auto">
           {allTabs.map(tab => (
@@ -175,7 +173,6 @@ export default function SessionDetail() {
           ))}
         </TabsList>
 
-        {/* Dynamic content tabs */}
         {pestanas.map(tab => {
           const groups = getGroupedContent(tab.clave);
           const hasExercises = tab.clave === 'ejercicio';
@@ -190,10 +187,11 @@ export default function SessionDetail() {
                       onToggleSolution={(id) => setShowSolutions(prev => ({ ...prev, [id]: !prev[id] }))} />
                   ));
                 }
+                const isOpen = openGroup === `${tab.clave}::${groupName}`;
                 return (
-                  <Collapsible key={groupName}>
+                  <Collapsible key={groupName} open={isOpen} onOpenChange={(open) => setOpenGroup(open ? `${tab.clave}::${groupName}` : null)}>
                     <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
-                      <ChevronDown className="w-4 h-4 transition-transform" />
+                      <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
                       <span className="font-semibold text-sm">{groupName}</span>
                       <span className="text-xs text-muted-foreground">({items.length})</span>
                     </CollapsibleTrigger>
@@ -212,7 +210,6 @@ export default function SessionDetail() {
                 <p className="text-center text-muted-foreground py-8">No hay contenido aún</p>
               )}
 
-              {/* AI Exercise Generation - show on ejercicio tab */}
               {hasExercises && (
                 <>
                   <Button onClick={generateAIExercise} disabled={aiLoading} variant="outline" className="w-full gap-2 neon-border">
@@ -249,7 +246,6 @@ export default function SessionDetail() {
           );
         })}
 
-        {/* Quiz Tab */}
         <TabsContent value="quiz" className="mt-4">
           {id && user && <QuizComponent sesionId={id} userId={user.id} />}
         </TabsContent>
@@ -258,7 +254,6 @@ export default function SessionDetail() {
   );
 }
 
-// Extracted content item component for reuse across tabs
 function ContentItem({ item, index, showSolutions, onToggleSolution }: {
   item: Contenido; index: number;
   showSolutions: Record<string, boolean>;
