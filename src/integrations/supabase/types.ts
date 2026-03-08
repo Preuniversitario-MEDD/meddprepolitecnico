@@ -434,6 +434,7 @@ export type Database = {
           apellidos: string
           avatar_url: string | null
           cedula: string
+          colegio: string | null
           created_at: string
           device_type: string | null
           fecha_nacimiento: string | null
@@ -451,6 +452,7 @@ export type Database = {
           apellidos?: string
           avatar_url?: string | null
           cedula: string
+          colegio?: string | null
           created_at?: string
           device_type?: string | null
           fecha_nacimiento?: string | null
@@ -468,6 +470,7 @@ export type Database = {
           apellidos?: string
           avatar_url?: string | null
           cedula?: string
+          colegio?: string | null
           created_at?: string
           device_type?: string | null
           fecha_nacimiento?: string | null
