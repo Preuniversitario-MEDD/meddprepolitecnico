@@ -99,7 +99,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {!isMobile && (
         <motion.aside initial={{ x: -80 }} animate={{ x: 0 }} className={`w-64 border-r border-border bg-sidebar flex flex-col ${isAdminOnStudentView ? 'pt-9' : ''}`}>
           <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
-            <img src={meddLogo} alt="MEDD Logo" className="w-10 h-10 rounded-xl object-contain" />
+            <div className="w-10 h-10 rounded-full ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.3)] overflow-hidden bg-background">
+              <img src={meddLogo} alt="MEDD Logo" className="w-full h-full object-cover" />
+            </div>
             <div>
               <h2 className="font-display font-bold text-sm text-sidebar-foreground">ESPOLMEDD</h2>
               <p className="text-xs text-muted-foreground capitalize">{isAdminOnStudentView ? 'Vista Estudiante' : role}</p>
