@@ -45,8 +45,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   usePresenceTracker();
   const location = useLocation();
   const navigate = useNavigate();
+  const [students, setStudents] = useState<{ user_id: string; nombre: string; apellidos: string }[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<string>('');
 
   const isAdminOnStudentView = role === 'admin' && location.pathname.startsWith('/student');
+
+  useEffect(() => {
+    if (role === 'admin') {
+      supabase.from('profiles').select('user_id, nombre, apellidos').then(({ data }) => {
+        if (data) setStudents(data.filter(s => s.user_id !== profile?.user_id));
+      });
+    }
+  }, [role, profile?.user_id]);
   const links = isAdminOnStudentView ? studentLinks : (role === 'admin' ? adminLinks : studentLinks);
   const initials = profile ? (profile.nombre?.[0] || '') + (profile.apellidos?.[0] || '') : '?';
   const getMensajesPath = role === 'admin' && !isAdminOnStudentView ? '/admin/mensajes' : '/student/mensajes';
