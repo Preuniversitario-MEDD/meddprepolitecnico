@@ -63,7 +63,7 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
     setReviews([]);
 
     try {
-      const batch = preguntas.slice(0, 30);
+      const batch = preguntas;
       const { data, error } = await supabase.functions.invoke('review-quiz-questions', {
         body: { questions: batch.map(q => ({ pregunta: q.pregunta, opciones: q.opciones, respuesta_correcta: q.respuesta_correcta })) },
       });
