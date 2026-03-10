@@ -695,6 +695,22 @@ export default function AdminQuiz() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* AI Review Dialog */}
+      <QuizReviewDialog
+        open={reviewDialogOpen}
+        onOpenChange={setReviewDialogOpen}
+        preguntas={filteredPreguntas}
+        onQuestionsUpdated={loadPreguntas}
+      />
+
+      {/* Stats Dialog */}
+      <QuizStatsDialog
+        open={statsDialogOpen}
+        onOpenChange={setStatsDialogOpen}
+        preguntas={preguntas}
+        sesionId={selectedSesion}
+      />
     </div>
   );
 }
