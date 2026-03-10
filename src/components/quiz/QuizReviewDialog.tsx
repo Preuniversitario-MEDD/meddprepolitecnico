@@ -183,8 +183,10 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
 
           {loading && (
             <div className="text-center py-8 space-y-3">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-[hsl(var(--neon-violet))]" />
               <p className="text-sm text-muted-foreground">Analizando preguntas con IA...</p>
+              {progress && <p className="text-xs font-medium text-[hsl(var(--neon-blue))]">{progress}</p>}
+              {reviews.length > 0 && <p className="text-[10px] text-muted-foreground">{reviews.length} evaluadas hasta ahora</p>}
             </div>
           )}
 
