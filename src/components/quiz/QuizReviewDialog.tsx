@@ -197,11 +197,10 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
                         <p className="text-sm font-medium line-clamp-2 flex-1">{r.index + 1}. {pregunta.pregunta}</p>
                         {canFix && (
                           <Button
-                            variant="outline"
                             size="sm"
                             onClick={() => fixQuestion(i)}
                             disabled={fixing.has(i)}
-                            className="shrink-0 gap-1 text-[10px] h-6 border-destructive/30 text-destructive hover:bg-destructive/10"
+                            className="shrink-0 gap-1 text-[10px] h-6 bg-[hsl(var(--neon-orange))] text-white hover:opacity-90 shadow-[0_0_8px_hsl(var(--neon-orange)/0.3)]"
                           >
                             {hasImprovedVersion(r) ? <RefreshCw className="w-3 h-3" /> : <Wrench className="w-3 h-3" />}
                             {fixing.has(i) ? '...' : hasImprovedVersion(r) ? 'Aplicar mejora' : `Corregir → ${String.fromCharCode(65 + (r.respuesta_correcta_sugerida ?? 0))}`}
