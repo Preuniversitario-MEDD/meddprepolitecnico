@@ -44,10 +44,13 @@ function formatDate(dateStr: string) {
 
 export default function AdminStudents() {
   const [students, setStudents] = useState<Profile[]>([]);
+  const [studentCursos, setStudentCursos] = useState<Record<string, { id: string; titulo: string }[]>>({});
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [editStudent, setEditStudent] = useState<Profile | null>(null);
   const [form, setForm] = useState({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '', colegio: '' });
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('students');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
