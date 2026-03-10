@@ -158,35 +158,37 @@ export default function AdminStudents() {
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="text-2xl font-display font-bold">Estudiantes</h1>
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogTrigger asChild>
-            <Button className="gradient-primary text-primary-foreground gap-2">
-              <UserPlus className="w-4 h-4" /> Agregar Estudiante
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="font-display">Nuevo Estudiante</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div><Label>Nombre</Label><Input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre(s)" /></div>
-              <div><Label>Apellidos</Label><Input value={form.apellidos} onChange={e => setForm({ ...form, apellidos: e.target.value })} placeholder="Apellidos" /></div>
-              <div><Label>Cédula (10 dígitos)</Label><Input value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value.replace(/\D/g, '').slice(0, 10) })} maxLength={10} /></div>
-              <div><Label>Fecha de Nacimiento</Label><Input type="date" value={form.fechaNacimiento} onChange={e => setForm({ ...form, fechaNacimiento: e.target.value })} /></div>
-              <div><Label>Colegio</Label><Input value={form.colegio} onChange={e => setForm({ ...form, colegio: e.target.value })} placeholder="Nombre del colegio" /></div>
-              {form.nombre && form.apellidos && (
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>Usuario: <span className="font-mono text-primary font-semibold">{generateUsuario(form.nombre, form.apellidos)}</span></p>
-                  <p>Credenciales: <span className="font-mono text-foreground">{form.cedula || '___'}</span> / <span className="font-mono text-foreground">123*789*h</span></p>
-                </div>
-              )}
-              <Button onClick={addStudent} disabled={loading} className="w-full gradient-primary text-primary-foreground">
-                {loading ? 'Creando...' : 'Crear Estudiante'}
+        <h1 className="text-2xl font-display font-bold">Estudiantes & Cursos</h1>
+        {activeTab === 'students' && (
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button className="gradient-primary text-primary-foreground gap-2">
+                <UserPlus className="w-4 h-4" /> Agregar Estudiante
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="font-display">Nuevo Estudiante</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Nombre</Label><Input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre(s)" /></div>
+                <div><Label>Apellidos</Label><Input value={form.apellidos} onChange={e => setForm({ ...form, apellidos: e.target.value })} placeholder="Apellidos" /></div>
+                <div><Label>Cédula (10 dígitos)</Label><Input value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value.replace(/\D/g, '').slice(0, 10) })} maxLength={10} /></div>
+                <div><Label>Fecha de Nacimiento</Label><Input type="date" value={form.fechaNacimiento} onChange={e => setForm({ ...form, fechaNacimiento: e.target.value })} /></div>
+                <div><Label>Colegio</Label><Input value={form.colegio} onChange={e => setForm({ ...form, colegio: e.target.value })} placeholder="Nombre del colegio" /></div>
+                {form.nombre && form.apellidos && (
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>Usuario: <span className="font-mono text-primary font-semibold">{generateUsuario(form.nombre, form.apellidos)}</span></p>
+                    <p>Credenciales: <span className="font-mono text-foreground">{form.cedula || '___'}</span> / <span className="font-mono text-foreground">123*789*h</span></p>
+                  </div>
+                )}
+                <Button onClick={addStudent} disabled={loading} className="w-full gradient-primary text-primary-foreground">
+                  {loading ? 'Creando...' : 'Crear Estudiante'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Edit Dialog */}
@@ -217,64 +219,93 @@ export default function AdminStudents() {
         </DialogContent>
       </Dialog>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Buscar por nombre, cédula, usuario o colegio..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
-      </div>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-xs grid-cols-2">
+          <TabsTrigger value="students" className="gap-1"><Users className="w-4 h-4" /> Estudiantes</TabsTrigger>
+          <TabsTrigger value="courses" className="gap-1"><BookOpen className="w-4 h-4" /> Cursos</TabsTrigger>
+        </TabsList>
 
-      {/* Student List */}
-      <div className="space-y-2">
-        {filtered.map((student, i) => (
-          <motion.div key={student.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-            <Card className={`card-elevated ${!student.activo ? 'opacity-50' : ''}`}>
-              <CardContent className="p-3 md:p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <AvatarUpload
-                    userId={student.user_id}
-                    avatarUrl={student.avatar_url}
-                    initials={(student.nombre?.[0] || '') + (student.apellidos?.[0] || '')}
-                    size="sm"
-                    editable={false}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold truncate text-foreground">{student.nombre} {student.apellidos}</p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
-                      <span>📋 {student.cedula}</span>
-                      <span>🔑 {student.usuario || '-'}</span>
-                      {(student as any).colegio && <span>🏫 {(student as any).colegio}</span>}
-                      {student.fecha_nacimiento && <span>🎂 {calcAge(student.fecha_nacimiento)}</span>}
-                      <span>📅 {formatDate(student.created_at)}</span>
-                      <span className={student.activo ? 'text-[hsl(var(--neon-mint))]' : 'text-destructive'}>
-                        {student.activo ? '● Activo' : '● Bloqueado'}
-                      </span>
+        <TabsContent value="students" className="space-y-3 mt-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Buscar por nombre, cédula, usuario o colegio..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+          </div>
+
+          {/* Student List */}
+          <div className="space-y-2">
+            {filtered.map((student, i) => (
+              <motion.div key={student.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                <Card className={`card-elevated ${!student.activo ? 'opacity-50' : ''}`}>
+                  <CardContent className="p-3 md:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <AvatarUpload
+                        userId={student.user_id}
+                        avatarUrl={student.avatar_url}
+                        initials={(student.nombre?.[0] || '') + (student.apellidos?.[0] || '')}
+                        size="sm"
+                        editable={false}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate text-foreground">{student.nombre} {student.apellidos}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
+                          <span>📋 {student.cedula}</span>
+                          <span>🔑 {student.usuario || '-'}</span>
+                          {(student as any).colegio && <span>🏫 {(student as any).colegio}</span>}
+                          {student.fecha_nacimiento && <span>🎂 {calcAge(student.fecha_nacimiento)}</span>}
+                          <span>📅 {formatDate(student.created_at)}</span>
+                          <span className={student.activo ? 'text-[hsl(var(--neon-mint))]' : 'text-destructive'}>
+                            {student.activo ? '● Activo' : '● Bloqueado'}
+                          </span>
+                        </div>
+                        {/* Course badges */}
+                        {studentCursos[student.user_id]?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {studentCursos[student.user_id].map(c => (
+                              <Badge
+                                key={c.id}
+                                variant="outline"
+                                className="text-[10px] cursor-pointer gap-1 border-[hsl(var(--neon-violet)/0.4)] text-[hsl(var(--neon-violet))] hover:bg-[hsl(var(--neon-violet)/0.1)]"
+                                onClick={() => { setActiveTab('courses'); }}
+                              >
+                                <BookOpen className="w-3 h-3" /> {c.titulo}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" title="Ver como estudiante" onClick={() => navigate(`/admin/student-view/${student.user_id}`)}>
+                          <Eye className="w-4 h-4 text-primary" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Editar" onClick={() => {
+                          setEditStudent(student);
+                          setForm({ nombre: student.nombre, apellidos: student.apellidos, cedula: student.cedula, fechaNacimiento: student.fecha_nacimiento || '', colegio: (student as any).colegio || '' });
+                        }}><Edit className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" title={student.activo ? 'Bloquear' : 'Activar'} onClick={() => toggleActive(student)}>
+                          {student.activo ? <Ban className="w-4 h-4 text-destructive" /> : <CheckCircle className="w-4 h-4 text-[hsl(var(--neon-mint))]" />}
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Reiniciar contraseña" onClick={() => resetPassword(student)}>
+                          <KeyRound className="w-4 h-4 text-[hsl(var(--neon-orange))]" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Eliminar" onClick={() => deleteStudent(student)}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" title="Ver como estudiante" onClick={() => navigate(`/admin/student-view/${student.user_id}`)}>
-                      <Eye className="w-4 h-4 text-primary" />
-                    </Button>
-                    <Button variant="ghost" size="icon" title="Editar" onClick={() => {
-                      setEditStudent(student);
-                      setForm({ nombre: student.nombre, apellidos: student.apellidos, cedula: student.cedula, fechaNacimiento: student.fecha_nacimiento || '', colegio: (student as any).colegio || '' });
-                    }}><Edit className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" title={student.activo ? 'Bloquear' : 'Activar'} onClick={() => toggleActive(student)}>
-                      {student.activo ? <Ban className="w-4 h-4 text-destructive" /> : <CheckCircle className="w-4 h-4 text-[hsl(var(--neon-mint))]" />}
-                    </Button>
-                    <Button variant="ghost" size="icon" title="Reiniciar contraseña" onClick={() => resetPassword(student)}>
-                      <KeyRound className="w-4 h-4 text-[hsl(var(--neon-orange))]" />
-                    </Button>
-                    <Button variant="ghost" size="icon" title="Eliminar" onClick={() => deleteStudent(student)}>
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-        {filtered.length === 0 && <p className="text-center py-8 text-muted-foreground">No hay estudiantes</p>}
-      </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+            {filtered.length === 0 && <p className="text-center py-8 text-muted-foreground">No hay estudiantes</p>}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="courses" className="mt-3">
+          <CourseManager students={students} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
