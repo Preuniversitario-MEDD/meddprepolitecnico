@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-exercise]
 verify_jwt = false
+
+[functions.review-quiz-questions]
+verify_jwt = false
