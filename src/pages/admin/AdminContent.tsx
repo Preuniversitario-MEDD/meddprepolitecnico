@@ -247,6 +247,8 @@ export default function AdminContent() {
 
   const currentSesion = sesiones.find(s => s.id === selectedSesion);
 
+  const filteredSesiones = cursoSesionIds ? sesiones.filter(s => cursoSesionIds.has(s.id)) : sesiones;
+
   // Group content by grupo_nombre within active tab
   const tabContent = contenido.filter(c => c.tipo === activeTab);
   const groups = new Map<string, Contenido[]>();
@@ -260,12 +262,19 @@ export default function AdminContent() {
     <div className="p-4 md:p-6 space-y-4">
       <h1 className="text-2xl font-display font-bold">Gestión de Contenido</h1>
 
-      {/* Session selector and toggle */}
+      {/* Course filter + Session selector */}
       <div className="flex flex-col sm:flex-row gap-3">
+        <Select value={filterCurso} onValueChange={setFilterCurso}>
+          <SelectTrigger className="sm:w-52"><SelectValue placeholder="Filtrar por curso" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los cursos</SelectItem>
+            {cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <Select value={selectedSesion} onValueChange={setSelectedSesion}>
           <SelectTrigger className="sm:w-64"><SelectValue placeholder="Selecciona sesión" /></SelectTrigger>
           <SelectContent>
-            {sesiones.map(s => <SelectItem key={s.id} value={s.id}>S{s.numero}: {s.titulo}</SelectItem>)}
+            {filteredSesiones.map(s => <SelectItem key={s.id} value={s.id}>S{s.numero}: {s.titulo}</SelectItem>)}
           </SelectContent>
         </Select>
         {currentSesion && (
