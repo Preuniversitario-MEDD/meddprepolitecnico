@@ -153,10 +153,10 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
           {reviews.length === 0 && !loading && (
             <div className="text-center py-6 space-y-3">
               <p className="text-sm text-muted-foreground">
-                La IA evaluará {Math.min(preguntas.length, 30)} preguntas y sugerirá mejoras cuando detecte problemas.
+                La IA evaluará {preguntas.length} preguntas y sugerirá mejoras cuando detecte problemas.
               </p>
-              <Button onClick={runReview} className="gradient-primary text-primary-foreground gap-2">
-                <ShieldCheck className="w-4 h-4" /> Iniciar Revisión ({Math.min(preguntas.length, 30)} preguntas)
+              <Button onClick={runReview} className="gap-2 bg-gradient-to-r from-[hsl(var(--neon-violet))] via-[hsl(var(--neon-fuchsia))] to-[hsl(var(--neon-pink))] text-white hover:opacity-90 shadow-[0_0_12px_hsl(var(--neon-violet)/0.4)]">
+                <ShieldCheck className="w-4 h-4" /> Iniciar Revisión ({preguntas.length} preguntas)
               </Button>
             </div>
           )}
