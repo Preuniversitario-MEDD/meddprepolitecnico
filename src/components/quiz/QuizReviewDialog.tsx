@@ -36,10 +36,10 @@ interface Props {
 }
 
 const ratingColors: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-  excelente: { bg: 'bg-accent/20', text: 'text-accent', icon: <CheckCircle className="w-3 h-3" /> },
-  buena: { bg: 'bg-primary/20', text: 'text-primary', icon: <CheckCircle className="w-3 h-3" /> },
-  mejorable: { bg: 'bg-warning/20', text: 'text-warning', icon: <AlertTriangle className="w-3 h-3" /> },
-  problematica: { bg: 'bg-destructive/20', text: 'text-destructive', icon: <XCircle className="w-3 h-3" /> },
+  excelente: { bg: 'bg-[hsl(var(--neon-mint))]/20', text: 'text-[hsl(var(--neon-mint))]', icon: <CheckCircle className="w-3 h-3" /> },
+  buena: { bg: 'bg-[hsl(var(--neon-blue))]/20', text: 'text-[hsl(var(--neon-blue))]', icon: <CheckCircle className="w-3 h-3" /> },
+  mejorable: { bg: 'bg-[hsl(var(--neon-orange))]/20', text: 'text-[hsl(var(--neon-orange))]', icon: <AlertTriangle className="w-3 h-3" /> },
+  problematica: { bg: 'bg-[hsl(var(--neon-pink))]/20', text: 'text-[hsl(var(--neon-pink))]', icon: <XCircle className="w-3 h-3" /> },
 };
 
 function RatingBadge({ rating }: { rating: string }) {
