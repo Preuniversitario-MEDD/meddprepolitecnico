@@ -54,8 +54,11 @@ function RatingBadge({ rating }: { rating: string }) {
 export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQuestionsUpdated }: Props) {
   const [reviews, setReviews] = useState<ReviewResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState('');
   const [fixing, setFixing] = useState<Set<number>>(new Set());
   const { toast } = useToast();
+
+  const BATCH_SIZE = 25;
 
   async function runReview() {
     if (preguntas.length === 0) return;
@@ -63,17 +66,34 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
     setReviews([]);
 
     try {
-      const batch = preguntas;
-      const { data, error } = await supabase.functions.invoke('review-quiz-questions', {
-        body: { questions: batch.map(q => ({ pregunta: q.pregunta, opciones: q.opciones, respuesta_correcta: q.respuesta_correcta })) },
-      });
-      if (error) throw error;
-      if (data?.error) { toast({ title: 'Error de IA', description: data.error, variant: 'destructive' }); setLoading(false); return; }
-      setReviews(data?.reviews || []);
+      const allReviews: ReviewResult[] = [];
+      const totalBatches = Math.ceil(preguntas.length / BATCH_SIZE);
+
+      for (let b = 0; b < totalBatches; b++) {
+        const start = b * BATCH_SIZE;
+        const batch = preguntas.slice(start, start + BATCH_SIZE);
+        setProgress(`Lote ${b + 1}/${totalBatches} (${start + 1}-${start + batch.length} de ${preguntas.length})`);
+
+        const { data, error } = await supabase.functions.invoke('review-quiz-questions', {
+          body: { questions: batch.map(q => ({ pregunta: q.pregunta, opciones: q.opciones, respuesta_correcta: q.respuesta_correcta })) },
+        });
+        if (error) throw error;
+        if (data?.error) { toast({ title: 'Error de IA', description: data.error, variant: 'destructive' }); setLoading(false); setProgress(''); return; }
+
+        const batchReviews = (data?.reviews || []).map((r: ReviewResult) => ({
+          ...r,
+          index: r.index + start, // offset index to match global position
+        }));
+        allReviews.push(...batchReviews);
+        setReviews([...allReviews]);
+      }
+
+      setReviews(allReviews);
     } catch (err: any) {
       toast({ title: 'Error al revisar', description: err.message || 'Intenta de nuevo', variant: 'destructive' });
     }
     setLoading(false);
+    setProgress('');
   }
 
   async function fixQuestion(reviewIndex: number) {
@@ -163,8 +183,10 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
 
           {loading && (
             <div className="text-center py-8 space-y-3">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-[hsl(var(--neon-violet))]" />
               <p className="text-sm text-muted-foreground">Analizando preguntas con IA...</p>
+              {progress && <p className="text-xs font-medium text-[hsl(var(--neon-blue))]">{progress}</p>}
+              {reviews.length > 0 && <p className="text-[10px] text-muted-foreground">{reviews.length} evaluadas hasta ahora</p>}
             </div>
           )}
 
