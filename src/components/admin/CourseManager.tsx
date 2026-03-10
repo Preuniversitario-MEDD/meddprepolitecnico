@@ -42,6 +42,8 @@ export default function CourseManager({ students }: { students: Profile[] }) {
   const [linkSesionOpen, setLinkSesionOpen] = useState(false);
   const [form, setForm] = useState({ titulo: '', descripcion: '' });
   const [searchStudent, setSearchStudent] = useState('');
+  const [newSesionForm, setNewSesionForm] = useState({ numero: 0, titulo: '' });
+  const [creatingSession, setCreatingSession] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -129,6 +131,25 @@ export default function CourseManager({ students }: { students: Profile[] }) {
     toast({ title: 'Eliminado', description: curso.titulo });
     if (expanded === curso.id) setExpanded(null);
     loadCursos();
+  }
+
+  async function createSesionAndLink(cursoId: string) {
+    if (!newSesionForm.titulo.trim() || !newSesionForm.numero) return;
+    setCreatingSession(true);
+    const { data: newSesion } = await supabase.from('sesiones').insert({
+      numero: newSesionForm.numero,
+      titulo: newSesionForm.titulo,
+      estado: 'bloqueada',
+    }).select().single();
+    if (newSesion) {
+      await supabase.from('curso_sesiones').insert({ curso_id: cursoId, sesion_id: newSesion.id, orden: cursoSesiones.length });
+      toast({ title: '✨ Sesión creada y vinculada', description: `S${newSesion.numero} - ${newSesion.titulo}` });
+      setNewSesionForm({ numero: 0, titulo: '' });
+      loadAllSesiones();
+      loadCursoDetail(cursoId);
+      loadCursos();
+    }
+    setCreatingSession(false);
   }
 
   async function toggleSesion(cursoId: string, sesionId: string) {
@@ -239,22 +260,34 @@ export default function CourseManager({ students }: { students: Profile[] }) {
                                   <Plus className="w-3 h-3" /> Vincular
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader><DialogTitle>Vincular Sesiones</DialogTitle></DialogHeader>
-                                <div className="space-y-2 max-h-80 overflow-y-auto">
-                                  {allSesiones.map(s => {
-                                    const linked = cursoSesiones.some(cs => cs.sesion_id === s.id);
-                                    return (
-                                      <div key={s.id} className={`flex items-center justify-between p-2 rounded-lg border ${linked ? 'border-[hsl(var(--neon-mint))] bg-[hsl(var(--neon-mint)/0.05)]' : 'border-border'}`}>
-                                        <span className="text-sm">S{s.numero} - {s.titulo}</span>
-                                        <Button size="sm" variant={linked ? 'default' : 'outline'} className={`h-7 text-xs ${linked ? 'bg-[hsl(var(--neon-mint))] text-white hover:bg-[hsl(var(--neon-mint)/0.8)]' : ''}`} onClick={() => toggleSesion(curso.id, s.id)}>
-                                          {linked ? '✓ Vinculada' : 'Vincular'}
-                                        </Button>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </DialogContent>
+                               <DialogContent className="max-w-md">
+                                 <DialogHeader><DialogTitle>Gestionar Sesiones</DialogTitle></DialogHeader>
+                                 {/* Create new session */}
+                                 <div className="p-3 rounded-xl border border-dashed border-[hsl(var(--neon-violet)/0.4)] bg-[hsl(var(--neon-violet)/0.05)] space-y-2">
+                                   <p className="text-xs font-semibold text-[hsl(var(--neon-violet))]">＋ Crear nueva sesión</p>
+                                   <div className="flex gap-2">
+                                     <Input type="number" placeholder="#" className="w-16" value={newSesionForm.numero || ''} onChange={e => setNewSesionForm({ ...newSesionForm, numero: parseInt(e.target.value) || 0 })} />
+                                     <Input placeholder="Título de la sesión" className="flex-1" value={newSesionForm.titulo} onChange={e => setNewSesionForm({ ...newSesionForm, titulo: e.target.value })} />
+                                   </div>
+                                   <Button size="sm" className="w-full h-7 text-xs bg-gradient-to-r from-[hsl(var(--neon-violet))] to-[hsl(var(--neon-blue))] text-white" disabled={creatingSession || !newSesionForm.titulo.trim() || !newSesionForm.numero} onClick={() => createSesionAndLink(curso.id)}>
+                                     {creatingSession ? 'Creando...' : 'Crear y vincular'}
+                                   </Button>
+                                 </div>
+                                 <p className="text-xs text-muted-foreground font-medium">O vincular existentes:</p>
+                                 <div className="space-y-2 max-h-60 overflow-y-auto">
+                                   {allSesiones.map(s => {
+                                     const linked = cursoSesiones.some(cs => cs.sesion_id === s.id);
+                                     return (
+                                       <div key={s.id} className={`flex items-center justify-between p-2 rounded-lg border ${linked ? 'border-[hsl(var(--neon-mint))] bg-[hsl(var(--neon-mint)/0.05)]' : 'border-border'}`}>
+                                         <span className="text-sm">S{s.numero} - {s.titulo}</span>
+                                         <Button size="sm" variant={linked ? 'default' : 'outline'} className={`h-7 text-xs ${linked ? 'bg-[hsl(var(--neon-mint))] text-white hover:bg-[hsl(var(--neon-mint)/0.8)]' : ''}`} onClick={() => toggleSesion(curso.id, s.id)}>
+                                           {linked ? '✓ Vinculada' : 'Vincular'}
+                                         </Button>
+                                       </div>
+                                     );
+                                   })}
+                                 </div>
+                               </DialogContent>
                             </Dialog>
                           </div>
                           {cursoSesiones.length === 0 ? (
@@ -262,7 +295,7 @@ export default function CourseManager({ students }: { students: Profile[] }) {
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               {cursoSesiones.map(cs => (
-                                <Badge key={cs.id} variant="outline" className="gap-1 cursor-pointer hover:bg-primary/10" onClick={() => navigate('/admin/content')}>
+                                <Badge key={cs.id} variant="outline" className="gap-1 cursor-pointer hover:bg-primary/10" onClick={() => navigate(`/admin/content?sesion=${cs.sesion_id}`)}>
                                   S{cs.sesion?.numero} {cs.sesion?.titulo}
                                   <ExternalLink className="w-3 h-3" />
                                 </Badge>
