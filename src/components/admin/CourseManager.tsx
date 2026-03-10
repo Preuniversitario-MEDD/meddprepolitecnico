@@ -260,22 +260,34 @@ export default function CourseManager({ students }: { students: Profile[] }) {
                                   <Plus className="w-3 h-3" /> Vincular
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader><DialogTitle>Vincular Sesiones</DialogTitle></DialogHeader>
-                                <div className="space-y-2 max-h-80 overflow-y-auto">
-                                  {allSesiones.map(s => {
-                                    const linked = cursoSesiones.some(cs => cs.sesion_id === s.id);
-                                    return (
-                                      <div key={s.id} className={`flex items-center justify-between p-2 rounded-lg border ${linked ? 'border-[hsl(var(--neon-mint))] bg-[hsl(var(--neon-mint)/0.05)]' : 'border-border'}`}>
-                                        <span className="text-sm">S{s.numero} - {s.titulo}</span>
-                                        <Button size="sm" variant={linked ? 'default' : 'outline'} className={`h-7 text-xs ${linked ? 'bg-[hsl(var(--neon-mint))] text-white hover:bg-[hsl(var(--neon-mint)/0.8)]' : ''}`} onClick={() => toggleSesion(curso.id, s.id)}>
-                                          {linked ? '✓ Vinculada' : 'Vincular'}
-                                        </Button>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </DialogContent>
+                               <DialogContent className="max-w-md">
+                                 <DialogHeader><DialogTitle>Gestionar Sesiones</DialogTitle></DialogHeader>
+                                 {/* Create new session */}
+                                 <div className="p-3 rounded-xl border border-dashed border-[hsl(var(--neon-violet)/0.4)] bg-[hsl(var(--neon-violet)/0.05)] space-y-2">
+                                   <p className="text-xs font-semibold text-[hsl(var(--neon-violet))]">＋ Crear nueva sesión</p>
+                                   <div className="flex gap-2">
+                                     <Input type="number" placeholder="#" className="w-16" value={newSesionForm.numero || ''} onChange={e => setNewSesionForm({ ...newSesionForm, numero: parseInt(e.target.value) || 0 })} />
+                                     <Input placeholder="Título de la sesión" className="flex-1" value={newSesionForm.titulo} onChange={e => setNewSesionForm({ ...newSesionForm, titulo: e.target.value })} />
+                                   </div>
+                                   <Button size="sm" className="w-full h-7 text-xs bg-gradient-to-r from-[hsl(var(--neon-violet))] to-[hsl(var(--neon-blue))] text-white" disabled={creatingSession || !newSesionForm.titulo.trim() || !newSesionForm.numero} onClick={() => createSesionAndLink(curso.id)}>
+                                     {creatingSession ? 'Creando...' : 'Crear y vincular'}
+                                   </Button>
+                                 </div>
+                                 <p className="text-xs text-muted-foreground font-medium">O vincular existentes:</p>
+                                 <div className="space-y-2 max-h-60 overflow-y-auto">
+                                   {allSesiones.map(s => {
+                                     const linked = cursoSesiones.some(cs => cs.sesion_id === s.id);
+                                     return (
+                                       <div key={s.id} className={`flex items-center justify-between p-2 rounded-lg border ${linked ? 'border-[hsl(var(--neon-mint))] bg-[hsl(var(--neon-mint)/0.05)]' : 'border-border'}`}>
+                                         <span className="text-sm">S{s.numero} - {s.titulo}</span>
+                                         <Button size="sm" variant={linked ? 'default' : 'outline'} className={`h-7 text-xs ${linked ? 'bg-[hsl(var(--neon-mint))] text-white hover:bg-[hsl(var(--neon-mint)/0.8)]' : ''}`} onClick={() => toggleSesion(curso.id, s.id)}>
+                                           {linked ? '✓ Vinculada' : 'Vincular'}
+                                         </Button>
+                                       </div>
+                                     );
+                                   })}
+                                 </div>
+                               </DialogContent>
                             </Dialog>
                           </div>
                           {cursoSesiones.length === 0 ? (
