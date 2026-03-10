@@ -436,13 +436,43 @@ export default function AdminQuiz() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <Select value={selectedSesion} onValueChange={setSelectedSesion}>
-          <SelectTrigger className="sm:w-64"><SelectValue placeholder="Selecciona sesión" /></SelectTrigger>
-          <SelectContent>
-            {sesiones.map(s => <SelectItem key={s.id} value={s.id}>S{s.numero}: {s.titulo}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2 flex-1 flex-wrap">
+          {cursos.length > 0 && (
+            <Select value={filterCurso} onValueChange={v => { setFilterCurso(v); loadCursoSesiones(v); }}>
+              <SelectTrigger className="sm:w-48"><SelectValue placeholder="Filtrar por curso" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los cursos</SelectItem>
+                {cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+          <Select value={selectedSesion} onValueChange={setSelectedSesion}>
+            <SelectTrigger className="sm:w-64"><SelectValue placeholder="Selecciona sesión" /></SelectTrigger>
+            <SelectContent>
+              {(cursoSesionIds ? sesiones.filter(s => cursoSesionIds.has(s.id)) : sesiones).map(s => <SelectItem key={s.id} value={s.id}>S{s.numero}: {s.titulo}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex gap-2 flex-wrap">
+          <Dialog open={createSesionOpen} onOpenChange={setCreateSesionOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Plus className="w-4 h-4" /> Nueva Sesión
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Crear Nueva Sesión</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <div className="w-20"><Label>Número</Label><Input type="number" value={newSesionForm.numero || ''} onChange={e => setNewSesionForm({ ...newSesionForm, numero: parseInt(e.target.value) || 0 })} /></div>
+                  <div className="flex-1"><Label>Título</Label><Input value={newSesionForm.titulo} onChange={e => setNewSesionForm({ ...newSesionForm, titulo: e.target.value })} placeholder="Ej: Álgebra Lineal" /></div>
+                </div>
+                <Button onClick={createSesion} className="w-full bg-gradient-to-r from-[hsl(var(--neon-violet))] to-[hsl(var(--neon-blue))] text-white" disabled={creatingSesion || !newSesionForm.titulo.trim() || !newSesionForm.numero}>
+                  {creatingSesion ? 'Creando...' : 'Crear Sesión'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Button onClick={() => { setPasteText(''); setPasteDialogOpen(true); }} variant="outline" className="gap-2">
             <ClipboardPaste className="w-4 h-4" /> Pegar Pregunta
           </Button>
