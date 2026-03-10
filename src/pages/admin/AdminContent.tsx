@@ -48,8 +48,25 @@ export default function AdminContent() {
   const [cursoSesionIds, setCursoSesionIds] = useState<Set<string> | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => { loadSesiones(); }, []);
+  useEffect(() => { loadSesiones(); loadCursos(); }, []);
   useEffect(() => { if (selectedSesion) { loadContenido(); loadPestanas(); } }, [selectedSesion]);
+  useEffect(() => {
+    if (filterCurso === 'all') {
+      setCursoSesionIds(null);
+    } else {
+      loadCursoSesiones(filterCurso);
+    }
+  }, [filterCurso]);
+
+  async function loadCursos() {
+    const { data } = await supabase.from('cursos').select('id, titulo').order('created_at', { ascending: false });
+    if (data) setCursos(data);
+  }
+
+  async function loadCursoSesiones(cursoId: string) {
+    const { data } = await supabase.from('curso_sesiones').select('sesion_id').eq('curso_id', cursoId);
+    if (data) setCursoSesionIds(new Set(data.map(d => d.sesion_id)));
+  }
 
   async function loadSesiones() {
     const { data } = await supabase.from('sesiones').select('*').order('numero');
