@@ -43,10 +43,30 @@ export default function AdminContent() {
   const [editingTab, setEditingTab] = useState<Pestana | null>(null);
   const [tabForm, setTabForm] = useState({ nombre: '', clave: '' });
   const [duplicating, setDuplicating] = useState(false);
+  const [cursos, setCursos] = useState<{ id: string; titulo: string }[]>([]);
+  const [filterCurso, setFilterCurso] = useState<string>('all');
+  const [cursoSesionIds, setCursoSesionIds] = useState<Set<string> | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => { loadSesiones(); }, []);
+  useEffect(() => { loadSesiones(); loadCursos(); }, []);
   useEffect(() => { if (selectedSesion) { loadContenido(); loadPestanas(); } }, [selectedSesion]);
+  useEffect(() => {
+    if (filterCurso === 'all') {
+      setCursoSesionIds(null);
+    } else {
+      loadCursoSesiones(filterCurso);
+    }
+  }, [filterCurso]);
+
+  async function loadCursos() {
+    const { data } = await supabase.from('cursos').select('id, titulo').order('created_at', { ascending: false });
+    if (data) setCursos(data);
+  }
+
+  async function loadCursoSesiones(cursoId: string) {
+    const { data } = await supabase.from('curso_sesiones').select('sesion_id').eq('curso_id', cursoId);
+    if (data) setCursoSesionIds(new Set(data.map(d => d.sesion_id)));
+  }
 
   async function loadSesiones() {
     const { data } = await supabase.from('sesiones').select('*').order('numero');
@@ -227,6 +247,8 @@ export default function AdminContent() {
 
   const currentSesion = sesiones.find(s => s.id === selectedSesion);
 
+  const filteredSesiones = cursoSesionIds ? sesiones.filter(s => cursoSesionIds.has(s.id)) : sesiones;
+
   // Group content by grupo_nombre within active tab
   const tabContent = contenido.filter(c => c.tipo === activeTab);
   const groups = new Map<string, Contenido[]>();
@@ -240,12 +262,19 @@ export default function AdminContent() {
     <div className="p-4 md:p-6 space-y-4">
       <h1 className="text-2xl font-display font-bold">Gestión de Contenido</h1>
 
-      {/* Session selector and toggle */}
+      {/* Course filter + Session selector */}
       <div className="flex flex-col sm:flex-row gap-3">
+        <Select value={filterCurso} onValueChange={setFilterCurso}>
+          <SelectTrigger className="sm:w-52"><SelectValue placeholder="Filtrar por curso" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los cursos</SelectItem>
+            {cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <Select value={selectedSesion} onValueChange={setSelectedSesion}>
           <SelectTrigger className="sm:w-64"><SelectValue placeholder="Selecciona sesión" /></SelectTrigger>
           <SelectContent>
-            {sesiones.map(s => <SelectItem key={s.id} value={s.id}>S{s.numero}: {s.titulo}</SelectItem>)}
+            {filteredSesiones.map(s => <SelectItem key={s.id} value={s.id}>S{s.numero}: {s.titulo}</SelectItem>)}
           </SelectContent>
         </Select>
         {currentSesion && (
