@@ -459,6 +459,16 @@ export default function AdminQuiz() {
         <Button variant="outline" size="sm" onClick={() => { setAiPreview([]); setAiSelectedIds(new Set()); setAiQuantity(5); setAiGrupo(1); setAiDialogOpen(true); }} className="gap-1 border-primary/30 text-primary hover:bg-primary/10">
           <Sparkles className="w-3 h-3" /> Generar con IA
         </Button>
+        {preguntas.length > 0 && (
+          <>
+            <Button variant="outline" size="sm" onClick={() => setReviewDialogOpen(true)} className="gap-1 border-accent/30 text-accent hover:bg-accent/10">
+              <ShieldCheck className="w-3 h-3" /> Revisar con IA
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setStatsDialogOpen(true)} className="gap-1">
+              <BarChart3 className="w-3 h-3" /> Estadísticas
+            </Button>
+          </>
+        )}
       </div>
 
       <div className="space-y-2">
