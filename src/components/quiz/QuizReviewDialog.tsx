@@ -192,7 +192,7 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
                   const canFix = hasFixableAnswer(r) || hasImprovedVersion(r);
 
                   return (
-                    <div key={i} className={`p-3 rounded-lg border ${hasIssue ? 'border-destructive/30 bg-destructive/5' : 'border-border'}`}>
+                    <div key={i} className={`p-3 rounded-lg border ${hasIssue ? 'border-[hsl(var(--neon-pink))]/40 bg-[hsl(var(--neon-pink))]/5' : 'border-border'}`}>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <p className="text-sm font-medium line-clamp-2 flex-1">{r.index + 1}. {pregunta.pregunta}</p>
                         {canFix && (
