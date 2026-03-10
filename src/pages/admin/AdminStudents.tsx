@@ -51,7 +51,6 @@ export default function AdminStudents() {
   const [form, setForm] = useState({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '', colegio: '' });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('students');
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
