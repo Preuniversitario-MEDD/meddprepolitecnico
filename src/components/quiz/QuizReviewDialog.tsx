@@ -173,7 +173,7 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
               {/* Summary */}
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
                 <div>
-                  <p className="text-sm font-medium">Calidad general: <span className={overallScore >= 80 ? 'text-accent' : overallScore >= 50 ? 'text-warning' : 'text-destructive'}>{overallScore}%</span></p>
+                  <p className="text-sm font-medium">Calidad general: <span className={overallScore >= 80 ? 'text-[hsl(var(--neon-mint))]' : overallScore >= 50 ? 'text-[hsl(var(--neon-orange))]' : 'text-[hsl(var(--neon-pink))]'}>{overallScore}%</span></p>
                   <p className="text-[10px] text-muted-foreground">{reviews.length} preguntas evaluadas</p>
                 </div>
                 {fixableCount > 0 && (
