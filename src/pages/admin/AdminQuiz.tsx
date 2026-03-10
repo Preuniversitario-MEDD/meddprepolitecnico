@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit, ClipboardPaste, X, Download, Upload, FileUp, Copy, Scissors, Sparkles, Filter } from 'lucide-react';
+import { Plus, Trash2, Edit, ClipboardPaste, X, Download, Upload, FileUp, Copy, Scissors, Sparkles, Filter, ShieldCheck, BarChart3 } from 'lucide-react';
+import QuizReviewDialog from '@/components/quiz/QuizReviewDialog';
+import QuizStatsDialog from '@/components/quiz/QuizStatsDialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import type { Tables } from '@/integrations/supabase/types';
@@ -89,6 +91,8 @@ export default function AdminQuiz() {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiPreview, setAiPreview] = useState<{ pregunta: string; opciones: string[]; respuesta_correcta: number }[]>([]);
   const [aiSelectedIds, setAiSelectedIds] = useState<Set<number>>(new Set());
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => { loadSesiones(); }, []);
@@ -455,6 +459,16 @@ export default function AdminQuiz() {
         <Button variant="outline" size="sm" onClick={() => { setAiPreview([]); setAiSelectedIds(new Set()); setAiQuantity(5); setAiGrupo(1); setAiDialogOpen(true); }} className="gap-1 border-primary/30 text-primary hover:bg-primary/10">
           <Sparkles className="w-3 h-3" /> Generar con IA
         </Button>
+        {preguntas.length > 0 && (
+          <>
+            <Button variant="outline" size="sm" onClick={() => setReviewDialogOpen(true)} className="gap-1 border-accent/30 text-accent hover:bg-accent/10">
+              <ShieldCheck className="w-3 h-3" /> Revisar con IA
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setStatsDialogOpen(true)} className="gap-1">
+              <BarChart3 className="w-3 h-3" /> Estadísticas
+            </Button>
+          </>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -681,6 +695,22 @@ export default function AdminQuiz() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* AI Review Dialog */}
+      <QuizReviewDialog
+        open={reviewDialogOpen}
+        onOpenChange={setReviewDialogOpen}
+        preguntas={filteredPreguntas}
+        onQuestionsUpdated={loadPreguntas}
+      />
+
+      {/* Stats Dialog */}
+      <QuizStatsDialog
+        open={statsDialogOpen}
+        onOpenChange={setStatsDialogOpen}
+        preguntas={preguntas}
+        sesionId={selectedSesion}
+      />
     </div>
   );
 }
