@@ -26,9 +26,13 @@ function calcAge(birth: string) {
   let y = now.getFullYear() - b.getFullYear();
   let m = now.getMonth() - b.getMonth();
   let d = now.getDate() - b.getDate();
-  if (d < 0) { m--; d += 30; }
+  if (d < 0) {
+    m--;
+    const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    d += prevMonth.getDate();
+  }
   if (m < 0) { y--; m += 12; }
-  return `${y}a ${m}m`;
+  return `${y}a ${m}m ${d}d`;
 }
 
 function formatDate(dateStr: string) {
