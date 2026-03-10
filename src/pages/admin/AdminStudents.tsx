@@ -7,9 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Ban, CheckCircle, KeyRound, Search, Edit, Eye } from 'lucide-react';
+import { UserPlus, Trash2, Ban, CheckCircle, KeyRound, Search, Edit, Eye, BookOpen, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AvatarUpload from '@/components/AvatarUpload';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import CourseManager from '@/components/admin/CourseManager';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Profile = Tables<'profiles'> & { colegio?: string };
