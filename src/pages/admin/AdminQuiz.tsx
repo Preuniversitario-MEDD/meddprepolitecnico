@@ -91,6 +91,8 @@ export default function AdminQuiz() {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiPreview, setAiPreview] = useState<{ pregunta: string; opciones: string[]; respuesta_correcta: number }[]>([]);
   const [aiSelectedIds, setAiSelectedIds] = useState<Set<number>>(new Set());
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => { loadSesiones(); }, []);
