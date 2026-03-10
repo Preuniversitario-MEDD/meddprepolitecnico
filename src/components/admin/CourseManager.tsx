@@ -133,6 +133,25 @@ export default function CourseManager({ students }: { students: Profile[] }) {
     loadCursos();
   }
 
+  async function createSesionAndLink(cursoId: string) {
+    if (!newSesionForm.titulo.trim() || !newSesionForm.numero) return;
+    setCreatingSession(true);
+    const { data: newSesion } = await supabase.from('sesiones').insert({
+      numero: newSesionForm.numero,
+      titulo: newSesionForm.titulo,
+      estado: 'bloqueada',
+    }).select().single();
+    if (newSesion) {
+      await supabase.from('curso_sesiones').insert({ curso_id: cursoId, sesion_id: newSesion.id, orden: cursoSesiones.length });
+      toast({ title: '✨ Sesión creada y vinculada', description: `S${newSesion.numero} - ${newSesion.titulo}` });
+      setNewSesionForm({ numero: 0, titulo: '' });
+      loadAllSesiones();
+      loadCursoDetail(cursoId);
+      loadCursos();
+    }
+    setCreatingSession(false);
+  }
+
   async function toggleSesion(cursoId: string, sesionId: string) {
     const exists = cursoSesiones.find(cs => cs.sesion_id === sesionId);
     if (exists) {
