@@ -295,7 +295,7 @@ export default function CourseManager({ students }: { students: Profile[] }) {
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               {cursoSesiones.map(cs => (
-                                <Badge key={cs.id} variant="outline" className="gap-1 cursor-pointer hover:bg-primary/10" onClick={() => navigate('/admin/content')}>
+                                <Badge key={cs.id} variant="outline" className="gap-1 cursor-pointer hover:bg-primary/10" onClick={() => navigate(`/admin/content?sesion=${cs.sesion_id}`)}>
                                   S{cs.sesion?.numero} {cs.sesion?.titulo}
                                   <ExternalLink className="w-3 h-3" />
                                 </Badge>
