@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit, ClipboardPaste, X, Download, Upload, FileUp, Copy, Scissors, Sparkles, Filter, ShieldCheck, BarChart3 } from 'lucide-react';
 import QuizReviewDialog from '@/components/quiz/QuizReviewDialog';
@@ -93,14 +93,51 @@ export default function AdminQuiz() {
   const [aiSelectedIds, setAiSelectedIds] = useState<Set<number>>(new Set());
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
+  // Course filter
+  const [cursos, setCursos] = useState<{ id: string; titulo: string }[]>([]);
+  const [cursoSesionIds, setCursoSesionIds] = useState<Set<string> | null>(null);
+  const [filterCurso, setFilterCurso] = useState<string>('all');
+  // Create session
+  const [createSesionOpen, setCreateSesionOpen] = useState(false);
+  const [newSesionForm, setNewSesionForm] = useState({ numero: 0, titulo: '' });
+  const [creatingSesion, setCreatingSesion] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => { loadSesiones(); }, []);
+  useEffect(() => { loadSesiones(); loadCursos(); }, []);
   useEffect(() => { if (selectedSesion) loadPreguntas(); }, [selectedSesion]);
+
+  async function loadCursos() {
+    const { data } = await supabase.from('cursos').select('id, titulo').order('created_at', { ascending: false });
+    if (data) setCursos(data);
+  }
+
+  async function loadCursoSesiones(cursoId: string) {
+    if (cursoId === 'all') { setCursoSesionIds(null); return; }
+    const { data } = await supabase.from('curso_sesiones').select('sesion_id').eq('curso_id', cursoId);
+    setCursoSesionIds(new Set((data || []).map(d => d.sesion_id)));
+  }
 
   async function loadSesiones() {
     const { data } = await supabase.from('sesiones').select('*').order('numero');
     if (data) { setSesiones(data); if (data.length > 0) setSelectedSesion(data[0].id); }
+  }
+
+  async function createSesion() {
+    if (!newSesionForm.titulo.trim() || !newSesionForm.numero) return;
+    setCreatingSesion(true);
+    const { data } = await supabase.from('sesiones').insert({
+      numero: newSesionForm.numero,
+      titulo: newSesionForm.titulo,
+      estado: 'bloqueada',
+    }).select().single();
+    if (data) {
+      toast({ title: '✨ Sesión creada', description: `S${data.numero} - ${data.titulo}` });
+      setNewSesionForm({ numero: 0, titulo: '' });
+      setCreateSesionOpen(false);
+      await loadSesiones();
+      setSelectedSesion(data.id);
+    }
+    setCreatingSesion(false);
   }
 
   async function loadPreguntas() {
@@ -399,13 +436,43 @@ export default function AdminQuiz() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <Select value={selectedSesion} onValueChange={setSelectedSesion}>
-          <SelectTrigger className="sm:w-64"><SelectValue placeholder="Selecciona sesión" /></SelectTrigger>
-          <SelectContent>
-            {sesiones.map(s => <SelectItem key={s.id} value={s.id}>S{s.numero}: {s.titulo}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2 flex-1 flex-wrap">
+          {cursos.length > 0 && (
+            <Select value={filterCurso} onValueChange={v => { setFilterCurso(v); loadCursoSesiones(v); }}>
+              <SelectTrigger className="sm:w-48"><SelectValue placeholder="Filtrar por curso" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los cursos</SelectItem>
+                {cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+          <Select value={selectedSesion} onValueChange={setSelectedSesion}>
+            <SelectTrigger className="sm:w-64"><SelectValue placeholder="Selecciona sesión" /></SelectTrigger>
+            <SelectContent>
+              {(cursoSesionIds ? sesiones.filter(s => cursoSesionIds.has(s.id)) : sesiones).map(s => <SelectItem key={s.id} value={s.id}>S{s.numero}: {s.titulo}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex gap-2 flex-wrap">
+          <Dialog open={createSesionOpen} onOpenChange={setCreateSesionOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Plus className="w-4 h-4" /> Nueva Sesión
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Crear Nueva Sesión</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <div className="w-20"><Label>Número</Label><Input type="number" value={newSesionForm.numero || ''} onChange={e => setNewSesionForm({ ...newSesionForm, numero: parseInt(e.target.value) || 0 })} /></div>
+                  <div className="flex-1"><Label>Título</Label><Input value={newSesionForm.titulo} onChange={e => setNewSesionForm({ ...newSesionForm, titulo: e.target.value })} placeholder="Ej: Álgebra Lineal" /></div>
+                </div>
+                <Button onClick={createSesion} className="w-full bg-gradient-to-r from-[hsl(var(--neon-violet))] to-[hsl(var(--neon-blue))] text-white" disabled={creatingSesion || !newSesionForm.titulo.trim() || !newSesionForm.numero}>
+                  {creatingSesion ? 'Creando...' : 'Crear Sesión'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Button onClick={() => { setPasteText(''); setPasteDialogOpen(true); }} variant="outline" className="gap-2">
             <ClipboardPaste className="w-4 h-4" /> Pegar Pregunta
           </Button>
