@@ -43,6 +43,9 @@ export default function AdminContent() {
   const [editingTab, setEditingTab] = useState<Pestana | null>(null);
   const [tabForm, setTabForm] = useState({ nombre: '', clave: '' });
   const [duplicating, setDuplicating] = useState(false);
+  const [cursos, setCursos] = useState<{ id: string; titulo: string }[]>([]);
+  const [filterCurso, setFilterCurso] = useState<string>('all');
+  const [cursoSesionIds, setCursoSesionIds] = useState<Set<string> | null>(null);
   const { toast } = useToast();
 
   useEffect(() => { loadSesiones(); }, []);
