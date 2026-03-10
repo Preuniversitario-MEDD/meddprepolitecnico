@@ -177,7 +177,7 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
                   <p className="text-[10px] text-muted-foreground">{reviews.length} preguntas evaluadas</p>
                 </div>
                 {fixableCount > 0 && (
-                  <Button variant="outline" size="sm" onClick={fixAllProblematic} className="gap-1 border-destructive/30 text-destructive hover:bg-destructive/10">
+                  <Button size="sm" onClick={fixAllProblematic} className="gap-1 bg-[hsl(var(--neon-pink))] text-white hover:opacity-90 shadow-[0_0_10px_hsl(var(--neon-pink)/0.4)]">
                     <Wrench className="w-3 h-3" /> Corregir {fixableCount}
                   </Button>
                 )}
