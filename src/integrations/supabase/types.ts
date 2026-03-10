@@ -319,6 +319,95 @@ export type Database = {
         }
         Relationships: []
       }
+      curso_estudiantes: {
+        Row: {
+          created_at: string | null
+          curso_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          curso_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          curso_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curso_estudiantes_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curso_sesiones: {
+        Row: {
+          created_at: string | null
+          curso_id: string
+          id: string
+          orden: number | null
+          sesion_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          curso_id: string
+          id?: string
+          orden?: number | null
+          sesion_id: string
+        }
+        Update: {
+          created_at?: string | null
+          curso_id?: string
+          id?: string
+          orden?: number | null
+          sesion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curso_sesiones_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curso_sesiones_sesion_id_fkey"
+            columns: ["sesion_id"]
+            isOneToOne: false
+            referencedRelation: "sesiones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cursos: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          id: string
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
       examenes: {
         Row: {
           aprobado: boolean | null
