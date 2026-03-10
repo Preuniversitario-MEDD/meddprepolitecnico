@@ -46,6 +46,7 @@ Para cada pregunta evalúa:
 4. **nivel**: ¿Es apropiada para nivel pre-universitario ESPOL?
 
 Si la respuesta correcta está MAL, indica cuál debería ser la correcta (índice 0-based).
+Si la pregunta tiene problemas de claridad, distractores o nivel, sugiere una versión mejorada completa de la pregunta con sus opciones.
 
 Responde SIEMPRE con un JSON array exacto:
 [
@@ -57,12 +58,16 @@ Responde SIEMPRE con un JSON array exacto:
     "nivel": "excelente|buena|mejorable|problematica",
     "comentario": "Breve explicación de problemas encontrados o confirmación de calidad",
     "correccion_sugerida": null,
-    "respuesta_correcta_sugerida": null
+    "respuesta_correcta_sugerida": null,
+    "pregunta_mejorada": null,
+    "opciones_mejoradas": null
   }
 ]
 
-Si correccion es "problematica", incluye respuesta_correcta_sugerida (índice 0-based) y correccion_sugerida (texto explicativo).
-No incluyas nada más fuera del JSON array.`
+Reglas:
+- Si correccion es "problematica", incluye respuesta_correcta_sugerida (índice 0-based) y correccion_sugerida (texto explicativo).
+- Si claridad, distractores o nivel es "mejorable" o "problematica", incluye pregunta_mejorada (string con la pregunta mejorada) y opciones_mejoradas (array de strings con las opciones mejoradas, manteniendo la misma cantidad de opciones). También incluye respuesta_correcta_sugerida con el índice 0-based de la respuesta correcta en las opciones mejoradas.
+- No incluyas nada más fuera del JSON array.`
           },
           {
             role: "user",
