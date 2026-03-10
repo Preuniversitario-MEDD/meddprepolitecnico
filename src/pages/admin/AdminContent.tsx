@@ -28,6 +28,7 @@ interface Pestana {
 }
 
 export default function AdminContent() {
+  const [searchParams] = useSearchParams();
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [selectedSesion, setSelectedSesion] = useState<string>('');
   const [contenido, setContenido] = useState<Contenido[]>([]);
@@ -49,7 +50,15 @@ export default function AdminContent() {
 
   async function loadSesiones() {
     const { data } = await supabase.from('sesiones').select('*').order('numero');
-    if (data) { setSesiones(data); if (data.length > 0 && !selectedSesion) setSelectedSesion(data[0].id); }
+    if (data) {
+      setSesiones(data);
+      const paramSesion = searchParams.get('sesion');
+      if (paramSesion && data.some(s => s.id === paramSesion)) {
+        setSelectedSesion(paramSesion);
+      } else if (data.length > 0 && !selectedSesion) {
+        setSelectedSesion(data[0].id);
+      }
+    }
   }
 
   async function loadContenido() {
