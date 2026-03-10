@@ -93,14 +93,51 @@ export default function AdminQuiz() {
   const [aiSelectedIds, setAiSelectedIds] = useState<Set<number>>(new Set());
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
+  // Course filter
+  const [cursos, setCursos] = useState<{ id: string; titulo: string }[]>([]);
+  const [cursoSesionIds, setCursoSesionIds] = useState<Set<string> | null>(null);
+  const [filterCurso, setFilterCurso] = useState<string>('all');
+  // Create session
+  const [createSesionOpen, setCreateSesionOpen] = useState(false);
+  const [newSesionForm, setNewSesionForm] = useState({ numero: 0, titulo: '' });
+  const [creatingSesion, setCreatingSesion] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => { loadSesiones(); }, []);
+  useEffect(() => { loadSesiones(); loadCursos(); }, []);
   useEffect(() => { if (selectedSesion) loadPreguntas(); }, [selectedSesion]);
+
+  async function loadCursos() {
+    const { data } = await supabase.from('cursos').select('id, titulo').order('created_at', { ascending: false });
+    if (data) setCursos(data);
+  }
+
+  async function loadCursoSesiones(cursoId: string) {
+    if (cursoId === 'all') { setCursoSesionIds(null); return; }
+    const { data } = await supabase.from('curso_sesiones').select('sesion_id').eq('curso_id', cursoId);
+    setCursoSesionIds(new Set((data || []).map(d => d.sesion_id)));
+  }
 
   async function loadSesiones() {
     const { data } = await supabase.from('sesiones').select('*').order('numero');
     if (data) { setSesiones(data); if (data.length > 0) setSelectedSesion(data[0].id); }
+  }
+
+  async function createSesion() {
+    if (!newSesionForm.titulo.trim() || !newSesionForm.numero) return;
+    setCreatingSesion(true);
+    const { data } = await supabase.from('sesiones').insert({
+      numero: newSesionForm.numero,
+      titulo: newSesionForm.titulo,
+      estado: 'bloqueada',
+    }).select().single();
+    if (data) {
+      toast({ title: '✨ Sesión creada', description: `S${data.numero} - ${data.titulo}` });
+      setNewSesionForm({ numero: 0, titulo: '' });
+      setCreateSesionOpen(false);
+      await loadSesiones();
+      setSelectedSesion(data.id);
+    }
+    setCreatingSesion(false);
   }
 
   async function loadPreguntas() {
