@@ -459,8 +459,8 @@ export default function AdminQuiz() {
         <Button variant="outline" size="sm" onClick={() => { setAiPreview([]); setAiSelectedIds(new Set()); setAiQuantity(5); setAiGrupo(1); setAiDialogOpen(true); }} className="gap-1 border-primary/30 text-primary hover:bg-primary/10">
           <Sparkles className="w-3 h-3" /> Generar con IA
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setReviewDialogOpen(true)} className="gap-1 border-accent/30 text-accent hover:bg-accent/10" disabled={filteredPreguntas.length === 0}>
-          <ShieldCheck className="w-3 h-3" /> 🛡️ Revisar con IA {filterGrupo !== 'all' ? `(G${filterGrupo})` : ''} {filteredPreguntas.length > 0 && `(${filteredPreguntas.length})`}
+        <Button size="sm" onClick={() => setReviewDialogOpen(true)} className="gap-1 bg-gradient-to-r from-[hsl(var(--neon-violet))] via-[hsl(var(--neon-fuchsia))] to-[hsl(var(--neon-pink))] text-white hover:opacity-90 shadow-[0_0_12px_hsl(var(--neon-violet)/0.4)] border-0" disabled={filteredPreguntas.length === 0}>
+          <ShieldCheck className="w-3 h-3" /> 🛡️ Revisar con IA {filterGrupo !== 'all' ? `(G${filterGrupo})` : ''} ({filteredPreguntas.length})
         </Button>
         {preguntas.length > 0 && (
           <Button variant="outline" size="sm" onClick={() => setStatsDialogOpen(true)} className="gap-1">

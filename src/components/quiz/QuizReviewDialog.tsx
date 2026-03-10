@@ -36,10 +36,10 @@ interface Props {
 }
 
 const ratingColors: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-  excelente: { bg: 'bg-accent/20', text: 'text-accent', icon: <CheckCircle className="w-3 h-3" /> },
-  buena: { bg: 'bg-primary/20', text: 'text-primary', icon: <CheckCircle className="w-3 h-3" /> },
-  mejorable: { bg: 'bg-warning/20', text: 'text-warning', icon: <AlertTriangle className="w-3 h-3" /> },
-  problematica: { bg: 'bg-destructive/20', text: 'text-destructive', icon: <XCircle className="w-3 h-3" /> },
+  excelente: { bg: 'bg-[hsl(var(--neon-mint))]/20', text: 'text-[hsl(var(--neon-mint))]', icon: <CheckCircle className="w-3 h-3" /> },
+  buena: { bg: 'bg-[hsl(var(--neon-blue))]/20', text: 'text-[hsl(var(--neon-blue))]', icon: <CheckCircle className="w-3 h-3" /> },
+  mejorable: { bg: 'bg-[hsl(var(--neon-orange))]/20', text: 'text-[hsl(var(--neon-orange))]', icon: <AlertTriangle className="w-3 h-3" /> },
+  problematica: { bg: 'bg-[hsl(var(--neon-pink))]/20', text: 'text-[hsl(var(--neon-pink))]', icon: <XCircle className="w-3 h-3" /> },
 };
 
 function RatingBadge({ rating }: { rating: string }) {
@@ -63,7 +63,7 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
     setReviews([]);
 
     try {
-      const batch = preguntas.slice(0, 30);
+      const batch = preguntas;
       const { data, error } = await supabase.functions.invoke('review-quiz-questions', {
         body: { questions: batch.map(q => ({ pregunta: q.pregunta, opciones: q.opciones, respuesta_correcta: q.respuesta_correcta })) },
       });
@@ -153,10 +153,10 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
           {reviews.length === 0 && !loading && (
             <div className="text-center py-6 space-y-3">
               <p className="text-sm text-muted-foreground">
-                La IA evaluará {Math.min(preguntas.length, 30)} preguntas y sugerirá mejoras cuando detecte problemas.
+                La IA evaluará {preguntas.length} preguntas y sugerirá mejoras cuando detecte problemas.
               </p>
-              <Button onClick={runReview} className="gradient-primary text-primary-foreground gap-2">
-                <ShieldCheck className="w-4 h-4" /> Iniciar Revisión ({Math.min(preguntas.length, 30)} preguntas)
+              <Button onClick={runReview} className="gap-2 bg-gradient-to-r from-[hsl(var(--neon-violet))] via-[hsl(var(--neon-fuchsia))] to-[hsl(var(--neon-pink))] text-white hover:opacity-90 shadow-[0_0_12px_hsl(var(--neon-violet)/0.4)]">
+                <ShieldCheck className="w-4 h-4" /> Iniciar Revisión ({preguntas.length} preguntas)
               </Button>
             </div>
           )}
@@ -173,11 +173,11 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
               {/* Summary */}
               <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
                 <div>
-                  <p className="text-sm font-medium">Calidad general: <span className={overallScore >= 80 ? 'text-accent' : overallScore >= 50 ? 'text-warning' : 'text-destructive'}>{overallScore}%</span></p>
+                  <p className="text-sm font-medium">Calidad general: <span className={overallScore >= 80 ? 'text-[hsl(var(--neon-mint))]' : overallScore >= 50 ? 'text-[hsl(var(--neon-orange))]' : 'text-[hsl(var(--neon-pink))]'}>{overallScore}%</span></p>
                   <p className="text-[10px] text-muted-foreground">{reviews.length} preguntas evaluadas</p>
                 </div>
                 {fixableCount > 0 && (
-                  <Button variant="outline" size="sm" onClick={fixAllProblematic} className="gap-1 border-destructive/30 text-destructive hover:bg-destructive/10">
+                  <Button size="sm" onClick={fixAllProblematic} className="gap-1 bg-[hsl(var(--neon-pink))] text-white hover:opacity-90 shadow-[0_0_10px_hsl(var(--neon-pink)/0.4)]">
                     <Wrench className="w-3 h-3" /> Corregir {fixableCount}
                   </Button>
                 )}
@@ -192,16 +192,15 @@ export default function QuizReviewDialog({ open, onOpenChange, preguntas, onQues
                   const canFix = hasFixableAnswer(r) || hasImprovedVersion(r);
 
                   return (
-                    <div key={i} className={`p-3 rounded-lg border ${hasIssue ? 'border-destructive/30 bg-destructive/5' : 'border-border'}`}>
+                    <div key={i} className={`p-3 rounded-lg border ${hasIssue ? 'border-[hsl(var(--neon-pink))]/40 bg-[hsl(var(--neon-pink))]/5' : 'border-border'}`}>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <p className="text-sm font-medium line-clamp-2 flex-1">{r.index + 1}. {pregunta.pregunta}</p>
                         {canFix && (
                           <Button
-                            variant="outline"
                             size="sm"
                             onClick={() => fixQuestion(i)}
                             disabled={fixing.has(i)}
-                            className="shrink-0 gap-1 text-[10px] h-6 border-destructive/30 text-destructive hover:bg-destructive/10"
+                            className="shrink-0 gap-1 text-[10px] h-6 bg-[hsl(var(--neon-orange))] text-white hover:opacity-90 shadow-[0_0_8px_hsl(var(--neon-orange)/0.3)]"
                           >
                             {hasImprovedVersion(r) ? <RefreshCw className="w-3 h-3" /> : <Wrench className="w-3 h-3" />}
                             {fixing.has(i) ? '...' : hasImprovedVersion(r) ? 'Aplicar mejora' : `Corregir → ${String.fromCharCode(65 + (r.respuesta_correcta_sugerida ?? 0))}`}
