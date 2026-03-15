@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useViewAsStudent } from '@/hooks/useViewAsStudent';
@@ -8,6 +8,8 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Lock, CheckCircle, Clock, FlaskConical, FileText, PartyPopper, Zap } from 'lucide-react';
+import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
@@ -32,6 +34,7 @@ export default function StudentDashboard() {
   const [liveCompCount, setLiveCompCount] = useState(0);
   const [sessionOverrides, setSessionOverrides] = useState<Record<string, boolean>>({});
   const [viewedProfile, setViewedProfile] = useState<Tables<'profiles'> | null>(null);
+  const prevUnlockedExamsRef = useRef<Set<string> | null>(null);
 
   useEffect(() => { loadData(); loadLiveComps(); }, [effectiveUserId]);
 
@@ -139,6 +142,32 @@ export default function StudentDashboard() {
       return accuracy >= 0.8;
     });
   }
+
+  // Detect newly unlocked exams and notify
+  useEffect(() => {
+    if (sesiones.length === 0 || Object.keys(progress).length === 0) return;
+    
+    const currentUnlocked = new Set<string>();
+    EXAM_BLOCKS.forEach(block => {
+      if (isExamUnlocked(block)) currentUnlocked.add(block.tipo);
+    });
+
+    if (prevUnlockedExamsRef.current !== null) {
+      currentUnlocked.forEach(tipo => {
+        if (!prevUnlockedExamsRef.current!.has(tipo)) {
+          const block = EXAM_BLOCKS.find(b => b.tipo === tipo);
+          if (block) {
+            toast.success(`🎓 ¡${block.label} desbloqueado!`, {
+              description: 'Has alcanzado ≥80% de precisión en todas las sesiones del bloque',
+              duration: 6000,
+            });
+            confetti({ particleCount: 100, spread: 60, origin: { y: 0.7 } });
+          }
+        }
+      });
+    }
+    prevUnlockedExamsRef.current = currentUnlocked;
+  }, [sesiones, progress]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
