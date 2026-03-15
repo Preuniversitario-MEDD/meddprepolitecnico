@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Lock, CheckCircle, Clock, FlaskConical, FileText, PartyPopper, Zap } from 'lucide-react';
 import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
