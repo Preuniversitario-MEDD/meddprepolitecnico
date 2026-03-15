@@ -29,6 +29,7 @@ export default function QuizComponent({ sesionId, userId }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
+  const scoreRef = useRef(0);
   const [state, setState] = useState<QuizState>('idle');
   const [timeLeft, setTimeLeft] = useState(60);
   const [answers, setAnswers] = useState<boolean[]>([]);
@@ -70,7 +71,7 @@ export default function QuizComponent({ sesionId, userId }: Props) {
 
   function startQuiz() {
     if (questions.length === 0) return;
-    setCurrentIndex(0); setScore(0); setAnswers([]); setSelected(null);
+    setCurrentIndex(0); setScore(0); scoreRef.current = 0; setAnswers([]); setSelected(null);
     setState('playing'); startTimer();
     startTimeRef.current = Date.now();
   }
@@ -95,7 +96,10 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     if (timerRef.current) clearInterval(timerRef.current);
     setSelected(index);
     const correct = index === questions[currentIndex].respuesta_correcta;
-    if (correct) setScore(prev => prev + 1);
+    if (correct) {
+      scoreRef.current += 1;
+      setScore(scoreRef.current);
+    }
     setAnswers(prev => [...prev, correct]);
     setState('feedback');
     setTimeout(() => nextQuestion(), 1500);
@@ -110,10 +114,10 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     setState('results');
     if (timerRef.current) clearInterval(timerRef.current);
 
-    const roundCorrect = score;
-    const roundErrors = questions.length - score;
+    const roundCorrect = scoreRef.current;
+    const roundErrors = questions.length - roundCorrect;
     const elapsedSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
-    const finalScore = Math.round((score / questions.length) * 100);
+    const finalScore = Math.round((roundCorrect / questions.length) * 100);
 
     const { data: existingProgress } = await supabase.from('progreso_estudiante').select('*').eq('user_id', userId).eq('sesion_id', sesionId).maybeSingle();
 
