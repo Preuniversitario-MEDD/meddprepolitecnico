@@ -114,10 +114,10 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     setState('results');
     if (timerRef.current) clearInterval(timerRef.current);
 
-    const roundCorrect = score;
-    const roundErrors = questions.length - score;
+    const roundCorrect = scoreRef.current;
+    const roundErrors = questions.length - roundCorrect;
     const elapsedSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
-    const finalScore = Math.round((score / questions.length) * 100);
+    const finalScore = Math.round((roundCorrect / questions.length) * 100);
 
     const { data: existingProgress } = await supabase.from('progreso_estudiante').select('*').eq('user_id', userId).eq('sesion_id', sesionId).maybeSingle();
 
