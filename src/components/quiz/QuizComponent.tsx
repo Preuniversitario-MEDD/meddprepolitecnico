@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { Timer, CheckCircle, XCircle, Trophy, RotateCcw } from 'lucide-react';
+import { Timer, CheckCircle, XCircle, Trophy, RotateCcw, Unlock } from 'lucide-react';
+import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 
 interface QuizQuestion {
