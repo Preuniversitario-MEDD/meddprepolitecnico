@@ -96,7 +96,10 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     if (timerRef.current) clearInterval(timerRef.current);
     setSelected(index);
     const correct = index === questions[currentIndex].respuesta_correcta;
-    if (correct) setScore(prev => prev + 1);
+    if (correct) {
+      scoreRef.current += 1;
+      setScore(scoreRef.current);
+    }
     setAnswers(prev => [...prev, correct]);
     setState('feedback');
     setTimeout(() => nextQuestion(), 1500);
