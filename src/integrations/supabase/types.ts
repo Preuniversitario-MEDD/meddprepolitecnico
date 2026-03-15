@@ -408,6 +408,45 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_configuracion: {
+        Row: {
+          activo: boolean
+          cantidad_preguntas: number
+          created_at: string
+          id: string
+          label: string
+          puntaje_aprobacion: number
+          sessions: number[]
+          tiempo_minutos: number
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          cantidad_preguntas?: number
+          created_at?: string
+          id?: string
+          label?: string
+          puntaje_aprobacion?: number
+          sessions?: number[]
+          tiempo_minutos?: number
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          cantidad_preguntas?: number
+          created_at?: string
+          id?: string
+          label?: string
+          puntaje_aprobacion?: number
+          sessions?: number[]
+          tiempo_minutos?: number
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       examenes: {
         Row: {
           aprobado: boolean | null
@@ -633,6 +672,7 @@ export type Database = {
       quiz_preguntas: {
         Row: {
           created_at: string
+          dificultad: number
           grupo: number
           id: string
           imagen_url: string | null
@@ -643,6 +683,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dificultad?: number
           grupo?: number
           id?: string
           imagen_url?: string | null
@@ -653,6 +694,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dificultad?: number
           grupo?: number
           id?: string
           imagen_url?: string | null
