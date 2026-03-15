@@ -204,8 +204,9 @@ export default function QuizComponent({ sesionId, userId }: Props) {
   }
 
   if (state === 'results') {
-    const finalPct = Math.round((score / questions.length) * 100);
-    const pieData = [{ name: 'Correctas', value: score }, { name: 'Incorrectas', value: questions.length - score }];
+    const finalScore = scoreRef.current;
+    const finalPct = Math.round((finalScore / questions.length) * 100);
+    const pieData = [{ name: 'Correctas', value: finalScore }, { name: 'Incorrectas', value: questions.length - finalScore }];
     const COLORS = ['hsl(160 60% 50%)', 'hsl(0 84% 60%)'];
 
     return (
