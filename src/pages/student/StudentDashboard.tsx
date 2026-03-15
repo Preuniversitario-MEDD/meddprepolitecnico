@@ -275,7 +275,7 @@ export default function StudentDashboard() {
                   </div>
                   {unlocked && !exam?.aprobado && (
                     <Button size="sm" onClick={() => navigate(`/student/exam/${block.tipo}`)} className="gradient-primary text-primary-foreground text-xs">
-                      Iniciar
+                      {exam ? 'Repetir' : 'Iniciar'}
                     </Button>
                   )}
                   {!unlocked && <Lock className="w-4 h-4 text-muted-foreground" />}
