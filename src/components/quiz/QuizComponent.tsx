@@ -29,6 +29,7 @@ export default function QuizComponent({ sesionId, userId }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
+  const scoreRef = useRef(0);
   const [state, setState] = useState<QuizState>('idle');
   const [timeLeft, setTimeLeft] = useState(60);
   const [answers, setAnswers] = useState<boolean[]>([]);
