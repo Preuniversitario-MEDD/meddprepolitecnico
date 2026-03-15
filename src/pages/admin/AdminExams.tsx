@@ -32,7 +32,7 @@ interface ExamResult {
   profile?: { nombre: string; apellidos: string };
 }
 
-const TIMER_OPTIONS = [30, 45, 60, 90, 120];
+const TIMER_OPTIONS = [30, 45, 50, 60, 90, 120];
 const QUESTION_OPTIONS = [10, 20, 25, 30];
 
 export default function AdminExams() {
