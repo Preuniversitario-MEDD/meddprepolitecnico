@@ -221,8 +221,8 @@ export default function QuizComponent({ sesionId, userId }: Props) {
           </Pie></PieChart>
         </ResponsiveContainer>
         <div className="flex justify-center gap-6 text-sm">
-          <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-accent" /> {score} correctas</span>
-          <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-destructive" /> {questions.length - score} incorrectas</span>
+          <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-accent" /> {finalScore} correctas</span>
+          <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-destructive" /> {questions.length - finalScore} incorrectas</span>
         </div>
         <div className="text-sm text-muted-foreground">
           <p>Total acumulado: <span className="font-bold text-accent">{totalCorrect}/150</span></p>
