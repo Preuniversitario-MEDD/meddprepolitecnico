@@ -142,6 +142,32 @@ export default function StudentDashboard() {
     });
   }
 
+  // Detect newly unlocked exams and notify
+  useEffect(() => {
+    if (sesiones.length === 0 || Object.keys(progress).length === 0) return;
+    
+    const currentUnlocked = new Set<string>();
+    EXAM_BLOCKS.forEach(block => {
+      if (isExamUnlocked(block)) currentUnlocked.add(block.tipo);
+    });
+
+    if (prevUnlockedExamsRef.current !== null) {
+      currentUnlocked.forEach(tipo => {
+        if (!prevUnlockedExamsRef.current!.has(tipo)) {
+          const block = EXAM_BLOCKS.find(b => b.tipo === tipo);
+          if (block) {
+            toast.success(`🎓 ¡${block.label} desbloqueado!`, {
+              description: 'Has alcanzado ≥80% de precisión en todas las sesiones del bloque',
+              duration: 6000,
+            });
+            confetti({ particleCount: 100, spread: 60, origin: { y: 0.7 } });
+          }
+        }
+      });
+    }
+    prevUnlockedExamsRef.current = currentUnlocked;
+  }, [sesiones, progress]);
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
