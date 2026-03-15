@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Timer, ArrowLeft, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Timer, ArrowLeft, CheckCircle, XCircle, AlertTriangle, RotateCcw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface ExamQuestion {
@@ -15,7 +15,24 @@ interface ExamQuestion {
   opciones: string[];
   respuesta_correcta: number;
   imagen_url: string | null;
+  dificultad: number;
 }
+
+interface ExamConfig {
+  tiempo_minutos: number;
+  cantidad_preguntas: number;
+  puntaje_aprobacion: number;
+  label: string;
+  sessions: number[];
+}
+
+const DEFAULT_CONFIG: ExamConfig = {
+  tiempo_minutos: 50,
+  cantidad_preguntas: 30,
+  puntaje_aprobacion: 80,
+  label: 'Examen',
+  sessions: [],
+};
 
 const EXAM_BLOCKS = [
   { tipo: 'exam_1_3', sessions: [1, 2, 3], label: 'Secciones 1-3' },
@@ -32,38 +49,62 @@ export default function SectionExam() {
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<{ questionId: string; correct: boolean }[]>([]);
-  const [timeLeft, setTimeLeft] = useState(50 * 60); // 50 min
+  const [answers, setAnswers] = useState<{ questionId: string; correct: boolean; dificultad: number }[]>([]);
+  const [config, setConfig] = useState<ExamConfig>(DEFAULT_CONFIG);
+  const [timeLeft, setTimeLeft] = useState(0);
   const [state, setState] = useState<'loading' | 'playing' | 'results'>('loading');
-  const [score, setScore] = useState(0);
+  const [weightedScore, setWeightedScore] = useState(0);
+  const [maxPossibleScore, setMaxPossibleScore] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const answersRef = useRef<typeof answers>([]);
+  const finishedRef = useRef(false);
 
   const block = EXAM_BLOCKS.find(b => b.tipo === tipo);
 
   useEffect(() => {
-    if (block && user) loadExamQuestions();
+    if (block && user) loadExamConfig();
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [tipo, user]);
 
-  async function loadExamQuestions() {
-    // Get session IDs for the block
-    const { data: sesiones } = await supabase.from('sesiones').select('id, numero').in('numero', block!.sessions);
+  async function loadExamConfig() {
+    // Load config from DB
+    const { data: cfg } = await supabase.from('exam_configuracion').select('*').eq('tipo', tipo!).single();
+    if (cfg) {
+      setConfig({
+        tiempo_minutos: (cfg as any).tiempo_minutos,
+        cantidad_preguntas: (cfg as any).cantidad_preguntas,
+        puntaje_aprobacion: (cfg as any).puntaje_aprobacion,
+        label: (cfg as any).label || block?.label || 'Examen',
+        sessions: (cfg as any).sessions || block?.sessions || [],
+      });
+      setTimeLeft((cfg as any).tiempo_minutos * 60);
+      await loadExamQuestions((cfg as any).sessions || block!.sessions, (cfg as any).cantidad_preguntas);
+    } else {
+      // Fallback to hardcoded
+      setTimeLeft(DEFAULT_CONFIG.tiempo_minutos * 60);
+      await loadExamQuestions(block!.sessions, DEFAULT_CONFIG.cantidad_preguntas);
+    }
+  }
+
+  async function loadExamQuestions(sessions: number[], count: number) {
+    const { data: sesiones } = await supabase.from('sesiones').select('id, numero').in('numero', sessions);
     if (!sesiones) return;
     const sesionIds = sesiones.map(s => s.id);
 
-    // Get all questions from those sessions
     const { data: allQ } = await supabase.from('quiz_preguntas').select('*').in('sesion_id', sesionIds);
     if (!allQ || allQ.length === 0) return;
 
-    // Shuffle and pick 30
-    const shuffled = allQ.sort(() => Math.random() - 0.5).slice(0, 30);
-    setQuestions(shuffled.map(q => ({
+    const shuffled = allQ.sort(() => Math.random() - 0.5).slice(0, count);
+    const mapped = shuffled.map(q => ({
       id: q.id,
       pregunta: q.pregunta,
       opciones: (q.opciones as string[]) || [],
       respuesta_correcta: q.respuesta_correcta,
       imagen_url: q.imagen_url,
-    })));
+      dificultad: (q as any).dificultad || 1,
+    }));
+    setQuestions(mapped);
+    setMaxPossibleScore(mapped.reduce((sum, q) => sum + q.dificultad, 0));
     setState('playing');
     startTimer();
   }
@@ -71,7 +112,10 @@ export default function SectionExam() {
   function startTimer() {
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 1) { finishExam(); return 0; }
+        if (prev <= 1) {
+          finishExam();
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
@@ -80,9 +124,11 @@ export default function SectionExam() {
   function handleAnswer(index: number) {
     if (selected !== null) return;
     setSelected(index);
-    const correct = index === questions[currentIndex].respuesta_correcta;
-    if (correct) setScore(prev => prev + 1);
-    setAnswers(prev => [...prev, { questionId: questions[currentIndex].id, correct }]);
+    const q = questions[currentIndex];
+    const correct = index === q.respuesta_correcta;
+    const newAnswer = { questionId: q.id, correct, dificultad: q.dificultad };
+    answersRef.current = [...answersRef.current, newAnswer];
+    setAnswers(answersRef.current);
 
     setTimeout(() => {
       if (currentIndex + 1 >= questions.length) {
@@ -95,18 +141,28 @@ export default function SectionExam() {
   }
 
   async function finishExam() {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
     if (timerRef.current) clearInterval(timerRef.current);
     setState('results');
-    const finalScore = Math.round((score / questions.length) * 100);
-    const aprobado = finalScore >= 80;
+
+    const currentAnswers = answersRef.current;
+    // Calculate weighted score
+    const earnedPoints = currentAnswers.filter(a => a.correct).reduce((sum, a) => sum + a.dificultad, 0);
+    // Max possible includes unanswered questions at their difficulty
+    const totalPossible = maxPossibleScore;
+    const finalPct = totalPossible > 0 ? Math.round((earnedPoints / totalPossible) * 100) : 0;
+    setWeightedScore(finalPct);
+
+    const aprobado = finalPct >= config.puntaje_aprobacion;
 
     if (user) {
       await supabase.from('examenes').insert({
         user_id: user.id,
         tipo: tipo!,
-        puntaje: finalScore,
+        puntaje: finalPct,
         aprobado,
-        respuestas: answers,
+        respuestas: currentAnswers as any,
       });
     }
 
@@ -122,21 +178,47 @@ export default function SectionExam() {
   if (state === 'loading') return <div className="p-6 text-center text-muted-foreground">Cargando examen...</div>;
 
   if (state === 'results') {
-    const finalPct = Math.round((score / questions.length) * 100);
+    const correctCount = answersRef.current.filter(a => a.correct).length;
+    const answeredCount = answersRef.current.length;
+    const aprobado = weightedScore >= config.puntaje_aprobacion;
+
     return (
       <div className="p-4 md:p-6 space-y-6">
         <Button variant="ghost" onClick={() => navigate('/student')} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-4">
           <h1 className="text-3xl font-display font-bold">
-            {finalPct >= 80 ? '🎉 ¡Examen Aprobado!' : '😔 No aprobado'}
+            {aprobado ? '🎉 ¡Examen Aprobado!' : '😔 No aprobado'}
           </h1>
-          <p className="text-5xl font-bold text-gradient-primary">{finalPct}/100</p>
-          <p className="text-muted-foreground">Necesitas 80/100 para aprobar</p>
+          <p className="text-5xl font-bold text-gradient-primary">{weightedScore}/100</p>
+          <p className="text-muted-foreground">Necesitas {config.puntaje_aprobacion}/100 para aprobar</p>
+          {answeredCount < questions.length && (
+            <p className="text-sm text-destructive flex items-center justify-center gap-1">
+              <AlertTriangle className="w-4 h-4" />
+              Respondiste {answeredCount} de {questions.length} preguntas (tiempo agotado)
+            </p>
+          )}
           <div className="flex justify-center gap-6 text-sm">
-            <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-accent" /> {score} correctas</span>
-            <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-destructive" /> {questions.length - score} incorrectas</span>
+            <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-accent" /> {correctCount} correctas</span>
+            <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-destructive" /> {answeredCount - correctCount} incorrectas</span>
           </div>
-          {finalPct < 80 && <Button onClick={() => navigate('/student')} className="gradient-primary text-primary-foreground">Volver al Dashboard</Button>}
+          <p className="text-xs text-muted-foreground">Puntuación ponderada por dificultad (1-5 pts por pregunta)</p>
+          <div className="flex justify-center gap-3">
+            {!aprobado && (
+              <Button onClick={() => {
+                finishedRef.current = false;
+                answersRef.current = [];
+                setAnswers([]);
+                setCurrentIndex(0);
+                setSelected(null);
+                setWeightedScore(0);
+                setState('loading');
+                loadExamConfig();
+              }} className="gradient-primary text-primary-foreground gap-2">
+                <RotateCcw className="w-4 h-4" /> Repetir Examen
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => navigate('/student')}>Volver al Dashboard</Button>
+          </div>
         </motion.div>
       </div>
     );
@@ -145,7 +227,7 @@ export default function SectionExam() {
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-display font-bold">Examen: {block?.label}</h1>
+        <h1 className="text-lg font-display font-bold">{config.label}</h1>
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${timerWarn ? 'bg-destructive/20 text-destructive' : 'bg-muted'}`}>
           {timerWarn && <AlertTriangle className="w-4 h-4" />}
           <Timer className="w-4 h-4" />

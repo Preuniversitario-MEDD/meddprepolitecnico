@@ -9,7 +9,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, Settings, LogOut,
-  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, ChevronDown
+  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, ChevronDown, FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,6 +24,7 @@ const adminLinks = [
   { path: '/admin/quiz', icon: Brain, label: 'Quiz' },
   { path: '/admin/library', icon: Library, label: 'Biblioteca' },
   { path: '/admin/mensajes', icon: MessageSquare, label: 'Mensajes' },
+  { path: '/admin/exams', icon: FileText, label: 'Exámenes' },
   { path: '/admin/competencias', icon: Zap, label: 'Competencias' },
   { path: '/admin/settings', icon: Settings, label: 'Roles' },
   { path: '/admin/profile', icon: GraduationCap, label: 'Mi Perfil' },
