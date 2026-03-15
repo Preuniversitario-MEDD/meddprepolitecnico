@@ -102,36 +102,28 @@ export default function AdminExams() {
 
     // Process in batches of 20
     const batchSize = 20;
+    let totalAssigned = 0;
     for (let i = 0; i < questions.length; i += batchSize) {
       const batch = questions.slice(i, i + batchSize);
-      const prompt = batch.map((q, idx) => {
-        const opts = (q.opciones as string[]).map((o, j) => `${String.fromCharCode(65 + j)}) ${o}`).join(', ');
-        return `${idx + 1}. "${q.pregunta}" Opciones: ${opts}`;
-      }).join('\n');
 
       try {
-        const { data, error } = await supabase.functions.invoke('review-quiz-questions', {
-          body: {
-            customPrompt: `Asigna un nivel de dificultad del 1 al 5 a cada pregunta. 1=muy fácil, 2=fácil, 3=media, 4=difícil, 5=muy difícil. Responde SOLO un JSON array con los niveles en orden, ejemplo: [2,3,1,5,4].\n\nPreguntas:\n${prompt}`,
-          }
+        const { data, error } = await supabase.functions.invoke('assign-difficulty', {
+          body: { questions: batch.map(q => ({ pregunta: q.pregunta, opciones: q.opciones })) }
         });
 
         if (error) throw error;
-        const content = data?.content || data?.choices?.[0]?.message?.content || '';
-        const match = content.match(/\[[\d,\s]+\]/);
-        if (match) {
-          const levels: number[] = JSON.parse(match[0]);
-          for (let j = 0; j < Math.min(levels.length, batch.length); j++) {
-            const diff = Math.max(1, Math.min(5, levels[j]));
-            await supabase.from('quiz_preguntas').update({ dificultad: diff } as any).eq('id', batch[j].id);
-          }
+        const levels: number[] = data?.levels || [];
+        for (let j = 0; j < Math.min(levels.length, batch.length); j++) {
+          await supabase.from('quiz_preguntas').update({ dificultad: levels[j] } as any).eq('id', batch[j].id);
+          totalAssigned++;
         }
       } catch (e) {
         console.error('AI difficulty error:', e);
+        toast.error(`Error en lote ${Math.floor(i / batchSize) + 1}`);
       }
     }
 
-    toast.success('Dificultad asignada correctamente');
+    toast.success(`Dificultad asignada a ${totalAssigned} preguntas`);
   }
 
   const examResults = (tipo: string) => results.filter(r => r.tipo === tipo);
