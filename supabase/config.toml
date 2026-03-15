@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.review-quiz-questions]
 verify_jwt = false
+
+[functions.assign-difficulty]
+verify_jwt = false
