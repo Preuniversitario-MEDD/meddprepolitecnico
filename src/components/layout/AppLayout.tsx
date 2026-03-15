@@ -24,6 +24,7 @@ const adminLinks = [
   { path: '/admin/quiz', icon: Brain, label: 'Quiz' },
   { path: '/admin/library', icon: Library, label: 'Biblioteca' },
   { path: '/admin/mensajes', icon: MessageSquare, label: 'Mensajes' },
+  { path: '/admin/exams', icon: FileText, label: 'Exámenes' },
   { path: '/admin/competencias', icon: Zap, label: 'Competencias' },
   { path: '/admin/settings', icon: Settings, label: 'Roles' },
   { path: '/admin/profile', icon: GraduationCap, label: 'Mi Perfil' },

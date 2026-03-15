@@ -60,6 +60,7 @@ function AppRoutes() {
       <Route path="/admin/competencias" element={<ProtectedRoute requiredRole="admin"><AdminCompetencias /></ProtectedRoute>} />
       <Route path="/admin/competencia/:id" element={<ProtectedRoute requiredRole="admin"><AdminCompetenciaLive /></ProtectedRoute>} />
       <Route path="/admin/profile" element={<ProtectedRoute requiredRole="admin"><AdminProfile /></ProtectedRoute>} />
+      <Route path="/admin/exams" element={<ProtectedRoute requiredRole="admin"><AdminExams /></ProtectedRoute>} />
 
       {/* Student Routes */}
       <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
