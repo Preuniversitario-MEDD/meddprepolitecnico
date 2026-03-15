@@ -149,6 +149,33 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     setTotalAttempts(prevAttempts + 1);
 
     if (finalScore >= 90) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+
+    // Auto-unlock next session when this one is completed (150+ correct)
+    if (isComplete && !existingProgress?.completada) {
+      await autoUnlockNextSession();
+    }
+  }
+
+  async function autoUnlockNextSession() {
+    // Get current session number
+    const { data: currentSession } = await supabase.from('sesiones').select('numero').eq('id', sesionId).single();
+    if (!currentSession) return;
+
+    // Find next session by number
+    const { data: nextSession } = await supabase.from('sesiones').select('id, numero, titulo').eq('numero', currentSession.numero + 1).single();
+    if (!nextSession) return;
+
+    // Upsert unlock record for the student
+    await supabase.from('sesion_estudiante').upsert({
+      user_id: userId,
+      sesion_id: nextSession.id,
+      desbloqueada: true,
+    } as any, { onConflict: 'user_id,sesion_id' });
+
+    toast.success(`🔓 ¡Sesión ${nextSession.numero} desbloqueada!`, {
+      description: nextSession.titulo,
+      duration: 5000,
+    });
   }
 
   const currentQ = questions[currentIndex];
