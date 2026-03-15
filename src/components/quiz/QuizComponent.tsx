@@ -71,7 +71,7 @@ export default function QuizComponent({ sesionId, userId }: Props) {
 
   function startQuiz() {
     if (questions.length === 0) return;
-    setCurrentIndex(0); setScore(0); setAnswers([]); setSelected(null);
+    setCurrentIndex(0); setScore(0); scoreRef.current = 0; setAnswers([]); setSelected(null);
     setState('playing'); startTimer();
     startTimeRef.current = Date.now();
   }
