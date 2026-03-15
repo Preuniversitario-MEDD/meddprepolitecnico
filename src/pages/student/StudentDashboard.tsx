@@ -33,6 +33,7 @@ export default function StudentDashboard() {
   const [liveCompCount, setLiveCompCount] = useState(0);
   const [sessionOverrides, setSessionOverrides] = useState<Record<string, boolean>>({});
   const [viewedProfile, setViewedProfile] = useState<Tables<'profiles'> | null>(null);
+  const prevUnlockedExamsRef = useRef<Set<string> | null>(null);
 
   useEffect(() => { loadData(); loadLiveComps(); }, [effectiveUserId]);
 
