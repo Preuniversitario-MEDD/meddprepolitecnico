@@ -204,8 +204,9 @@ export default function QuizComponent({ sesionId, userId }: Props) {
   }
 
   if (state === 'results') {
-    const finalPct = Math.round((score / questions.length) * 100);
-    const pieData = [{ name: 'Correctas', value: score }, { name: 'Incorrectas', value: questions.length - score }];
+    const finalScore = scoreRef.current;
+    const finalPct = Math.round((finalScore / questions.length) * 100);
+    const pieData = [{ name: 'Correctas', value: finalScore }, { name: 'Incorrectas', value: questions.length - finalScore }];
     const COLORS = ['hsl(160 60% 50%)', 'hsl(0 84% 60%)'];
 
     return (
@@ -220,8 +221,8 @@ export default function QuizComponent({ sesionId, userId }: Props) {
           </Pie></PieChart>
         </ResponsiveContainer>
         <div className="flex justify-center gap-6 text-sm">
-          <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-accent" /> {score} correctas</span>
-          <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-destructive" /> {questions.length - score} incorrectas</span>
+          <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-accent" /> {finalScore} correctas</span>
+          <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-destructive" /> {questions.length - finalScore} incorrectas</span>
         </div>
         <div className="text-sm text-muted-foreground">
           <p>Total acumulado: <span className="font-bold text-accent">{totalCorrect}/150</span></p>
