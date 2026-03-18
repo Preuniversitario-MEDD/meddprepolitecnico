@@ -42,6 +42,8 @@ serve(async (req) => {
             content: `Eres un profesor experto en Química para preparación universitaria ESPOL (Ecuador).
 Genera preguntas de opción múltiple de nivel universitario sobre el tema indicado.
 
+${diffInstruction}
+
 Cada pregunta DEBE tener exactamente 4 opciones (A, B, C, D) y una sola respuesta correcta.
 Las preguntas deben ser variadas: conceptuales, cálculos, identificación, aplicación.
 Los distractores deben ser plausibles pero claramente incorrectos.
