@@ -595,6 +595,11 @@ export default function AdminQuiz() {
             <BarChart3 className="w-3 h-3" /> Estadísticas
           </Button>
         )}
+        {preguntas.length > 0 && (
+          <Button variant="outline" size="sm" onClick={() => { setBulkDeleteMode('grupo'); setBulkDeleteGrupo(''); setBulkDeleteFrom(1); setBulkDeleteTo(filteredPreguntas.length); setBulkDeleteOpen(true); }} className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+            <Trash2 className="w-3 h-3" /> Borrar masivo
+          </Button>
+        )}
       </div>
 
       <div className="space-y-2">
