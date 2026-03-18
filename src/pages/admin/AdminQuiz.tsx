@@ -441,6 +441,43 @@ export default function AdminQuiz() {
     loadPreguntas();
   }
 
+  // Bulk delete
+  async function bulkDelete() {
+    setBulkDeleting(true);
+    let idsToDelete: string[] = [];
+
+    if (bulkDeleteMode === 'grupo' && bulkDeleteGrupo) {
+      idsToDelete = preguntas.filter(p => p.grupo === parseInt(bulkDeleteGrupo)).map(p => p.id);
+    } else if (bulkDeleteMode === 'rango') {
+      // Use filtered list indices (1-based)
+      const from = Math.max(1, bulkDeleteFrom);
+      const to = Math.min(filteredPreguntas.length, bulkDeleteTo);
+      idsToDelete = filteredPreguntas.slice(from - 1, to).map(p => p.id);
+    }
+
+    if (idsToDelete.length === 0) {
+      toast({ title: 'No hay preguntas para eliminar', variant: 'destructive' });
+      setBulkDeleting(false);
+      return;
+    }
+
+    if (!confirm(`¿Eliminar ${idsToDelete.length} preguntas? Esta acción no se puede deshacer.`)) {
+      setBulkDeleting(false);
+      return;
+    }
+
+    // Delete in batches of 50
+    for (let i = 0; i < idsToDelete.length; i += 50) {
+      const batch = idsToDelete.slice(i, i + 50);
+      await supabase.from('quiz_preguntas').delete().in('id', batch);
+    }
+
+    toast({ title: `${idsToDelete.length} preguntas eliminadas` });
+    setBulkDeleting(false);
+    setBulkDeleteOpen(false);
+    loadPreguntas();
+  }
+
   // Filtered questions
   const grupos = [...new Set(preguntas.map(p => p.grupo))].sort((a, b) => a - b);
   const filteredPreguntas = preguntas.filter(p => {
