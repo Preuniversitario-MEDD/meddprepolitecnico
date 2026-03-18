@@ -89,6 +89,10 @@ export default function AdminQuiz() {
   const [aiQuantity, setAiQuantity] = useState(10);
   const [aiGrupo, setAiGrupo] = useState(1);
   const [aiDifficulty, setAiDifficulty] = useState<string>('mixto');
+  const [aiCustomTopic, setAiCustomTopic] = useState('');
+  const [aiEnfoque, setAiEnfoque] = useState<string>('quimico');
+  const [aiDocText, setAiDocText] = useState('');
+  const [aiDocSource, setAiDocSource] = useState<'none' | 'paste' | 'file'>('none');
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiPreview, setAiPreview] = useState<{ pregunta: string; opciones: string[]; respuesta_correcta: number }[]>([]);
   const [aiSelectedIds, setAiSelectedIds] = useState<Set<number>>(new Set());
