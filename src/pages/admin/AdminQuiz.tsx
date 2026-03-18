@@ -101,6 +101,13 @@ export default function AdminQuiz() {
   const [aiSelectedIds, setAiSelectedIds] = useState<Set<number>>(new Set());
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
+  // Bulk delete
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleteMode, setBulkDeleteMode] = useState<'grupo' | 'rango'>('grupo');
+  const [bulkDeleteGrupo, setBulkDeleteGrupo] = useState<string>('');
+  const [bulkDeleteFrom, setBulkDeleteFrom] = useState(1);
+  const [bulkDeleteTo, setBulkDeleteTo] = useState(100);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   // Course filter
   const [cursos, setCursos] = useState<{ id: string; titulo: string }[]>([]);
   const [cursoSesionIds, setCursoSesionIds] = useState<Set<string> | null>(null);
@@ -434,6 +441,43 @@ export default function AdminQuiz() {
     loadPreguntas();
   }
 
+  // Bulk delete
+  async function bulkDelete() {
+    setBulkDeleting(true);
+    let idsToDelete: string[] = [];
+
+    if (bulkDeleteMode === 'grupo' && bulkDeleteGrupo) {
+      idsToDelete = preguntas.filter(p => p.grupo === parseInt(bulkDeleteGrupo)).map(p => p.id);
+    } else if (bulkDeleteMode === 'rango') {
+      // Use filtered list indices (1-based)
+      const from = Math.max(1, bulkDeleteFrom);
+      const to = Math.min(filteredPreguntas.length, bulkDeleteTo);
+      idsToDelete = filteredPreguntas.slice(from - 1, to).map(p => p.id);
+    }
+
+    if (idsToDelete.length === 0) {
+      toast({ title: 'No hay preguntas para eliminar', variant: 'destructive' });
+      setBulkDeleting(false);
+      return;
+    }
+
+    if (!confirm(`¿Eliminar ${idsToDelete.length} preguntas? Esta acción no se puede deshacer.`)) {
+      setBulkDeleting(false);
+      return;
+    }
+
+    // Delete in batches of 50
+    for (let i = 0; i < idsToDelete.length; i += 50) {
+      const batch = idsToDelete.slice(i, i + 50);
+      await supabase.from('quiz_preguntas').delete().in('id', batch);
+    }
+
+    toast({ title: `${idsToDelete.length} preguntas eliminadas` });
+    setBulkDeleting(false);
+    setBulkDeleteOpen(false);
+    loadPreguntas();
+  }
+
   // Filtered questions
   const grupos = [...new Set(preguntas.map(p => p.grupo))].sort((a, b) => a - b);
   const filteredPreguntas = preguntas.filter(p => {
@@ -549,6 +593,11 @@ export default function AdminQuiz() {
         {preguntas.length > 0 && (
           <Button variant="outline" size="sm" onClick={() => setStatsDialogOpen(true)} className="gap-1">
             <BarChart3 className="w-3 h-3" /> Estadísticas
+          </Button>
+        )}
+        {preguntas.length > 0 && (
+          <Button variant="outline" size="sm" onClick={() => { setBulkDeleteMode('grupo'); setBulkDeleteGrupo(''); setBulkDeleteFrom(1); setBulkDeleteTo(filteredPreguntas.length); setBulkDeleteOpen(true); }} className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+            <Trash2 className="w-3 h-3" /> Borrar masivo
           </Button>
         )}
       </div>
@@ -876,6 +925,68 @@ export default function AdminQuiz() {
         preguntas={preguntas}
         sesionId={selectedSesion}
       />
+      {/* Bulk Delete Dialog */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle className="font-display flex items-center gap-2"><Trash2 className="w-5 h-5 text-destructive" /> Borrar preguntas masivamente</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Button size="sm" variant={bulkDeleteMode === 'grupo' ? 'default' : 'outline'} onClick={() => setBulkDeleteMode('grupo')}>Por grupo</Button>
+              <Button size="sm" variant={bulkDeleteMode === 'rango' ? 'default' : 'outline'} onClick={() => setBulkDeleteMode('rango')}>Por intervalo</Button>
+            </div>
+
+            {bulkDeleteMode === 'grupo' && (
+              <div>
+                <Label>Selecciona el grupo a eliminar</Label>
+                <Select value={bulkDeleteGrupo} onValueChange={setBulkDeleteGrupo}>
+                  <SelectTrigger><SelectValue placeholder="Selecciona un grupo" /></SelectTrigger>
+                  <SelectContent>
+                    {grupos.map(g => {
+                      const count = preguntas.filter(p => p.grupo === g).length;
+                      return <SelectItem key={g} value={String(g)}>Grupo {g} ({count} preguntas)</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+                {bulkDeleteGrupo && (
+                  <p className="text-sm text-destructive mt-2">
+                    Se eliminarán <strong>{preguntas.filter(p => p.grupo === parseInt(bulkDeleteGrupo)).length}</strong> preguntas del Grupo {bulkDeleteGrupo}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {bulkDeleteMode === 'rango' && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Eliminar preguntas por posición en la lista {filterGrupo !== 'all' ? `(Grupo ${filterGrupo})` : '(todos los grupos)'}. Total: {filteredPreguntas.length}</p>
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1">
+                    <Label>Desde #</Label>
+                    <Input type="number" min={1} max={filteredPreguntas.length} value={bulkDeleteFrom} onChange={e => setBulkDeleteFrom(parseInt(e.target.value) || 1)} />
+                  </div>
+                  <span className="mt-5 text-muted-foreground">—</span>
+                  <div className="flex-1">
+                    <Label>Hasta #</Label>
+                    <Input type="number" min={1} max={filteredPreguntas.length} value={bulkDeleteTo} onChange={e => setBulkDeleteTo(parseInt(e.target.value) || 1)} />
+                  </div>
+                </div>
+                <p className="text-sm text-destructive">
+                  Se eliminarán <strong>{Math.max(0, Math.min(bulkDeleteTo, filteredPreguntas.length) - Math.max(1, bulkDeleteFrom) + 1)}</strong> preguntas (#{Math.max(1, bulkDeleteFrom)} a #{Math.min(bulkDeleteTo, filteredPreguntas.length)})
+                </p>
+              </div>
+            )}
+
+            <Button
+              onClick={bulkDelete}
+              disabled={bulkDeleting || (bulkDeleteMode === 'grupo' && !bulkDeleteGrupo)}
+              variant="destructive"
+              className="w-full"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {bulkDeleting ? 'Eliminando...' : 'Eliminar preguntas'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
