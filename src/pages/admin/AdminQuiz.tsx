@@ -86,8 +86,9 @@ export default function AdminQuiz() {
   const [filterGrupo, setFilterGrupo] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
-  const [aiQuantity, setAiQuantity] = useState(5);
+  const [aiQuantity, setAiQuantity] = useState(10);
   const [aiGrupo, setAiGrupo] = useState(1);
+  const [aiDifficulty, setAiDifficulty] = useState<string>('mixto');
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiPreview, setAiPreview] = useState<{ pregunta: string; opciones: string[]; respuesta_correcta: number }[]>([]);
   const [aiSelectedIds, setAiSelectedIds] = useState<Set<number>>(new Set());
@@ -389,7 +390,7 @@ export default function AdminQuiz() {
     try {
       const existingQuestions = preguntas.slice(0, 30).map(p => p.pregunta.slice(0, 80));
       const { data, error } = await supabase.functions.invoke('generate-quiz-questions', {
-        body: { sessionTitle: sesion.titulo, sessionNumber: sesion.numero, quantity: aiQuantity, existingQuestions },
+        body: { sessionTitle: sesion.titulo, sessionNumber: sesion.numero, quantity: aiQuantity, difficulty: aiDifficulty, existingQuestions },
       });
       if (error) throw error;
       if (data?.error) { toast({ title: 'Error de IA', description: data.error, variant: 'destructive' }); setAiGenerating(false); return; }
@@ -523,7 +524,7 @@ export default function AdminQuiz() {
         <Button variant="outline" size="sm" onClick={() => { setImportSourceSesion(''); setImportSourcePreguntas([]); setImportSelectedIds(new Set()); setImportMoveMode(false); setImportSessionDialogOpen(true); }} className="gap-1">
           <Copy className="w-3 h-3" /> Desde Sesión
         </Button>
-        <Button variant="outline" size="sm" onClick={() => { setAiPreview([]); setAiSelectedIds(new Set()); setAiQuantity(5); setAiGrupo(1); setAiDialogOpen(true); }} className="gap-1 border-primary/30 text-primary hover:bg-primary/10">
+        <Button variant="outline" size="sm" onClick={() => { setAiPreview([]); setAiSelectedIds(new Set()); setAiQuantity(10); setAiGrupo(1); setAiDifficulty('mixto'); setAiDialogOpen(true); }} className="gap-1 border-primary/30 text-primary hover:bg-primary/10">
           <Sparkles className="w-3 h-3" /> Generar con IA
         </Button>
         <Button size="sm" onClick={() => setReviewDialogOpen(true)} className="gap-1 bg-gradient-to-r from-[hsl(var(--neon-violet))] via-[hsl(var(--neon-fuchsia))] to-[hsl(var(--neon-pink))] text-white hover:opacity-90 shadow-[0_0_12px_hsl(var(--neon-violet)/0.4)] border-0" disabled={filteredPreguntas.length === 0}>
@@ -709,13 +710,25 @@ export default function AdminQuiz() {
                 <Select value={String(aiQuantity)} onValueChange={v => setAiQuantity(parseInt(v))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {[3, 5, 10, 15, 20].map(n => <SelectItem key={n} value={String(n)}>{n} preguntas</SelectItem>)}
+                    {[10, 20, 40, 50].map(n => <SelectItem key={n} value={String(n)}>{n} preguntas</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div><Label>Grupo destino</Label>
                 <Input type="number" min={1} value={aiGrupo} onChange={e => setAiGrupo(parseInt(e.target.value) || 1)} />
               </div>
+            </div>
+            <div>
+              <Label>Nivel de dificultad</Label>
+              <Select value={aiDifficulty} onValueChange={setAiDifficulty}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="basico">🟢 Básico — Preguntas directas</SelectItem>
+                  <SelectItem value="medio">🟡 Medio — Requiere conocimiento</SelectItem>
+                  <SelectItem value="dificil">🔴 Difícil — Complejidad universitaria</SelectItem>
+                  <SelectItem value="mixto">🎯 Mixto — 30% básico, 30% medio, 40% difícil</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Button onClick={generateWithAI} disabled={aiGenerating} className="w-full gradient-primary text-primary-foreground gap-2">
