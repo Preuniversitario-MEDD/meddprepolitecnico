@@ -710,13 +710,25 @@ export default function AdminQuiz() {
                 <Select value={String(aiQuantity)} onValueChange={v => setAiQuantity(parseInt(v))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {[3, 5, 10, 15, 20].map(n => <SelectItem key={n} value={String(n)}>{n} preguntas</SelectItem>)}
+                    {[10, 20, 40, 50].map(n => <SelectItem key={n} value={String(n)}>{n} preguntas</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div><Label>Grupo destino</Label>
                 <Input type="number" min={1} value={aiGrupo} onChange={e => setAiGrupo(parseInt(e.target.value) || 1)} />
               </div>
+            </div>
+            <div>
+              <Label>Nivel de dificultad</Label>
+              <Select value={aiDifficulty} onValueChange={setAiDifficulty}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="basico">🟢 Básico — Preguntas directas</SelectItem>
+                  <SelectItem value="medio">🟡 Medio — Requiere conocimiento</SelectItem>
+                  <SelectItem value="dificil">🔴 Difícil — Complejidad universitaria</SelectItem>
+                  <SelectItem value="mixto">🎯 Mixto — 30% básico, 30% medio, 40% difícil</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Button onClick={generateWithAI} disabled={aiGenerating} className="w-full gradient-primary text-primary-foreground gap-2">
