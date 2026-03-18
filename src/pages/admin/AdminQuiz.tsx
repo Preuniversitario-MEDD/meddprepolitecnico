@@ -394,7 +394,16 @@ export default function AdminQuiz() {
     try {
       const existingQuestions = preguntas.slice(0, 30).map(p => p.pregunta.slice(0, 80));
       const { data, error } = await supabase.functions.invoke('generate-quiz-questions', {
-        body: { sessionTitle: sesion.titulo, sessionNumber: sesion.numero, quantity: aiQuantity, difficulty: aiDifficulty, existingQuestions },
+        body: {
+          sessionTitle: sesion.titulo,
+          sessionNumber: sesion.numero,
+          quantity: aiQuantity,
+          difficulty: aiDifficulty,
+          existingQuestions,
+          customTopic: aiCustomTopic.trim() || undefined,
+          enfoque: aiEnfoque,
+          documentContext: aiDocText.trim() || undefined,
+        },
       });
       if (error) throw error;
       if (data?.error) { toast({ title: 'Error de IA', description: data.error, variant: 'destructive' }); setAiGenerating(false); return; }
