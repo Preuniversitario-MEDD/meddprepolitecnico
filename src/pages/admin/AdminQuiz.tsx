@@ -15,6 +15,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import type { Tables } from '@/integrations/supabase/types';
 import mammoth from 'mammoth';
+import * as pdfjsLib from 'pdfjs-dist';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs`;
 
 type Sesion = Tables<'sesiones'>;
 
@@ -786,8 +789,18 @@ export default function AdminQuiz() {
                         setAiDocText(result.value);
                       } catch { setAiDocText(''); toast({ title: 'No se pudo leer el archivo', variant: 'destructive' }); }
                     } else if (file.name.endsWith('.pdf')) {
-                      toast({ title: 'PDF subido', description: 'Se enviará el nombre como referencia. Para mejor resultado, copia el texto del PDF y usa "Pegar texto".' });
-                      setAiDocText(`[Documento PDF: ${file.name}]`);
+                      try {
+                        const ab = await file.arrayBuffer();
+                        const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+                        let fullText = '';
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                          const page = await pdf.getPage(i);
+                          const content = await page.getTextContent();
+                          fullText += content.items.map((item: any) => item.str).join(' ') + '\n';
+                        }
+                        setAiDocText(fullText.trim());
+                        toast({ title: `PDF leído (${pdf.numPages} páginas)` });
+                      } catch { setAiDocText(''); toast({ title: 'No se pudo leer el PDF', variant: 'destructive' }); }
                     }
                     e.target.value = '';
                   }} />
