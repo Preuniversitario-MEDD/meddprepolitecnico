@@ -89,6 +89,10 @@ export default function AdminQuiz() {
   const [aiQuantity, setAiQuantity] = useState(10);
   const [aiGrupo, setAiGrupo] = useState(1);
   const [aiDifficulty, setAiDifficulty] = useState<string>('mixto');
+  const [aiCustomTopic, setAiCustomTopic] = useState('');
+  const [aiEnfoque, setAiEnfoque] = useState<string>('quimico');
+  const [aiDocText, setAiDocText] = useState('');
+  const [aiDocSource, setAiDocSource] = useState<'none' | 'paste' | 'file'>('none');
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiPreview, setAiPreview] = useState<{ pregunta: string; opciones: string[]; respuesta_correcta: number }[]>([]);
   const [aiSelectedIds, setAiSelectedIds] = useState<Set<number>>(new Set());
@@ -390,7 +394,16 @@ export default function AdminQuiz() {
     try {
       const existingQuestions = preguntas.slice(0, 30).map(p => p.pregunta.slice(0, 80));
       const { data, error } = await supabase.functions.invoke('generate-quiz-questions', {
-        body: { sessionTitle: sesion.titulo, sessionNumber: sesion.numero, quantity: aiQuantity, difficulty: aiDifficulty, existingQuestions },
+        body: {
+          sessionTitle: sesion.titulo,
+          sessionNumber: sesion.numero,
+          quantity: aiQuantity,
+          difficulty: aiDifficulty,
+          existingQuestions,
+          customTopic: aiCustomTopic.trim() || undefined,
+          enfoque: aiEnfoque,
+          documentContext: aiDocText.trim() || undefined,
+        },
       });
       if (error) throw error;
       if (data?.error) { toast({ title: 'Error de IA', description: data.error, variant: 'destructive' }); setAiGenerating(false); return; }
@@ -524,7 +537,7 @@ export default function AdminQuiz() {
         <Button variant="outline" size="sm" onClick={() => { setImportSourceSesion(''); setImportSourcePreguntas([]); setImportSelectedIds(new Set()); setImportMoveMode(false); setImportSessionDialogOpen(true); }} className="gap-1">
           <Copy className="w-3 h-3" /> Desde Sesión
         </Button>
-        <Button variant="outline" size="sm" onClick={() => { setAiPreview([]); setAiSelectedIds(new Set()); setAiQuantity(10); setAiGrupo(1); setAiDifficulty('mixto'); setAiDialogOpen(true); }} className="gap-1 border-primary/30 text-primary hover:bg-primary/10">
+        <Button variant="outline" size="sm" onClick={() => { setAiPreview([]); setAiSelectedIds(new Set()); setAiQuantity(10); setAiGrupo(1); setAiDifficulty('mixto'); setAiCustomTopic(''); setAiEnfoque('quimico'); setAiDocText(''); setAiDocSource('none'); setAiDialogOpen(true); }} className="gap-1 border-primary/30 text-primary hover:bg-primary/10">
           <Sparkles className="w-3 h-3" /> Generar con IA
         </Button>
         <Button size="sm" onClick={() => setReviewDialogOpen(true)} className="gap-1 bg-gradient-to-r from-[hsl(var(--neon-violet))] via-[hsl(var(--neon-fuchsia))] to-[hsl(var(--neon-pink))] text-white hover:opacity-90 shadow-[0_0_12px_hsl(var(--neon-violet)/0.4)] border-0" disabled={filteredPreguntas.length === 0}>
@@ -729,6 +742,67 @@ export default function AdminQuiz() {
                   <SelectItem value="mixto">🎯 Mixto — 30% básico, 30% medio, 40% difícil</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label>Enfoque pedagógico</Label>
+              <Select value={aiEnfoque} onValueChange={setAiEnfoque}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="quimico">🧪 Químico</SelectItem>
+                  <SelectItem value="matematico">📐 Matemático</SelectItem>
+                  <SelectItem value="fisico">⚛️ Físico</SelectItem>
+                  <SelectItem value="ingeniero">⚙️ Ingeniería</SelectItem>
+                  <SelectItem value="general">🎓 General ESPOL</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Tema personalizado (opcional)</Label>
+              <Input value={aiCustomTopic} onChange={e => setAiCustomTopic(e.target.value)} placeholder="Ej: Estequiometría, Derivadas parciales..." />
+              <p className="text-[10px] text-muted-foreground mt-1">Si se deja vacío, se usa el tema de la sesión</p>
+            </div>
+
+            <div>
+              <Label>Contexto / Documento (opcional)</Label>
+              <div className="flex gap-1 mb-2">
+                <Button type="button" size="sm" variant={aiDocSource === 'none' ? 'default' : 'outline'} onClick={() => { setAiDocSource('none'); setAiDocText(''); }}>Ninguno</Button>
+                <Button type="button" size="sm" variant={aiDocSource === 'paste' ? 'default' : 'outline'} onClick={() => setAiDocSource('paste')}>Pegar texto</Button>
+                <label>
+                  <Button type="button" size="sm" variant={aiDocSource === 'file' ? 'default' : 'outline'} asChild>
+                    <span><FileUp className="w-3 h-3 mr-1" /> Subir archivo</span>
+                  </Button>
+                  <input type="file" accept=".pdf,.doc,.docx,.txt" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setAiDocSource('file');
+                    if (file.name.endsWith('.txt')) {
+                      setAiDocText(await file.text());
+                    } else if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+                      try {
+                        const ab = await file.arrayBuffer();
+                        const result = await mammoth.extractRawText({ arrayBuffer: ab });
+                        setAiDocText(result.value);
+                      } catch { setAiDocText(''); toast({ title: 'No se pudo leer el archivo', variant: 'destructive' }); }
+                    } else if (file.name.endsWith('.pdf')) {
+                      toast({ title: 'PDF subido', description: 'Se enviará el nombre como referencia. Para mejor resultado, copia el texto del PDF y usa "Pegar texto".' });
+                      setAiDocText(`[Documento PDF: ${file.name}]`);
+                    }
+                    e.target.value = '';
+                  }} />
+                </label>
+              </div>
+              {aiDocSource === 'paste' && (
+                <Textarea value={aiDocText} onChange={e => setAiDocText(e.target.value)} rows={4} placeholder="Pega aquí el contenido del documento, apuntes o texto de referencia..." />
+              )}
+              {aiDocSource === 'file' && aiDocText && (
+                <div className="bg-muted/50 rounded p-2 text-xs max-h-24 overflow-y-auto">
+                  <p className="font-medium mb-1">Contenido extraído ({aiDocText.length} caracteres)</p>
+                  <p className="text-muted-foreground line-clamp-4">{aiDocText.slice(0, 500)}</p>
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground mt-1">La IA usará este material como base para crear preguntas más precisas</p>
             </div>
 
             <Button onClick={generateWithAI} disabled={aiGenerating} className="w-full gradient-primary text-primary-foreground gap-2">
