@@ -101,6 +101,13 @@ export default function AdminQuiz() {
   const [aiSelectedIds, setAiSelectedIds] = useState<Set<number>>(new Set());
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
+  // Bulk delete
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleteMode, setBulkDeleteMode] = useState<'grupo' | 'rango'>('grupo');
+  const [bulkDeleteGrupo, setBulkDeleteGrupo] = useState<string>('');
+  const [bulkDeleteFrom, setBulkDeleteFrom] = useState(1);
+  const [bulkDeleteTo, setBulkDeleteTo] = useState(100);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   // Course filter
   const [cursos, setCursos] = useState<{ id: string; titulo: string }[]>([]);
   const [cursoSesionIds, setCursoSesionIds] = useState<Set<string> | null>(null);
