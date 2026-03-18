@@ -9,11 +9,21 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { sessionTitle, sessionNumber, quantity, existingQuestions } = await req.json();
+    const { sessionTitle, sessionNumber, quantity, difficulty, existingQuestions } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const count = quantity || 5;
+    const count = quantity || 10;
+    const diffLevel = difficulty || 'mixto';
+    
+    const difficultyInstructions: Record<string, string> = {
+      basico: `TODAS las preguntas deben ser de nivel BÁSICO: directas, de memorización, definiciones claras, identificación simple. No requieren cálculos complejos ni análisis profundo.`,
+      medio: `TODAS las preguntas deben ser de nivel MEDIO: requieren comprensión de conceptos, aplicación de fórmulas sencillas, relaciones entre conceptos. El estudiante necesita cierto grado de conocimiento previo.`,
+      dificil: `TODAS las preguntas deben ser de nivel DIFÍCIL/UNIVERSITARIO: problemas multi-paso, análisis y síntesis, cálculos complejos, comparación avanzada de conceptos, casos de estudio. Nivel de complejidad de examen universitario ESPOL.`,
+      mixto: `Distribuye las preguntas así: 30% nivel BÁSICO (directas, memorización), 30% nivel MEDIO (comprensión, aplicación), 40% nivel DIFÍCIL (análisis, síntesis, problemas complejos universitarios). Esta distribución busca un desarrollo cognitivo progresivo.`,
+    };
+    
+    const diffInstruction = difficultyInstructions[diffLevel] || difficultyInstructions.mixto;
     const existingContext = existingQuestions?.length
       ? `\n\nYa existen estas preguntas en el banco, NO las repitas:\n${existingQuestions.map((q: string) => `- ${q}`).join('\n')}`
       : '';
