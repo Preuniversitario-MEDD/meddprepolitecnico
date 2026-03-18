@@ -789,8 +789,18 @@ export default function AdminQuiz() {
                         setAiDocText(result.value);
                       } catch { setAiDocText(''); toast({ title: 'No se pudo leer el archivo', variant: 'destructive' }); }
                     } else if (file.name.endsWith('.pdf')) {
-                      toast({ title: 'PDF subido', description: 'Se enviará el nombre como referencia. Para mejor resultado, copia el texto del PDF y usa "Pegar texto".' });
-                      setAiDocText(`[Documento PDF: ${file.name}]`);
+                      try {
+                        const ab = await file.arrayBuffer();
+                        const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+                        let fullText = '';
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                          const page = await pdf.getPage(i);
+                          const content = await page.getTextContent();
+                          fullText += content.items.map((item: any) => item.str).join(' ') + '\n';
+                        }
+                        setAiDocText(fullText.trim());
+                        toast({ title: `PDF leído (${pdf.numPages} páginas)` });
+                      } catch { setAiDocText(''); toast({ title: 'No se pudo leer el PDF', variant: 'destructive' }); }
                     }
                     e.target.value = '';
                   }} />
