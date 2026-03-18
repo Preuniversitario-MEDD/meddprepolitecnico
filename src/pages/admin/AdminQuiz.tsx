@@ -86,8 +86,9 @@ export default function AdminQuiz() {
   const [filterGrupo, setFilterGrupo] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
-  const [aiQuantity, setAiQuantity] = useState(5);
+  const [aiQuantity, setAiQuantity] = useState(10);
   const [aiGrupo, setAiGrupo] = useState(1);
+  const [aiDifficulty, setAiDifficulty] = useState<string>('mixto');
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiPreview, setAiPreview] = useState<{ pregunta: string; opciones: string[]; respuesta_correcta: number }[]>([]);
   const [aiSelectedIds, setAiSelectedIds] = useState<Set<number>>(new Set());
