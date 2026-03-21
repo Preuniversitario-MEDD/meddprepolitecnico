@@ -13,8 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2, Copy, AlertTriangle } from 'lucide-react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2, Copy, AlertTriangle, MoreVertical } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
@@ -334,76 +335,81 @@ export default function AdminContent() {
         </Select>
         {currentSesion && (
           <div className="flex items-center gap-2">
-            <Switch checked={currentSesion.estado === 'abierta'} onCheckedChange={() => toggleSesion(currentSesion)} />
-            <span className="text-sm flex items-center gap-1">
-              {currentSesion.estado === 'abierta' ? <><Unlock className="w-4 h-4 text-accent" /> Abierta</> : <><Lock className="w-4 h-4 text-muted-foreground" /> Bloqueada</>}
-            </span>
-            <Button variant="outline" size="sm" className="gap-1 ml-2" onClick={() => duplicateSesion(currentSesion)} disabled={duplicating}>
-              <Copy className="w-3 h-3" /> {duplicating ? 'Duplicando...' : 'Duplicar'}
-            </Button>
-            <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
-                  <Trash2 className="w-3 h-3" /> Eliminar
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  <Settings2 className="w-4 h-4" /> Gestión <ChevronDown className="w-3 h-3" />
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-destructive" />
-                    ¿Eliminar sesión S{currentSesion.numero}?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription className="space-y-2">
-                    <p>Se eliminará permanentemente <strong>"{currentSesion.titulo}"</strong> junto con:</p>
-                    <ul className="list-disc list-inside text-sm space-y-1">
-                      <li>Todo el contenido y pestañas</li>
-                      <li>Todas las preguntas de quiz</li>
-                      <li>Progreso de estudiantes en esta sesión</li>
-                      <li>Vínculos con cursos</li>
-                    </ul>
-                    <p className="font-medium">Las sesiones restantes se renumerarán automáticamente y los exámenes se actualizarán.</p>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => deleteSesion(currentSesion)}
-                    disabled={deleting}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {deleting ? 'Eliminando...' : 'Sí, eliminar todo'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => toggleSesion(currentSesion)} className="gap-2">
+                  {currentSesion.estado === 'abierta' ? <><Lock className="w-4 h-4" /> Bloquear sesión</> : <><Unlock className="w-4 h-4" /> Abrir sesión</>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setSesionForm({ titulo: currentSesion.titulo, descripcion: currentSesion.descripcion || '' }); setEditingSesion(true); }} className="gap-2">
+                  <Pencil className="w-4 h-4" /> Editar nombre
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => duplicateSesion(currentSesion)} disabled={duplicating} className="gap-2">
+                  <Copy className="w-4 h-4" /> {duplicating ? 'Duplicando...' : 'Duplicar sesión'}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setDeleteConfirmOpen(true)} className="gap-2 text-destructive focus:text-destructive">
+                  <Trash2 className="w-4 h-4" /> Eliminar sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <span className={`text-xs px-2 py-1 rounded-full ${currentSesion.estado === 'abierta' ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground'}`}>
+              {currentSesion.estado === 'abierta' ? '● Abierta' : '○ Bloqueada'}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Edit session name */}
+      {/* Delete confirmation dialog */}
       {currentSesion && (
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+                ¿Eliminar sesión S{currentSesion.numero}?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                <p>Se eliminará permanentemente <strong>"{currentSesion.titulo}"</strong> junto con:</p>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  <li>Todo el contenido y pestañas</li>
+                  <li>Todas las preguntas de quiz</li>
+                  <li>Progreso de estudiantes en esta sesión</li>
+                  <li>Vínculos con cursos</li>
+                </ul>
+                <p className="font-medium">Las sesiones restantes se renumerarán automáticamente y los exámenes se actualizarán.</p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteSesion(currentSesion)}
+                disabled={deleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleting ? 'Eliminando...' : 'Sí, eliminar todo'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {/* Edit session name */}
+      {currentSesion && editingSesion && (
         <Card className="card-elevated">
           <CardContent className="p-3">
-            {editingSesion ? (
-              <div className="space-y-2">
-                <Input value={sesionForm.titulo} onChange={e => setSesionForm({ ...sesionForm, titulo: e.target.value })} placeholder="Título" />
-                <Input value={sesionForm.descripcion} onChange={e => setSesionForm({ ...sesionForm, descripcion: e.target.value })} placeholder="Descripción" />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={saveSesionName} className="gap-1"><Check className="w-3 h-3" /> Guardar</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingSesion(false)}><X className="w-3 h-3" /></Button>
-                </div>
+            <div className="space-y-2">
+              <Input value={sesionForm.titulo} onChange={e => setSesionForm({ ...sesionForm, titulo: e.target.value })} placeholder="Título" />
+              <Input value={sesionForm.descripcion} onChange={e => setSesionForm({ ...sesionForm, descripcion: e.target.value })} placeholder="Descripción" />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={saveSesionName} className="gap-1"><Check className="w-3 h-3" /> Guardar</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingSesion(false)}><X className="w-3 h-3" /></Button>
               </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-sm">S{currentSesion.numero}: {currentSesion.titulo}</p>
-                  <p className="text-xs text-muted-foreground">{currentSesion.descripcion}</p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => { setSesionForm({ titulo: currentSesion.titulo, descripcion: currentSesion.descripcion || '' }); setEditingSesion(true); }}>
-                  <Pencil className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       )}
