@@ -13,8 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2, Copy, AlertTriangle } from 'lucide-react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2, Copy, AlertTriangle, MoreVertical } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
