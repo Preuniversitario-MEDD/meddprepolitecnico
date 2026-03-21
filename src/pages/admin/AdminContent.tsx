@@ -13,7 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2, Copy } from 'lucide-react';
+import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2, Copy, AlertTriangle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
@@ -245,6 +246,60 @@ export default function AdminContent() {
     setDuplicating(false);
   }
 
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function deleteSesion(sesion: Sesion) {
+    setDeleting(true);
+    try {
+      const oldNumero = sesion.numero;
+
+      // 1. Delete all related data in parallel
+      await Promise.all([
+        supabase.from('contenido').delete().eq('sesion_id', sesion.id),
+        supabase.from('quiz_preguntas').delete().eq('sesion_id', sesion.id),
+        supabase.from('pestanas_sesion').delete().eq('sesion_id', sesion.id),
+        supabase.from('curso_sesiones').delete().eq('sesion_id', sesion.id),
+        supabase.from('sesion_estudiante').delete().eq('sesion_id', sesion.id),
+        supabase.from('progreso_estudiante').delete().eq('sesion_id', sesion.id),
+      ]);
+
+      // 2. Delete the session itself
+      await supabase.from('sesiones').delete().eq('id', sesion.id);
+
+      // 3. Renumber remaining sessions
+      const { data: remaining } = await supabase.from('sesiones').select('id, numero').order('numero');
+      if (remaining) {
+        for (let i = 0; i < remaining.length; i++) {
+          const newNum = i + 1;
+          if (remaining[i].numero !== newNum) {
+            await supabase.from('sesiones').update({ numero: newNum }).eq('id', remaining[i].id);
+          }
+        }
+      }
+
+      // 4. Update exam_configuracion: remove old number and shift down
+      const { data: examConfigs } = await supabase.from('exam_configuracion').select('id, sessions, tipo');
+      if (examConfigs) {
+        for (const cfg of examConfigs) {
+          const sessions: number[] = (cfg as any).sessions || [];
+          const updated = sessions
+            .filter((n: number) => n !== oldNumero)
+            .map((n: number) => n > oldNumero ? n - 1 : n);
+          await supabase.from('exam_configuracion').update({ sessions: updated } as any).eq('id', cfg.id);
+        }
+      }
+
+      toast({ title: 'Sesión eliminada', description: `S${oldNumero}: ${sesion.titulo} y todo su contenido eliminado. Sesiones renumeradas.` });
+      setDeleteConfirmOpen(false);
+      setSelectedSesion('');
+      loadSesiones();
+    } catch (err: any) {
+      toast({ title: 'Error al eliminar', description: err?.message || 'No se pudo eliminar', variant: 'destructive' });
+    }
+    setDeleting(false);
+  }
+
   const currentSesion = sesiones.find(s => s.id === selectedSesion);
 
   const filteredSesiones = cursoSesionIds ? sesiones.filter(s => cursoSesionIds.has(s.id)) : sesiones;
@@ -286,6 +341,41 @@ export default function AdminContent() {
             <Button variant="outline" size="sm" className="gap-1 ml-2" onClick={() => duplicateSesion(currentSesion)} disabled={duplicating}>
               <Copy className="w-3 h-3" /> {duplicating ? 'Duplicando...' : 'Duplicar'}
             </Button>
+            <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <Trash2 className="w-3 h-3" /> Eliminar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                    ¿Eliminar sesión S{currentSesion.numero}?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-2">
+                    <p>Se eliminará permanentemente <strong>"{currentSesion.titulo}"</strong> junto con:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      <li>Todo el contenido y pestañas</li>
+                      <li>Todas las preguntas de quiz</li>
+                      <li>Progreso de estudiantes en esta sesión</li>
+                      <li>Vínculos con cursos</li>
+                    </ul>
+                    <p className="font-medium">Las sesiones restantes se renumerarán automáticamente y los exámenes se actualizarán.</p>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => deleteSesion(currentSesion)}
+                    disabled={deleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {deleting ? 'Eliminando...' : 'Sí, eliminar todo'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </div>
