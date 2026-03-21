@@ -246,6 +246,60 @@ export default function AdminContent() {
     setDuplicating(false);
   }
 
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function deleteSesion(sesion: Sesion) {
+    setDeleting(true);
+    try {
+      const oldNumero = sesion.numero;
+
+      // 1. Delete all related data in parallel
+      await Promise.all([
+        supabase.from('contenido').delete().eq('sesion_id', sesion.id),
+        supabase.from('quiz_preguntas').delete().eq('sesion_id', sesion.id),
+        supabase.from('pestanas_sesion').delete().eq('sesion_id', sesion.id),
+        supabase.from('curso_sesiones').delete().eq('sesion_id', sesion.id),
+        supabase.from('sesion_estudiante').delete().eq('sesion_id', sesion.id),
+        supabase.from('progreso_estudiante').delete().eq('sesion_id', sesion.id),
+      ]);
+
+      // 2. Delete the session itself
+      await supabase.from('sesiones').delete().eq('id', sesion.id);
+
+      // 3. Renumber remaining sessions
+      const { data: remaining } = await supabase.from('sesiones').select('id, numero').order('numero');
+      if (remaining) {
+        for (let i = 0; i < remaining.length; i++) {
+          const newNum = i + 1;
+          if (remaining[i].numero !== newNum) {
+            await supabase.from('sesiones').update({ numero: newNum }).eq('id', remaining[i].id);
+          }
+        }
+      }
+
+      // 4. Update exam_configuracion: remove old number and shift down
+      const { data: examConfigs } = await supabase.from('exam_configuracion').select('id, sessions, tipo');
+      if (examConfigs) {
+        for (const cfg of examConfigs) {
+          const sessions: number[] = (cfg as any).sessions || [];
+          const updated = sessions
+            .filter((n: number) => n !== oldNumero)
+            .map((n: number) => n > oldNumero ? n - 1 : n);
+          await supabase.from('exam_configuracion').update({ sessions: updated } as any).eq('id', cfg.id);
+        }
+      }
+
+      toast({ title: 'Sesión eliminada', description: `S${oldNumero}: ${sesion.titulo} y todo su contenido eliminado. Sesiones renumeradas.` });
+      setDeleteConfirmOpen(false);
+      setSelectedSesion('');
+      loadSesiones();
+    } catch (err: any) {
+      toast({ title: 'Error al eliminar', description: err?.message || 'No se pudo eliminar', variant: 'destructive' });
+    }
+    setDeleting(false);
+  }
+
   const currentSesion = sesiones.find(s => s.id === selectedSesion);
 
   const filteredSesiones = cursoSesionIds ? sesiones.filter(s => cursoSesionIds.has(s.id)) : sesiones;
