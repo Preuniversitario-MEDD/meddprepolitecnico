@@ -119,6 +119,14 @@ export default function AdminStudentView() {
     setProgress(prev => {
       const next = { ...prev };
       delete next[sesionId];
+      // Recalculate global progress
+      let totalProgress = 0;
+      Object.values(next).forEach(p => {
+        const ejerciciosP = Math.min((p.correctasTotal || 0) / 20, 1) * 40;
+        const quizP = Math.min((p.correctasTotal || 0) / 150, 1) * 60;
+        totalProgress += ejerciciosP + quizP;
+      });
+      setGlobalProgress(Math.round(totalProgress / 14));
       return next;
     });
   }
