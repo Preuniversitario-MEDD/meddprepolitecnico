@@ -341,6 +341,41 @@ export default function AdminContent() {
             <Button variant="outline" size="sm" className="gap-1 ml-2" onClick={() => duplicateSesion(currentSesion)} disabled={duplicating}>
               <Copy className="w-3 h-3" /> {duplicating ? 'Duplicando...' : 'Duplicar'}
             </Button>
+            <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <Trash2 className="w-3 h-3" /> Eliminar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                    ¿Eliminar sesión S{currentSesion.numero}?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-2">
+                    <p>Se eliminará permanentemente <strong>"{currentSesion.titulo}"</strong> junto con:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      <li>Todo el contenido y pestañas</li>
+                      <li>Todas las preguntas de quiz</li>
+                      <li>Progreso de estudiantes en esta sesión</li>
+                      <li>Vínculos con cursos</li>
+                    </ul>
+                    <p className="font-medium">Las sesiones restantes se renumerarán automáticamente y los exámenes se actualizarán.</p>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => deleteSesion(currentSesion)}
+                    disabled={deleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {deleting ? 'Eliminando...' : 'Sí, eliminar todo'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </div>
