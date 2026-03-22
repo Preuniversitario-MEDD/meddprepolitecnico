@@ -498,9 +498,59 @@ export default function AdminContent() {
           <DialogHeader><DialogTitle className="font-display">{editItem ? 'Editar' : 'Agregar'} Contenido</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Título</Label><Input value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} /></div>
-            <div><Label>Texto / Contenido</Label><Textarea value={form.texto} onChange={e => setForm({ ...form, texto: e.target.value })} rows={5} /></div>
+            <div>
+              <Label>Texto / Contenido</Label>
+              <Textarea value={form.texto} onChange={e => setForm({ ...form, texto: e.target.value })} rows={5}
+                onPaste={async (e) => {
+                  const items = e.clipboardData?.items;
+                  if (!items) return;
+                  for (const item of Array.from(items)) {
+                    if (item.type.startsWith('image/')) {
+                      e.preventDefault();
+                      const file = item.getAsFile();
+                      if (!file) return;
+                      const ext = file.type.split('/')[1] || 'png';
+                      const fileName = `content-${Date.now()}.${ext}`;
+                      toast({ title: 'Subiendo imagen...' });
+                      const { data: uploaded, error } = await supabase.storage.from('quiz-images').upload(fileName, file);
+                      if (error) { toast({ title: 'Error al subir imagen', variant: 'destructive' }); return; }
+                      const { data: urlData } = supabase.storage.from('quiz-images').getPublicUrl(uploaded.path);
+                      setForm(prev => ({ ...prev, imagen_url: urlData.publicUrl }));
+                      toast({ title: '✅ Imagen pegada y subida' });
+                      return;
+                    }
+                  }
+                }}
+                placeholder="Puedes pegar imágenes con Ctrl+V..."
+              />
+            </div>
             <div><Label>URL (link, PDF, video)</Label><Input value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://..." /></div>
-            <div><Label>URL de Imagen</Label><Input value={form.imagen_url} onChange={e => setForm({ ...form, imagen_url: e.target.value })} placeholder="https://..." /></div>
+            <div>
+              <Label>URL de Imagen</Label>
+              <Input value={form.imagen_url} onChange={e => setForm({ ...form, imagen_url: e.target.value })} placeholder="https://... o pega imagen en el texto"
+                onPaste={async (e) => {
+                  const items = e.clipboardData?.items;
+                  if (!items) return;
+                  for (const item of Array.from(items)) {
+                    if (item.type.startsWith('image/')) {
+                      e.preventDefault();
+                      const file = item.getAsFile();
+                      if (!file) return;
+                      const ext = file.type.split('/')[1] || 'png';
+                      const fileName = `content-${Date.now()}.${ext}`;
+                      toast({ title: 'Subiendo imagen...' });
+                      const { data: uploaded, error } = await supabase.storage.from('quiz-images').upload(fileName, file);
+                      if (error) { toast({ title: 'Error al subir imagen', variant: 'destructive' }); return; }
+                      const { data: urlData } = supabase.storage.from('quiz-images').getPublicUrl(uploaded.path);
+                      setForm(prev => ({ ...prev, imagen_url: urlData.publicUrl }));
+                      toast({ title: '✅ Imagen pegada y subida' });
+                      return;
+                    }
+                  }
+                }}
+              />
+              {form.imagen_url && <img src={form.imagen_url} alt="Preview" className="mt-2 max-h-32 rounded-md border" />}
+            </div>
             <div><Label>Grupo (para agrupar en desplegable)</Label><Input value={form.grupo_nombre} onChange={e => setForm({ ...form, grupo_nombre: e.target.value })} placeholder="Ej: Fundamentos, Avanzado..." /></div>
             {(form.tipo === 'ejercicio' || form.solucion) && (
               <div><Label>Solución</Label><Textarea value={form.solucion} onChange={e => setForm({ ...form, solucion: e.target.value })} rows={4} placeholder="Escribe la solución paso a paso..." /></div>
