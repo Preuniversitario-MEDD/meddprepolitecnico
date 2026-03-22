@@ -447,6 +447,36 @@ export type Database = {
         }
         Relationships: []
       }
+      examen_historial: {
+        Row: {
+          correcta: boolean
+          created_at: string
+          exam_tipo: string
+          id: string
+          intento: number
+          pregunta_id: string
+          user_id: string
+        }
+        Insert: {
+          correcta?: boolean
+          created_at?: string
+          exam_tipo: string
+          id?: string
+          intento?: number
+          pregunta_id: string
+          user_id: string
+        }
+        Update: {
+          correcta?: boolean
+          created_at?: string
+          exam_tipo?: string
+          id?: string
+          intento?: number
+          pregunta_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       examenes: {
         Row: {
           aprobado: boolean | null
