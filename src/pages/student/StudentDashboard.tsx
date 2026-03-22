@@ -7,20 +7,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Lock, CheckCircle, Clock, FlaskConical, FileText, PartyPopper, Zap } from 'lucide-react';
+import { Lock, CheckCircle, Clock, FlaskConical, FileText, Zap, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
 
-const EXAM_BLOCKS = [
-  { tipo: 'exam_1_3', sessions: [1, 2, 3], label: 'Examen Secciones 1-3' },
-  { tipo: 'exam_4_6', sessions: [4, 5, 6], label: 'Examen Secciones 4-6' },
-  { tipo: 'exam_7_9', sessions: [7, 8, 9], label: 'Examen Secciones 7-9' },
-  { tipo: 'exam_10_12', sessions: [10, 11, 12], label: 'Examen Secciones 10-12' },
-  { tipo: 'exam_13_14', sessions: [13, 14], label: 'Examen Secciones 13-14' },
-];
+interface ExamBlockConfig {
+  tipo: string;
+  sessions: number[];
+  label: string;
+  puntaje_aprobacion: number;
+  activo: boolean;
+  isFinal: boolean;
+}
 
 export default function StudentDashboard() {
   const { profile, user } = useAuth();
@@ -34,32 +35,26 @@ export default function StudentDashboard() {
   const [liveCompCount, setLiveCompCount] = useState(0);
   const [sessionOverrides, setSessionOverrides] = useState<Record<string, boolean>>({});
   const [viewedProfile, setViewedProfile] = useState<Tables<'profiles'> | null>(null);
+  const [examBlocks, setExamBlocks] = useState<ExamBlockConfig[]>([]);
   const prevUnlockedExamsRef = useRef<Set<string> | null>(null);
 
   useEffect(() => { loadData(); loadLiveComps(); }, [effectiveUserId]);
 
-  // Realtime: listen for new/updated competitions
   useEffect(() => {
     const ch = supabase.channel('live-comp-notif')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'competencias' }, () => {
-        loadLiveComps();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'competencias' }, () => { loadLiveComps(); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
 
   async function loadLiveComps() {
-    const { count } = await supabase
-      .from('competencias')
-      .select('*', { count: 'exact', head: true })
-      .in('estado', ['lobby', 'en_curso']);
+    const { count } = await supabase.from('competencias').select('*', { count: 'exact', head: true }).in('estado', ['lobby', 'en_curso']);
     setLiveCompCount(count || 0);
   }
 
   async function loadData() {
     if (!effectiveUserId) return;
 
-    // If viewing as another student, load their profile
     if (viewAsStudentId) {
       const { data: vp } = await supabase.from('profiles').select('*').eq('user_id', viewAsStudentId).single();
       setViewedProfile(vp);
@@ -67,11 +62,24 @@ export default function StudentDashboard() {
       setViewedProfile(null);
     }
 
-    const [{ data: ses }, overridesRes] = await Promise.all([
+    const [{ data: ses }, overridesRes, { data: examConfigs }] = await Promise.all([
       supabase.from('sesiones').select('*').order('numero'),
       supabase.from('sesion_estudiante').select('*').eq('user_id', effectiveUserId),
+      supabase.from('exam_configuracion').select('*').eq('activo', true).order('tipo'),
     ]);
     setSesiones(ses || []);
+
+    // Build exam blocks from DB config
+    if (examConfigs) {
+      setExamBlocks(examConfigs.map((c: any) => ({
+        tipo: c.tipo,
+        sessions: c.sessions || [],
+        label: c.label || c.tipo,
+        puntaje_aprobacion: c.puntaje_aprobacion || 80,
+        activo: c.activo,
+        isFinal: c.tipo === 'exam_final',
+      })));
+    }
 
     const oMap: Record<string, boolean> = {};
     overridesRes?.data?.forEach((o: any) => { oMap[o.sesion_id] = o.desbloqueada; });
@@ -80,11 +88,11 @@ export default function StudentDashboard() {
     const { data: prog } = await supabase.from('progreso_estudiante').select('*').eq('user_id', effectiveUserId);
     const map: Record<string, { completada: boolean; puntaje: number; correctasTotal: number; erroresTotal: number }> = {};
     let totalProgress = 0;
+    const totalSesiones = ses?.length || 14;
     prog?.forEach((p: any) => {
       const ejerciciosP = Math.min((p.ejercicios_correctos || 0) / 20, 1) * 40;
       const quizP = Math.min((p.preguntas_correctas_total || 0) / 150, 1) * 60;
-      const sessionP = ejerciciosP + quizP;
-      totalProgress += sessionP;
+      totalProgress += ejerciciosP + quizP;
       map[p.sesion_id] = {
         completada: p.completada,
         puntaje: Number(p.puntaje_quiz) || 0,
@@ -93,7 +101,7 @@ export default function StudentDashboard() {
       };
     });
     setProgress(map);
-    setGlobalProgress(Math.round(totalProgress / 14));
+    setGlobalProgress(Math.round(totalProgress / totalSesiones));
 
     const { data: examData } = await supabase.from('examenes').select('*').eq('user_id', effectiveUserId);
     const examMap: Record<string, { aprobado: boolean; puntaje: number }> = {};
@@ -107,7 +115,6 @@ export default function StudentDashboard() {
   const firstName = displayProfile?.nombre?.split(' ')[0] || 'Estudiante';
 
   const getSessionStatus = (sesion: Sesion) => {
-    // Per-student override takes priority
     const override = sessionOverrides[sesion.id];
     const isBlocked = override !== undefined ? !override : sesion.estado === 'bloqueada';
     if (isBlocked) return 'locked';
@@ -129,8 +136,11 @@ export default function StudentDashboard() {
     'from-neon-orange to-neon-pink', 'from-neon-mint to-neon-blue', 'from-neon-fuchsia to-neon-violet', 'from-neon-orange to-neon-violet',
   ];
 
-  // Exam unlocks when ALL sessions in the block have >= 80% quiz accuracy
-  function isExamUnlocked(block: typeof EXAM_BLOCKS[0]) {
+  function isExamUnlocked(block: ExamBlockConfig) {
+    if (block.isFinal) {
+      // Final exam: all block exams must be approved
+      return examBlocks.filter(b => !b.isFinal).every(b => exams[b.tipo]?.aprobado);
+    }
     return block.sessions.every(num => {
       const sesion = sesiones.find(s => s.numero === num);
       if (!sesion) return false;
@@ -138,36 +148,31 @@ export default function StudentDashboard() {
       if (!p) return false;
       const totalAnswered = p.correctasTotal + p.erroresTotal;
       if (totalAnswered === 0) return false;
-      const accuracy = p.correctasTotal / totalAnswered;
-      return accuracy >= 0.8;
+      return (p.correctasTotal / totalAnswered) >= 0.8;
     });
   }
 
-  // Detect newly unlocked exams and notify
   useEffect(() => {
-    if (sesiones.length === 0 || Object.keys(progress).length === 0) return;
-    
+    if (sesiones.length === 0 || examBlocks.length === 0) return;
     const currentUnlocked = new Set<string>();
-    EXAM_BLOCKS.forEach(block => {
-      if (isExamUnlocked(block)) currentUnlocked.add(block.tipo);
-    });
+    examBlocks.forEach(block => { if (isExamUnlocked(block)) currentUnlocked.add(block.tipo); });
 
     if (prevUnlockedExamsRef.current !== null) {
       currentUnlocked.forEach(tipo => {
         if (!prevUnlockedExamsRef.current!.has(tipo)) {
-          const block = EXAM_BLOCKS.find(b => b.tipo === tipo);
+          const block = examBlocks.find(b => b.tipo === tipo);
           if (block) {
-            toast.success(`🎓 ¡${block.label} desbloqueado!`, {
-              description: 'Has alcanzado ≥80% de precisión en todas las sesiones del bloque',
-              duration: 6000,
-            });
+            toast.success(`🎓 ¡${block.label} desbloqueado!`, { description: block.isFinal ? 'Has aprobado todos los exámenes de bloque' : 'Has alcanzado ≥80% de precisión en todas las sesiones', duration: 6000 });
             confetti({ particleCount: 100, spread: 60, origin: { y: 0.7 } });
           }
         }
       });
     }
     prevUnlockedExamsRef.current = currentUnlocked;
-  }, [sesiones, progress]);
+  }, [sesiones, progress, exams, examBlocks]);
+
+  const blockExams = examBlocks.filter(b => !b.isFinal);
+  const finalExam = examBlocks.find(b => b.isFinal);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -202,7 +207,7 @@ export default function StudentDashboard() {
             </div>
             <Progress value={globalProgress} className="h-3" />
             <p className="text-xs text-muted-foreground mt-2">
-              {Object.values(progress).filter(p => p.completada).length} de 14 sesiones completadas
+              {Object.values(progress).filter(p => p.completada).length} de {sesiones.length} sesiones completadas
             </p>
           </CardContent>
         </Card>
@@ -225,7 +230,6 @@ export default function StudentDashboard() {
                     </div>
                     <p className="font-display font-bold text-sm">S{sesion.numero}</p>
                     <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{sesion.titulo}</p>
-                    {/* Show quiz accuracy if has progress */}
                     {progress[sesion.id] && (progress[sesion.id].correctasTotal + progress[sesion.id].erroresTotal) > 0 && (
                       <p className="text-[10px] text-muted-foreground mt-1">
                         Quiz: {Math.round((progress[sesion.id].correctasTotal / (progress[sesion.id].correctasTotal + progress[sesion.id].erroresTotal)) * 100)}% aciertos
@@ -244,47 +248,85 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      <div>
-        <h2 className="font-display font-bold text-lg mb-3 text-neon-fuchsia">Exámenes por Bloque</h2>
-        <p className="text-xs text-muted-foreground mb-2">Se desbloquean al alcanzar ≥80% de aciertos en el quiz de cada sesión del bloque</p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {EXAM_BLOCKS.map(block => {
-            const unlocked = isExamUnlocked(block);
-            const exam = exams[block.tipo];
-            return (
-              <Card key={block.tipo} className={`card-elevated ${!unlocked ? 'opacity-50' : exam?.aprobado ? 'border-l-4 border-accent' : ''}`}>
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className={`w-5 h-5 ${exam?.aprobado ? 'text-accent' : unlocked ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <div>
-                      <p className="text-sm font-medium">{block.label}</p>
-                      {exam && <p className="text-xs text-muted-foreground">{exam.puntaje}/100 {exam.aprobado ? '✅' : '❌'}</p>}
-                      {!unlocked && (
-                        <p className="text-[10px] text-muted-foreground">
-                          {block.sessions.map(num => {
-                            const ses = sesiones.find(s => s.numero === num);
-                            if (!ses) return null;
-                            const p = progress[ses.id];
-                            const total = p ? p.correctasTotal + p.erroresTotal : 0;
-                            const acc = total > 0 ? Math.round((p!.correctasTotal / total) * 100) : 0;
-                            return `S${num}: ${acc}%`;
-                          }).filter(Boolean).join(' · ')}
-                        </p>
-                      )}
+      {/* Block exams */}
+      {blockExams.length > 0 && (
+        <div>
+          <h2 className="font-display font-bold text-lg mb-3 text-neon-fuchsia">Exámenes por Bloque</h2>
+          <p className="text-xs text-muted-foreground mb-2">Se desbloquean al alcanzar ≥80% de aciertos en el quiz de cada sesión del bloque</p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {blockExams.map(block => {
+              const unlocked = isExamUnlocked(block);
+              const exam = exams[block.tipo];
+              return (
+                <Card key={block.tipo} className={`card-elevated ${!unlocked ? 'opacity-50' : exam?.aprobado ? 'border-l-4 border-accent' : ''}`}>
+                  <CardContent className="p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className={`w-5 h-5 ${exam?.aprobado ? 'text-accent' : unlocked ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <div>
+                        <p className="text-sm font-medium">{block.label}</p>
+                        {exam && <p className="text-xs text-muted-foreground">{exam.puntaje}/100 {exam.aprobado ? '✅' : '❌'}</p>}
+                        {!unlocked && (
+                          <p className="text-[10px] text-muted-foreground">
+                            {block.sessions.map(num => {
+                              const ses = sesiones.find(s => s.numero === num);
+                              if (!ses) return null;
+                              const p = progress[ses.id];
+                              const total = p ? p.correctasTotal + p.erroresTotal : 0;
+                              const acc = total > 0 ? Math.round((p!.correctasTotal / total) * 100) : 0;
+                              return `S${num}: ${acc}%`;
+                            }).filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  {unlocked && !exam?.aprobado && (
-                    <Button size="sm" onClick={() => navigate(`/student/exam/${block.tipo}`)} className="gradient-primary text-primary-foreground text-xs">
-                      {exam ? 'Repetir' : 'Iniciar'}
-                    </Button>
-                  )}
-                  {!unlocked && <Lock className="w-4 h-4 text-muted-foreground" />}
-                </CardContent>
-              </Card>
-            );
-          })}
+                    {unlocked && !exam?.aprobado && (
+                      <Button size="sm" onClick={() => navigate(`/student/exam/${block.tipo}`)} className="gradient-primary text-primary-foreground text-xs">
+                        {exam ? 'Repetir' : 'Iniciar'}
+                      </Button>
+                    )}
+                    {!unlocked && <Lock className="w-4 h-4 text-muted-foreground" />}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Final Exam */}
+      {finalExam && (
+        <div>
+          <h2 className="font-display font-bold text-lg mb-3 text-[hsl(var(--neon-orange))]">🏆 Examen Final</h2>
+          <Card className={`card-elevated border-2 ${isExamUnlocked(finalExam) ? 'border-[hsl(var(--neon-orange))]' : 'border-muted opacity-60'}`}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-[hsl(var(--neon-orange))]/20 flex items-center justify-center">
+                  <Trophy className="w-6 h-6 text-[hsl(var(--neon-orange))]" />
+                </div>
+                <div>
+                  <p className="font-display font-bold">{finalExam.label}</p>
+                  <p className="text-xs text-muted-foreground">50 preguntas · Alta dificultad · Sobre 1000 puntos</p>
+                  {exams[finalExam.tipo] && (
+                    <p className="text-sm font-medium mt-1">
+                      Mejor: {exams[finalExam.tipo].puntaje}/1000 {exams[finalExam.tipo].aprobado ? '✅' : ''}
+                    </p>
+                  )}
+                  {!isExamUnlocked(finalExam) && (
+                    <p className="text-[10px] text-muted-foreground mt-1">Aprueba todos los exámenes de bloque para desbloquear</p>
+                  )}
+                </div>
+              </div>
+              {isExamUnlocked(finalExam) ? (
+                <Button onClick={() => navigate(`/student/exam/${finalExam.tipo}`)} className="bg-[hsl(var(--neon-orange))] hover:bg-[hsl(var(--neon-orange))]/90 text-primary-foreground gap-2">
+                  {exams[finalExam.tipo] ? 'Reintentar' : 'Iniciar'}
+                </Button>
+              ) : (
+                <Lock className="w-5 h-5 text-muted-foreground" />
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
