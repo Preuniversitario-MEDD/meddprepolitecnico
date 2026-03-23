@@ -261,12 +261,15 @@ export default function AdminExams() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {totalStudents} estudiantes</span>
                   <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-accent" /> {aprobados} aprobados</span>
                   <span className="flex items-center gap-1"><XCircle className="w-3 h-3 text-destructive" /> {examRes.length - aprobados} reprobados</span>
                   <Button size="sm" variant="ghost" className="text-xs h-6 px-2" onClick={() => setSelectedExam(cfg.tipo)}>
                     <Eye className="w-3 h-3 mr-1" /> Ver resultados
+                  </Button>
+                  <Button size="sm" variant="ghost" className="text-xs h-6 px-2 text-[hsl(var(--neon-violet))]" onClick={() => setStatusExam(cfg.tipo)}>
+                    <Lock className="w-3 h-3 mr-1" /> Estado por estudiante
                   </Button>
                 </div>
               </CardContent>
