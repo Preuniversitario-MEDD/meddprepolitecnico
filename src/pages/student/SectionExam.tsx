@@ -75,10 +75,23 @@ export default function SectionExam() {
       setConfig(examCfg);
       setTimeLeft(examCfg.tiempo_minutos * 60);
 
-      // Get attempt number
+      // Check attempt count and enforce limit
       if (user) {
-        const { count } = await supabase.from('examenes').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('tipo', tipo!);
-        setAttemptNumber((count || 0) + 1);
+        const { data: prevExams } = await supabase.from('examenes').select('*').eq('user_id', user.id).eq('tipo', tipo!);
+        const attemptCount = prevExams?.length || 0;
+        setAttemptNumber(attemptCount + 1);
+
+        const bestScore = prevExams ? Math.max(0, ...prevExams.map((e: any) => Number(e.puntaje))) : 0;
+        const anyApproved = prevExams?.some((e: any) => e.aprobado);
+
+        if (!anyApproved && attemptCount >= 3) {
+          if (bestScore < 70) {
+            // Blocked - must redo sessions
+            setState('blocked' as any);
+            return;
+          }
+          // Allow extra attempt if score >= 70
+        }
       }
 
       await loadExamQuestions(examCfg.sessions, examCfg.cantidad_preguntas, isFinal);
