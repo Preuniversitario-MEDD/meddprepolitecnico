@@ -13,6 +13,7 @@ import AvatarUpload from '@/components/AvatarUpload';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import CourseManager from '@/components/admin/CourseManager';
+import StudentStatsTab from '@/components/admin/StudentStatsTab';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Profile = Tables<'profiles'> & { colegio?: string };
