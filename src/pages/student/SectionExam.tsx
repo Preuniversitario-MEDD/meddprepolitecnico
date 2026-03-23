@@ -246,6 +246,26 @@ export default function SectionExam() {
 
   if (state === 'loading') return <div className="p-6 text-center text-muted-foreground">Cargando examen...</div>;
 
+  if ((state as string) === 'blocked') {
+    return (
+      <div className="p-4 md:p-6 space-y-6">
+        <Button variant="ghost" onClick={() => navigate('/student')} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-4 py-12">
+          <div className="w-16 h-16 rounded-full bg-destructive/20 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-8 h-8 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-display font-bold text-destructive">Intentos Agotados</h1>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Has usado tus 3 intentos sin alcanzar el puntaje mínimo. Debes repasar las sesiones de este examen para poder intentarlo nuevamente.
+          </p>
+          <p className="text-xs text-muted-foreground">Si hubieras obtenido ≥70/100 tendrías una oportunidad extra.</p>
+          <Button onClick={() => navigate('/student')} className="gradient-primary text-primary-foreground">Volver a las sesiones</Button>
+        </motion.div>
+      </div>
+    );
+  }
+
+
   if (state === 'results') {
     const correctCount = answersRef.current.filter(a => a.correct).length;
     const answeredCount = answersRef.current.length;
