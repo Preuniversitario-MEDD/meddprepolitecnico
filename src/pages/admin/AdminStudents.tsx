@@ -222,9 +222,10 @@ export default function AdminStudents() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-xs grid-cols-2">
+        <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="students" className="gap-1"><Users className="w-4 h-4" /> Estudiantes</TabsTrigger>
           <TabsTrigger value="courses" className="gap-1"><BookOpen className="w-4 h-4" /> Cursos</TabsTrigger>
+          <TabsTrigger value="stats" className="gap-1"><BarChart3 className="w-4 h-4" /> Estadísticas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="students" className="space-y-3 mt-3">
