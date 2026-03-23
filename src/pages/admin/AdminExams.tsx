@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Settings2, Eye, Users, CheckCircle, XCircle, Brain, Pencil, Save, Plus, Trophy } from 'lucide-react';
+import { Settings2, Eye, Users, CheckCircle, XCircle, Brain, Pencil, Save, Plus, Trophy, Lock, Unlock, AlertTriangle, RotateCcw } from 'lucide-react';
 
 interface ExamConfig {
   id: string;
@@ -55,6 +55,8 @@ export default function AdminExams() {
   const [editSessions, setEditSessions] = useState<number[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [newExam, setNewExam] = useState({ tipo: '', label: '', sessions: [] as number[], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80 });
+  const [statusExam, setStatusExam] = useState<string | null>(null);
+  const [studentStatuses, setStudentStatuses] = useState<any[]>([]);
 
   useEffect(() => { loadAll(); }, []);
 
@@ -261,12 +263,15 @@ export default function AdminExams() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {totalStudents} estudiantes</span>
                   <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-accent" /> {aprobados} aprobados</span>
                   <span className="flex items-center gap-1"><XCircle className="w-3 h-3 text-destructive" /> {examRes.length - aprobados} reprobados</span>
                   <Button size="sm" variant="ghost" className="text-xs h-6 px-2" onClick={() => setSelectedExam(cfg.tipo)}>
                     <Eye className="w-3 h-3 mr-1" /> Ver resultados
+                  </Button>
+                  <Button size="sm" variant="ghost" className="text-xs h-6 px-2 text-[hsl(var(--neon-violet))]" onClick={() => setStatusExam(cfg.tipo)}>
+                    <Lock className="w-3 h-3 mr-1" /> Estado por estudiante
                   </Button>
                 </div>
               </CardContent>
@@ -355,6 +360,153 @@ export default function AdminExams() {
           </Table>
         </DialogContent>
       </Dialog>
+
+      {/* Student exam status dialog */}
+      <Dialog open={!!statusExam} onOpenChange={() => setStatusExam(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5" /> Estado: {configs.find(c => c.tipo === statusExam)?.label}
+            </DialogTitle>
+          </DialogHeader>
+          <StudentExamStatusTable examTipo={statusExam} configs={configs} sesiones={sesiones} results={results} />
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { examTipo: string | null; configs: ExamConfig[]; sesiones: Sesion[]; results: ExamResult[] }) {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (examTipo) loadStatus();
+  }, [examTipo]);
+
+  async function loadStatus() {
+    setLoading(true);
+    const cfg = configs.find(c => c.tipo === examTipo);
+    if (!cfg) { setLoading(false); return; }
+
+    const [{ data: profiles }, { data: allProgress }, { data: allExams }] = await Promise.all([
+      supabase.from('profiles').select('user_id, nombre, apellidos'),
+      supabase.from('progreso_estudiante').select('user_id, sesion_id, preguntas_correctas_total, errores_quiz'),
+      supabase.from('examenes').select('user_id, tipo, puntaje, aprobado, fecha').eq('tipo', examTipo!),
+    ]);
+
+    const sesionIds = sesiones.filter(s => cfg.sessions.includes(s.numero)).map(s => s.id);
+
+    const studentMap = new Map<string, any>();
+    (profiles || []).forEach((p: any) => {
+      // Check unlock condition: >=80% accuracy in all required sessions
+      const sessionStatuses = sesionIds.map(sid => {
+        const prog = (allProgress || []).find((pr: any) => pr.user_id === p.user_id && pr.sesion_id === sid);
+        if (!prog) return { met: false, accuracy: 0 };
+        const total = (prog.preguntas_correctas_total || 0) + (prog.errores_quiz || 0);
+        const accuracy = total > 0 ? Math.round(((prog.preguntas_correctas_total || 0) / total) * 100) : 0;
+        return { met: accuracy >= 80, accuracy };
+      });
+
+      const unlocked = sessionStatuses.every(s => s.met);
+      const studentExams = (allExams || []).filter((e: any) => e.user_id === p.user_id);
+      const attempts = studentExams.length;
+      const bestScore = studentExams.length > 0 ? Math.max(...studentExams.map((e: any) => Number(e.puntaje))) : 0;
+      const approved = studentExams.some((e: any) => e.aprobado);
+      const blocked = attempts >= 3 && !approved && bestScore < 70;
+      const extraChance = attempts >= 3 && !approved && bestScore >= 70;
+
+      studentMap.set(p.user_id, {
+        ...p,
+        unlocked,
+        sessionAccuracies: sessionStatuses,
+        attempts,
+        bestScore,
+        approved,
+        blocked,
+        extraChance,
+        lastDate: studentExams.length > 0 ? studentExams[studentExams.length - 1].fecha : null,
+      });
+    });
+
+    setData(Array.from(studentMap.values()).sort((a, b) => {
+      if (a.approved !== b.approved) return a.approved ? -1 : 1;
+      if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
+      return b.bestScore - a.bestScore;
+    }));
+    setLoading(false);
+  }
+
+  if (loading) return <p className="text-center text-muted-foreground py-4">Cargando...</p>;
+
+  const cfg = configs.find(c => c.tipo === examTipo);
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Estudiante</TableHead>
+          <TableHead>Desbloqueo</TableHead>
+          <TableHead>Intentos</TableHead>
+          <TableHead>Mejor nota</TableHead>
+          <TableHead>Estado</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.map(s => (
+          <TableRow key={s.user_id}>
+            <TableCell className="font-medium text-sm">{s.nombre} {s.apellidos}</TableCell>
+            <TableCell>
+              {s.unlocked ? (
+                <Badge variant="outline" className="text-[10px] gap-1 border-[hsl(var(--neon-mint))] text-[hsl(var(--neon-mint))]">
+                  <Unlock className="w-3 h-3" /> Desbloqueado
+                </Badge>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Badge variant="outline" className="text-[10px] gap-1 border-destructive text-destructive">
+                    <Lock className="w-3 h-3" /> Bloqueado
+                  </Badge>
+                  <span className="text-[9px] text-muted-foreground">
+                    ({s.sessionAccuracies.filter((a: any) => a.met).length}/{s.sessionAccuracies.length} sesiones)
+                  </span>
+                </div>
+              )}
+            </TableCell>
+            <TableCell>
+              <span className={`text-sm font-bold ${s.attempts >= 3 ? 'text-destructive' : 'text-foreground'}`}>
+                {s.attempts}/3
+              </span>
+            </TableCell>
+            <TableCell>
+              <span className={`text-sm font-bold ${s.bestScore >= (cfg?.puntaje_aprobacion || 80) ? 'text-[hsl(var(--neon-mint))]' : s.bestScore > 0 ? 'text-[hsl(var(--neon-orange))]' : 'text-muted-foreground'}`}>
+                {s.bestScore > 0 ? `${s.bestScore}/${cfg?.tipo === 'exam_final' ? '1000' : '100'}` : '—'}
+              </span>
+            </TableCell>
+            <TableCell>
+              {s.approved ? (
+                <Badge className="text-[10px] bg-[hsl(var(--neon-mint))] text-white">✅ Aprobado</Badge>
+              ) : s.blocked ? (
+                <Badge variant="destructive" className="text-[10px] gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Bloqueado (debe repetir sesiones)
+                </Badge>
+              ) : s.extraChance ? (
+                <Badge className="text-[10px] bg-[hsl(var(--neon-orange))] text-white gap-1">
+                  <RotateCcw className="w-3 h-3" /> Oportunidad extra (≥70)
+                </Badge>
+              ) : s.attempts > 0 ? (
+                <Badge variant="outline" className="text-[10px]">En progreso</Badge>
+              ) : s.unlocked ? (
+                <Badge variant="outline" className="text-[10px] text-[hsl(var(--neon-orange))]">Pendiente</Badge>
+              ) : (
+                <span className="text-[10px] text-muted-foreground">No disponible</span>
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
+        {data.length === 0 && (
+          <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Sin estudiantes</TableCell></TableRow>
+        )}
+      </TableBody>
+    </Table>
   );
 }
