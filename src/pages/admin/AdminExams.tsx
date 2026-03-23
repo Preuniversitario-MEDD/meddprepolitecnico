@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Settings2, Eye, Users, CheckCircle, XCircle, Brain, Pencil, Save, Plus, Trophy } from 'lucide-react';
+import { Settings2, Eye, Users, CheckCircle, XCircle, Brain, Pencil, Save, Plus, Trophy, Lock, Unlock, AlertTriangle, RotateCcw } from 'lucide-react';
 
 interface ExamConfig {
   id: string;
