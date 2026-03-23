@@ -301,8 +301,18 @@ export default function SectionExam() {
             <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-destructive" /> {answeredCount - correctCount} incorrectas</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {config.isFinal ? `Puntuación sobre ${maxScore} puntos · Intento #${attemptNumber}` : 'Puntuación ponderada por dificultad (1-5 pts por pregunta)'}
+            {config.isFinal ? `Puntuación sobre ${maxScore} puntos · Intento #${attemptNumber}` : `Puntuación ponderada por dificultad · Intento #${attemptNumber} de 3`}
           </p>
+          {!aprobado && attemptNumber >= 3 && weightedScore < 70 && (
+            <p className="text-xs text-destructive flex items-center justify-center gap-1 mt-1">
+              <AlertTriangle className="w-3.5 h-3.5" /> Has agotado tus 3 intentos. Debes repasar las sesiones.
+            </p>
+          )}
+          {!aprobado && attemptNumber >= 3 && weightedScore >= 70 && (
+            <p className="text-xs text-[hsl(var(--neon-orange))] flex items-center justify-center gap-1 mt-1">
+              ✨ Obtuviste ≥70, tienes una oportunidad extra.
+            </p>
+          )}
           <div className="flex justify-center gap-3">
             {!aprobado && (
               <Button onClick={() => {
