@@ -75,10 +75,23 @@ export default function SectionExam() {
       setConfig(examCfg);
       setTimeLeft(examCfg.tiempo_minutos * 60);
 
-      // Get attempt number
+      // Check attempt count and enforce limit
       if (user) {
-        const { count } = await supabase.from('examenes').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('tipo', tipo!);
-        setAttemptNumber((count || 0) + 1);
+        const { data: prevExams } = await supabase.from('examenes').select('*').eq('user_id', user.id).eq('tipo', tipo!);
+        const attemptCount = prevExams?.length || 0;
+        setAttemptNumber(attemptCount + 1);
+
+        const bestScore = prevExams ? Math.max(0, ...prevExams.map((e: any) => Number(e.puntaje))) : 0;
+        const anyApproved = prevExams?.some((e: any) => e.aprobado);
+
+        if (!anyApproved && attemptCount >= 3) {
+          if (bestScore < 70) {
+            // Blocked - must redo sessions
+            setState('blocked' as any);
+            return;
+          }
+          // Allow extra attempt if score >= 70
+        }
       }
 
       await loadExamQuestions(examCfg.sessions, examCfg.cantidad_preguntas, isFinal);
@@ -233,6 +246,26 @@ export default function SectionExam() {
 
   if (state === 'loading') return <div className="p-6 text-center text-muted-foreground">Cargando examen...</div>;
 
+  if ((state as string) === 'blocked') {
+    return (
+      <div className="p-4 md:p-6 space-y-6">
+        <Button variant="ghost" onClick={() => navigate('/student')} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-4 py-12">
+          <div className="w-16 h-16 rounded-full bg-destructive/20 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-8 h-8 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-display font-bold text-destructive">Intentos Agotados</h1>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Has usado tus 3 intentos sin alcanzar el puntaje mínimo. Debes repasar las sesiones de este examen para poder intentarlo nuevamente.
+          </p>
+          <p className="text-xs text-muted-foreground">Si hubieras obtenido ≥70/100 tendrías una oportunidad extra.</p>
+          <Button onClick={() => navigate('/student')} className="gradient-primary text-primary-foreground">Volver a las sesiones</Button>
+        </motion.div>
+      </div>
+    );
+  }
+
+
   if (state === 'results') {
     const correctCount = answersRef.current.filter(a => a.correct).length;
     const answeredCount = answersRef.current.length;
@@ -268,8 +301,18 @@ export default function SectionExam() {
             <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-destructive" /> {answeredCount - correctCount} incorrectas</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {config.isFinal ? `Puntuación sobre ${maxScore} puntos · Intento #${attemptNumber}` : 'Puntuación ponderada por dificultad (1-5 pts por pregunta)'}
+            {config.isFinal ? `Puntuación sobre ${maxScore} puntos · Intento #${attemptNumber}` : `Puntuación ponderada por dificultad · Intento #${attemptNumber} de 3`}
           </p>
+          {!aprobado && attemptNumber >= 3 && weightedScore < 70 && (
+            <p className="text-xs text-destructive flex items-center justify-center gap-1 mt-1">
+              <AlertTriangle className="w-3.5 h-3.5" /> Has agotado tus 3 intentos. Debes repasar las sesiones.
+            </p>
+          )}
+          {!aprobado && attemptNumber >= 3 && weightedScore >= 70 && (
+            <p className="text-xs text-[hsl(var(--neon-orange))] flex items-center justify-center gap-1 mt-1">
+              ✨ Obtuviste ≥70, tienes una oportunidad extra.
+            </p>
+          )}
           <div className="flex justify-center gap-3">
             {!aprobado && (
               <Button onClick={() => {
