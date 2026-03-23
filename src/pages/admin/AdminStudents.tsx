@@ -307,6 +307,10 @@ export default function AdminStudents() {
         <TabsContent value="courses" className="mt-3">
           <CourseManager students={students} />
         </TabsContent>
+
+        <TabsContent value="stats" className="mt-3">
+          <StudentStatsTab students={students} />
+        </TabsContent>
       </Tabs>
     </div>
   );
