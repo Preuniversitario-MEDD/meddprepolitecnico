@@ -97,7 +97,7 @@ export default function SectionExam() {
       setConfig(examCfg);
       setTimeLeft(examCfg.tiempo_minutos * 60);
 
-      if (user) {
+      if (user && !isAdminPreview) {
         const { data: prevExams } = await supabase.from('examenes').select('*').eq('user_id', user.id).eq('tipo', tipo!);
         const attemptCount = prevExams?.length || 0;
         setAttemptNumber(attemptCount + 1);
