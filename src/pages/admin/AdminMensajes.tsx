@@ -166,8 +166,11 @@ export default function AdminMensajes() {
             supabase.from('mensajes').update({ leido: true }).eq('id', msg.id);
           }
         })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'mensajes', filter: `conversacion_id=eq.${selectedConv}` },
+        (payload) => {
+          setMessages(prev => prev.filter(m => m.id !== (payload.old as any).id));
+        })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
   }, [selectedConv, user]);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
