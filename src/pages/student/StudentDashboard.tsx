@@ -155,8 +155,9 @@ export default function StudentDashboard() {
   ];
 
   function isExamUnlocked(block: ExamBlockConfig) {
+    if (block.bloqueado) return false;
     if (block.isFinal) {
-      return examBlocks.filter(b => !b.isFinal).every(b => exams[b.tipo]?.aprobado);
+      return examBlocks.filter(b => !b.isFinal && !b.bloqueado).every(b => exams[b.tipo]?.aprobado);
     }
     return block.sessions.every(num => {
       const sesion = sesiones.find(s => s.numero === num);
