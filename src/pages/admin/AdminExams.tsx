@@ -421,13 +421,15 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
     const cfg = configs.find(c => c.tipo === examTipo);
     if (!cfg) { setLoading(false); return; }
 
-    const [{ data: profiles }, { data: allProgress }, { data: allExams }] = await Promise.all([
+    const [{ data: profiles }, { data: allProgress }, { data: allExams }, { data: bloqueos }] = await Promise.all([
       supabase.from('profiles').select('user_id, nombre, apellidos'),
       supabase.from('progreso_estudiante').select('user_id, sesion_id, preguntas_correctas_total, errores_quiz'),
       supabase.from('examenes').select('user_id, tipo, puntaje, aprobado, fecha').eq('tipo', examTipo!),
+      supabase.from('exam_bloqueos').select('user_id, exam_tipo'),
     ]);
 
     const sesionIds = sesiones.filter(s => cfg.sessions.includes(s.numero)).map(s => s.id);
+    const bloqueoSet = new Set((bloqueos || []).map((b: any) => `${b.user_id}:${b.exam_tipo}`));
 
     const studentMap = new Map<string, any>();
     (profiles || []).forEach((p: any) => {
@@ -446,6 +448,7 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
       const approved = studentExams.some((e: any) => e.aprobado);
       const blocked = attempts >= 3 && !approved && bestScore < 70;
       const extraChance = attempts >= 3 && !approved && bestScore >= 70;
+      const examBloqueado = bloqueoSet.has(`${p.user_id}:${examTipo}`);
 
       studentMap.set(p.user_id, {
         ...p,
@@ -456,6 +459,7 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
         approved,
         blocked,
         extraChance,
+        examBloqueado,
       });
     });
 
