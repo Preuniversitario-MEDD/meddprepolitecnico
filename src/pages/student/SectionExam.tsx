@@ -152,7 +152,7 @@ export default function SectionExam() {
       opciones: (q.opciones as string[]) || [],
       respuesta_correcta: q.respuesta_correcta,
       imagen_url: q.imagen_url,
-      dificultad: (q as any).dificultad || 1,
+      dificultad: q.dificultad || 1,
     }));
     setQuestions(mapped);
     setState('playing');
