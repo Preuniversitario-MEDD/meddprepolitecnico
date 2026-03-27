@@ -331,7 +331,8 @@ export default function StudentDashboard() {
                       <FileText className={`w-5 h-5 ${exam?.aprobado ? 'text-accent' : isOpen ? 'text-[hsl(var(--neon-orange))]' : unlocked ? 'text-primary' : 'text-muted-foreground'}`} />
                       <div>
                         <p className={`text-sm font-medium ${isOpen ? 'text-[hsl(var(--neon-orange))]' : ''}`}>{block.label}</p>
-                        {exam && <p className="text-xs text-muted-foreground">{exam.puntaje}/100 {exam.aprobado ? '✅' : '❌'} · {exam.intentos} intento{exam.intentos > 1 ? 's' : ''}</p>}
+                        <p className="text-[10px] text-muted-foreground">Aprueba con: {block.puntaje_aprobacion}/{block.isFinal ? '1000' : '100'}</p>
+                        {exam && <p className="text-xs text-muted-foreground">{exam.puntaje}/100 {exam.aprobado ? '✅' : '❌'} · {exam.intentos} intento{exam.intentos > 1 ? 's' : ''} de 3</p>}
                         {!unlocked && (
                           <p className="text-[10px] text-muted-foreground">
                             {block.sessions.map(num => {
