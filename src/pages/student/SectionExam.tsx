@@ -230,7 +230,7 @@ export default function SectionExam() {
           correcta: a.correct,
           intento: attemptNumber,
         }));
-        await supabase.from('examen_historial' as any).insert(historyRows);
+        await supabase.from('examen_historial').insert(historyRows);
       }
     }
 
