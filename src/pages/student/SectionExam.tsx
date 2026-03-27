@@ -302,9 +302,10 @@ export default function SectionExam() {
     const correctCount = Array.from(answeredMap.values()).filter(a => a.correct).length;
     const answeredCount = answeredMap.size;
     const aprobado = weightedScore >= config.puntaje_aprobacion;
+    const [showReview, setShowReviewState] = useState(false);
 
     return (
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6 max-h-screen overflow-y-auto">
         <Button variant="ghost" onClick={() => navigate(backPath)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-4">
           {config.isFinal && weightedScore >= 900 ? (
@@ -337,7 +338,10 @@ export default function SectionExam() {
           {!aprobado && attemptNumber >= 3 && weightedScore >= 70 && (
             <p className="text-xs text-[hsl(var(--neon-orange))]">✨ Obtuviste ≥70, tienes una oportunidad extra.</p>
           )}
-          <div className="flex justify-center gap-3">
+          <div className="flex justify-center gap-3 flex-wrap">
+            <Button variant="outline" onClick={() => setShowReviewState(!showReview)} className="gap-2">
+              <Eye className="w-4 h-4" /> {showReview ? 'Ocultar Revisión' : 'Revisar Respuestas'}
+            </Button>
             {!aprobado && (
               <Button onClick={() => {
                 finishedRef.current = false;
@@ -354,6 +358,50 @@ export default function SectionExam() {
             <Button variant="outline" onClick={() => navigate(backPath)}>Volver al Dashboard</Button>
           </div>
         </motion.div>
+
+        {/* Answer review */}
+        {showReview && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 pb-6">
+            <h3 className="font-display font-bold text-lg text-foreground">Revisión de Respuestas</h3>
+            {questions.map((q, idx) => {
+              const ans = answeredMap.get(idx);
+              const wasCorrect = ans?.correct;
+              const selectedIdx = ans?.selected;
+              const notAnswered = selectedIdx === undefined;
+              return (
+                <Card key={q.id} className={`border-l-4 ${notAnswered ? 'border-muted' : wasCorrect ? 'border-accent' : 'border-destructive'}`}>
+                  <CardContent className="p-3 md:p-4 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${notAnswered ? 'bg-muted text-muted-foreground' : wasCorrect ? 'bg-accent/20 text-accent' : 'bg-destructive/20 text-destructive'}`}>
+                        {idx + 1}
+                      </span>
+                      <p className="text-sm font-medium text-foreground">{q.pregunta}</p>
+                    </div>
+                    {q.imagen_url && <img src={q.imagen_url} alt="" className="rounded-lg max-w-full h-auto max-h-32" />}
+                    <div className="space-y-1">
+                      {q.opciones.map((op, i) => {
+                        const isCorrectAnswer = i === q.respuesta_correcta;
+                        const wasSelected = selectedIdx === i;
+                        let bg = 'bg-card border-border';
+                        if (isCorrectAnswer) bg = 'bg-accent/15 border-accent text-accent';
+                        else if (wasSelected && !isCorrectAnswer) bg = 'bg-destructive/15 border-destructive text-destructive';
+                        return (
+                          <div key={i} className={`p-2 rounded-lg border text-xs flex items-center gap-2 ${bg}`}>
+                            {isCorrectAnswer && <CheckCircle className="w-3.5 h-3.5 text-accent shrink-0" />}
+                            {wasSelected && !isCorrectAnswer && <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />}
+                            {!isCorrectAnswer && !wasSelected && <span className="w-3.5 shrink-0" />}
+                            <span><span className="font-medium mr-1">{String.fromCharCode(65 + i)}.</span>{op}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {notAnswered && <p className="text-[10px] text-muted-foreground italic">No respondida</p>}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </motion.div>
+        )}
       </div>
     );
   }
