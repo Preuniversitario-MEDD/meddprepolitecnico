@@ -40,7 +40,9 @@ const DEFAULT_CONFIG: ExamConfig = {
 export default function SectionExam() {
   const { tipo } = useParams<{ tipo: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const location = window.location.pathname;
+  const isAdminPreview = location.startsWith('/admin/exam-preview');
+  const { user, role } = useAuth();
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
