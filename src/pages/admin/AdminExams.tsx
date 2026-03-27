@@ -119,10 +119,11 @@ export default function AdminExams() {
       tiempo_minutos: newExam.tiempo_minutos,
       cantidad_preguntas: newExam.cantidad_preguntas,
       puntaje_aprobacion: newExam.puntaje_aprobacion,
+      modo: newExam.modo,
     });
     if (error) { toast.error('Error: ' + error.message); return; }
     setCreateOpen(false);
-    setNewExam({ tipo: '', label: '', sessions: [], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80 });
+    setNewExam({ tipo: '', label: '', sessions: [], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80, modo: 'libre' });
     toast.success('Examen creado');
     loadAll();
   }
