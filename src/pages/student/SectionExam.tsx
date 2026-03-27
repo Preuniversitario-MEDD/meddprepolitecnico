@@ -95,6 +95,7 @@ export default function SectionExam() {
         label: (cfg as any).label || 'Examen',
         sessions: (cfg as any).sessions || [],
         isFinal,
+        modo: (cfg as any).modo || 'libre',
       };
       setConfig(examCfg);
       setTimeLeft(examCfg.tiempo_minutos * 60);
