@@ -69,12 +69,15 @@ export default function StudentDashboard() {
       setViewedProfile(null);
     }
 
-    const [{ data: ses }, overridesRes, { data: examConfigs }] = await Promise.all([
+    const [{ data: ses }, overridesRes, { data: examConfigs }, { data: bloqueos }] = await Promise.all([
       supabase.from('sesiones').select('*').order('numero'),
       supabase.from('sesion_estudiante').select('*').eq('user_id', effectiveUserId),
       supabase.from('exam_configuracion').select('*').eq('activo', true).order('tipo'),
+      supabase.from('exam_bloqueos').select('*').eq('user_id', effectiveUserId),
     ]);
     setSesiones(ses || []);
+
+    const bloqueoSet = new Set((bloqueos || []).map((b: any) => b.exam_tipo));
 
     if (examConfigs) {
       setExamBlocks(examConfigs.map((c: any) => ({
@@ -84,6 +87,7 @@ export default function StudentDashboard() {
         puntaje_aprobacion: c.puntaje_aprobacion || 80,
         activo: c.activo,
         isFinal: c.tipo === 'exam_final',
+        bloqueado: bloqueoSet.has(c.tipo),
       })));
     }
 
