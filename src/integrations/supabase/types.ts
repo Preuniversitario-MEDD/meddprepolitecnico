@@ -438,6 +438,27 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_bloqueos: {
+        Row: {
+          created_at: string
+          exam_tipo: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exam_tipo: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exam_tipo?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       exam_configuracion: {
         Row: {
           activo: boolean
