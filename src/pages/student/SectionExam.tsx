@@ -303,7 +303,6 @@ export default function SectionExam() {
     const correctCount = Array.from(answeredMap.values()).filter(a => a.correct).length;
     const answeredCount = answeredMap.size;
     const aprobado = weightedScore >= config.puntaje_aprobacion;
-    const [showReview, setShowReviewState] = useState(false);
 
     return (
       <div className="p-4 md:p-6 space-y-6 max-h-screen overflow-y-auto">
