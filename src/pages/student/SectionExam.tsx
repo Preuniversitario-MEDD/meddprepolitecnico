@@ -130,15 +130,15 @@ export default function SectionExam() {
 
     let pool = allQ;
     if (isFinal && user) {
-      const { data: history } = await supabase.from('examen_historial' as any).select('pregunta_id').eq('user_id', user.id).eq('exam_tipo', tipo!);
+      const { data: history } = await supabase.from('examen_historial').select('pregunta_id').eq('user_id', user.id).eq('exam_tipo', tipo!);
       if (history && history.length > 0) {
-        const answeredIds = new Set((history as any[]).map(h => h.pregunta_id));
+        const answeredIds = new Set(history.map(h => h.pregunta_id));
         const fresh = pool.filter(q => !answeredIds.has(q.id));
         if (fresh.length >= count) pool = fresh;
       }
-      const hard = pool.filter(q => (q as any).dificultad >= 4);
-      const medium = pool.filter(q => (q as any).dificultad >= 3 && (q as any).dificultad < 4);
-      const rest = pool.filter(q => (q as any).dificultad < 3);
+      const hard = pool.filter(q => q.dificultad >= 4);
+      const medium = pool.filter(q => q.dificultad >= 3 && q.dificultad < 4);
+      const rest = pool.filter(q => q.dificultad < 3);
       pool = [...hard, ...medium, ...rest];
     }
 
@@ -152,7 +152,7 @@ export default function SectionExam() {
       opciones: (q.opciones as string[]) || [],
       respuesta_correcta: q.respuesta_correcta,
       imagen_url: q.imagen_url,
-      dificultad: (q as any).dificultad || 1,
+      dificultad: q.dificultad || 1,
     }));
     setQuestions(mapped);
     setState('playing');
@@ -230,7 +230,7 @@ export default function SectionExam() {
           correcta: a.correct,
           intento: attemptNumber,
         }));
-        await supabase.from('examen_historial' as any).insert(historyRows);
+        await supabase.from('examen_historial').insert(historyRows);
       }
     }
 

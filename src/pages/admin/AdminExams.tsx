@@ -232,7 +232,7 @@ export default function AdminExams() {
                   <div>
                     <Label className="text-xs">Temporizador</Label>
                     <Select value={String(cfg.tiempo_minutos)} onValueChange={(v) => updateConfig(cfg.tipo, 'tiempo_minutos', parseInt(v))}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {TIMER_OPTIONS.map(t => <SelectItem key={t} value={String(t)}>{t} minutos</SelectItem>)}
                       </SelectContent>
@@ -241,7 +241,7 @@ export default function AdminExams() {
                   <div>
                     <Label className="text-xs">Cantidad de preguntas</Label>
                     <Select value={String(cfg.cantidad_preguntas)} onValueChange={(v) => updateConfig(cfg.tipo, 'cantidad_preguntas', parseInt(v))}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {QUESTION_OPTIONS.map(q => <SelectItem key={q} value={String(q)}>{q} preguntas</SelectItem>)}
                       </SelectContent>
@@ -250,29 +250,31 @@ export default function AdminExams() {
                   <div>
                     <Label className="text-xs">Puntaje aprobación</Label>
                     <Select value={String(cfg.puntaje_aprobacion)} onValueChange={(v) => updateConfig(cfg.tipo, 'puntaje_aprobacion', parseInt(v))}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {[60, 70, 80, 90, 900].map(p => <SelectItem key={p} value={String(p)}>{p}/{isFinal ? '1000' : '100'}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="flex items-end">
-                    <Button size="sm" variant="outline" onClick={() => assignDifficultyAI(cfg.tipo)} className="w-full gap-1">
-                      <Brain className="w-4 h-4" /> Asignar dificultad IA
+                    <Button size="sm" variant="outline" onClick={() => assignDifficultyAI(cfg.tipo)} className="w-full gap-1 h-9 text-xs">
+                      <Brain className="w-3.5 h-3.5" /> Dificultad IA
                     </Button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {totalStudents} estudiantes</span>
-                  <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-accent" /> {aprobados} aprobados</span>
-                  <span className="flex items-center gap-1"><XCircle className="w-3 h-3 text-destructive" /> {examRes.length - aprobados} reprobados</span>
-                  <Button size="sm" variant="ghost" className="text-xs h-6 px-2" onClick={() => setSelectedExam(cfg.tipo)}>
-                    <Eye className="w-3 h-3 mr-1" /> Ver resultados
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-xs h-6 px-2 text-[hsl(var(--neon-violet))]" onClick={() => setStatusExam(cfg.tipo)}>
-                    <Lock className="w-3 h-3 mr-1" /> Estado por estudiante
-                  </Button>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap border-t border-border pt-3 mt-1">
+                  <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-md"><Users className="w-3 h-3" /> {totalStudents}</span>
+                  <span className="flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-md text-accent"><CheckCircle className="w-3 h-3" /> {aprobados}</span>
+                  <span className="flex items-center gap-1 bg-destructive/10 px-2 py-1 rounded-md text-destructive"><XCircle className="w-3 h-3" /> {examRes.length - aprobados}</span>
+                  <div className="ml-auto flex gap-1.5">
+                    <Button size="sm" variant="outline" className="text-xs h-7 px-3" onClick={() => setSelectedExam(cfg.tipo)}>
+                      <Eye className="w-3 h-3 mr-1" /> Resultados
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-xs h-7 px-3 border-[hsl(var(--neon-violet))]/40 text-[hsl(var(--neon-violet))] hover:bg-[hsl(var(--neon-violet))]/10" onClick={() => setStatusExam(cfg.tipo)}>
+                      <Users className="w-3 h-3 mr-1" /> Estado por estudiante
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -439,16 +441,27 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
     const cfg = configs.find(c => c.tipo === examTipo);
     if (!cfg) return;
 
-    // Create fake progress for all required sessions so the student can take the exam
     const sesionIds = sesiones.filter(s => cfg.sessions.includes(s.numero)).map(s => s.id);
     for (const sid of sesionIds) {
-      await supabase.from('progreso_estudiante').upsert({
-        user_id: userId,
-        sesion_id: sid,
-        preguntas_correctas_total: 150,
-        errores_quiz: 0,
-        completada: true,
-      } as any, { onConflict: 'user_id,sesion_id' });
+      // Check if progress exists first
+      const { data: existing } = await supabase.from('progreso_estudiante')
+        .select('id').eq('user_id', userId).eq('sesion_id', sid).maybeSingle();
+      
+      if (existing) {
+        await supabase.from('progreso_estudiante').update({
+          preguntas_correctas_total: 150,
+          errores_quiz: 0,
+          completada: true,
+        }).eq('id', existing.id);
+      } else {
+        await supabase.from('progreso_estudiante').insert({
+          user_id: userId,
+          sesion_id: sid,
+          preguntas_correctas_total: 150,
+          errores_quiz: 0,
+          completada: true,
+        });
+      }
     }
     toast.success('Examen activado para el estudiante');
     loadStatus();
@@ -456,7 +469,7 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
 
   async function resetAttempts(userId: string) {
     await supabase.from('examenes').delete().eq('user_id', userId).eq('tipo', examTipo!);
-    await supabase.from('examen_historial' as any).delete().eq('user_id', userId).eq('exam_tipo', examTipo!);
+    await supabase.from('examen_historial').delete().eq('user_id', userId).eq('exam_tipo', examTipo!);
     toast.success('Intentos reseteados');
     loadStatus();
   }

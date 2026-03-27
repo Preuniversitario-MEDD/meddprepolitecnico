@@ -331,7 +331,8 @@ export default function StudentDashboard() {
                       <FileText className={`w-5 h-5 ${exam?.aprobado ? 'text-accent' : isOpen ? 'text-[hsl(var(--neon-orange))]' : unlocked ? 'text-primary' : 'text-muted-foreground'}`} />
                       <div>
                         <p className={`text-sm font-medium ${isOpen ? 'text-[hsl(var(--neon-orange))]' : ''}`}>{block.label}</p>
-                        {exam && <p className="text-xs text-muted-foreground">{exam.puntaje}/100 {exam.aprobado ? '✅' : '❌'} · {exam.intentos} intento{exam.intentos > 1 ? 's' : ''}</p>}
+                        <p className="text-[10px] text-muted-foreground">Aprueba con: {block.puntaje_aprobacion}/{block.isFinal ? '1000' : '100'}</p>
+                        {exam && <p className="text-xs text-muted-foreground">{exam.puntaje}/100 {exam.aprobado ? '✅' : '❌'} · {exam.intentos} intento{exam.intentos > 1 ? 's' : ''} de 3</p>}
                         {!unlocked && (
                           <p className="text-[10px] text-muted-foreground">
                             {block.sessions.map(num => {
@@ -384,10 +385,10 @@ export default function StudentDashboard() {
                   </div>
                   <div>
                     <p className="font-display font-bold">{finalExam.label}</p>
-                    <p className="text-xs text-muted-foreground">50 preguntas · Alta dificultad · Sobre 1000 puntos</p>
+                     <p className="text-xs text-muted-foreground">50 preguntas · Alta dificultad · Sobre 1000 puntos · Aprueba con {finalExam.puntaje_aprobacion}/1000</p>
                     {exams[finalExam.tipo] && (
                       <p className="text-sm font-medium mt-1">
-                        Mejor: {exams[finalExam.tipo].puntaje}/1000 {exams[finalExam.tipo].aprobado ? '✅' : ''} · {exams[finalExam.tipo].intentos} intento{exams[finalExam.tipo].intentos > 1 ? 's' : ''}
+                        Mejor: {exams[finalExam.tipo].puntaje}/1000 {exams[finalExam.tipo].aprobado ? '✅' : ''} · {exams[finalExam.tipo].intentos} intento{exams[finalExam.tipo].intentos > 1 ? 's' : ''} de 3
                       </p>
                     )}
                     {!finalUnlocked && <p className="text-[10px] text-muted-foreground mt-1">Aprueba todos los exámenes de bloque para desbloquear</p>}

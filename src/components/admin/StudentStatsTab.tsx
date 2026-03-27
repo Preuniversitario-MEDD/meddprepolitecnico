@@ -60,7 +60,7 @@ export default function StudentStatsTab({ students }: { students: Profile[] }) {
       supabase.from('profiles').select('*').eq('user_id', userId).single(),
       supabase.from('progreso_estudiante').select('*').eq('user_id', userId),
       supabase.from('examenes').select('tipo, puntaje, aprobado, fecha').eq('user_id', userId).order('fecha'),
-      supabase.from('connection_logs' as any).select('created_at, event_type, device_type, ip_address, user_agent').eq('user_id', userId).order('created_at', { ascending: false }).limit(500),
+      supabase.from('connection_logs').select('created_at, event_type, device_type, ip_address, user_agent').eq('user_id', userId).order('created_at', { ascending: false }).limit(500),
     ]);
 
     setProfile(prof);
@@ -331,52 +331,81 @@ export default function StudentStatsTab({ students }: { students: Profile[] }) {
             </Card>
           )}
 
-          {/* Pedagogical insights */}
+          {/* Pedagogical insights with detailed improvement messages */}
           <Card className="card-elevated border border-[hsl(var(--neon-violet)/0.3)]">
             <CardContent className="p-4">
               <h3 className="font-display font-semibold text-sm mb-3">🔬 Análisis Cognitivo-Pedagógico</h3>
-              <div className="grid md:grid-cols-2 gap-3 text-sm">
-                <div className="space-y-2">
+              <div className="grid md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-3">
                   <div>
-                    <p className="text-xs text-muted-foreground">Ritmo de aprendizaje</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-muted-foreground">Ritmo de aprendizaje</p>
+                      <span className="text-[10px] font-bold text-foreground">{learningRate > 0 ? '+' : ''}{learningRate.toFixed(1)}%</span>
+                    </div>
                     <Progress value={Math.max(0, Math.min(100, 50 + learningRate * 5))} className="h-2 mt-1" />
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {learningRate > 2 ? '⬆️ Progresión ascendente — Excelente evolución' :
-                       learningRate > 0 ? '➡️ Progresión estable — Buen ritmo' :
-                       learningRate > -2 ? '⚠️ Estancamiento detectado — Reforzar conceptos' :
-                       '🔻 Regresión — Requiere atención pedagógica'}
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                      {learningRate > 3 ? '⬆️ Progresión ascendente excelente. El estudiante muestra una mejora constante entre sesiones, lo que indica buena comprensión y retención de conceptos previos. Mantener el ritmo actual con ejercicios de complejidad creciente.' :
+                       learningRate > 0 ? '➡️ Progresión estable. El estudiante mejora gradualmente. Para acelerar el aprendizaje, se recomienda revisar los errores frecuentes en las sesiones anteriores y practicar ejercicios específicos en las áreas con menor precisión.' :
+                       learningRate > -2 ? '⚠️ Estancamiento detectado. La precisión no está mejorando entre sesiones. Se recomienda: 1) Repasar los fundamentos de las sesiones con menor rendimiento, 2) Identificar patrones de error recurrentes, 3) Realizar prácticas adicionales con ejercicios de dificultad progresiva.' :
+                       '🔻 Regresión en el rendimiento. La precisión está disminuyendo. Acciones recomendadas: 1) Revisión urgente de conceptos base, 2) Sesiones de refuerzo uno a uno, 3) Reducir el ritmo de avance hasta consolidar los temas previos, 4) Evaluar posibles factores externos que afecten la concentración.'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Consistencia cognitiva</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-muted-foreground">Consistencia cognitiva</p>
+                      <span className="text-[10px] font-bold text-foreground">{consistencyScore}%</span>
+                    </div>
                     <Progress value={consistencyScore} className="h-2 mt-1" />
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {consistencyScore > 80 ? '🧠 Alta consistencia — Dominio sólido' :
-                       consistencyScore > 60 ? '📊 Consistencia media — Algunas variaciones' :
-                       '⚡ Baja consistencia — Rendimiento irregular'}
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                      {consistencyScore > 85 ? '🧠 Alta consistencia. El estudiante mantiene un rendimiento uniforme entre sesiones, indicando dominio sólido y confiable de los contenidos. Está listo para desafíos de mayor complejidad y preguntas de análisis.' :
+                       consistencyScore > 65 ? '📊 Consistencia media. El rendimiento varía entre sesiones, lo que puede indicar: 1) Algunos temas se dominan mejor que otros — identificar las sesiones con menor precisión, 2) Posible falta de repaso previo a cada sesión, 3) Diferentes niveles de concentración. Se recomienda establecer una rutina de estudio más regular.' :
+                       '⚡ Baja consistencia. El rendimiento es irregular y poco predecible. Esto puede deberse a: 1) Lagunas en conceptos fundamentales que afectan temas posteriores, 2) Estudio fragmentado sin continuidad, 3) Dificultad para mantener la atención. Se recomienda un plan de estudio estructurado con micro-sesiones diarias de 15-20 minutos.'}
                     </p>
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div>
-                    <p className="text-xs text-muted-foreground">Dedicación</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-muted-foreground">Dedicación y frecuencia</p>
+                      <span className="text-[10px] font-bold text-foreground">{activeDays}/30 días</span>
+                    </div>
                     <Progress value={Math.min(100, (activeDays / 30) * 100)} className="h-2 mt-1" />
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {activeDays > 20 ? '🔥 Muy comprometido — Hábito de estudio sólido' :
-                       activeDays > 10 ? '📚 Compromiso moderado — Puede mejorar frecuencia' :
-                       '💤 Baja frecuencia — Necesita motivación'}
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                      {activeDays > 20 ? '🔥 Muy comprometido. El estudiante accede regularmente a la plataforma, lo que facilita la retención a largo plazo. La constancia es el mejor predictor de éxito académico. Reconocer y reforzar este hábito.' :
+                       activeDays > 10 ? '📚 Compromiso moderado. El estudiante accede de forma intermitente. Para mejorar: 1) Establecer horarios fijos de estudio, 2) Activar notificaciones de recordatorio, 3) Fijar metas semanales pequeñas y alcanzables para generar hábito.' :
+                       activeDays > 3 ? '💤 Baja frecuencia de uso. El estudiante apenas accede a la plataforma. Se recomienda: 1) Contactar al estudiante para verificar su situación, 2) Establecer compromisos de estudio mínimos (10 min/día), 3) Asignar tareas específicas con plazos para motivar el acceso regular.' :
+                       '🚨 Casi sin actividad. El estudiante no está usando la plataforma. Es necesario: 1) Intervención directa para conocer las causas, 2) Verificar si hay problemas técnicos o de acceso, 3) Considerar estrategias de motivación alternativas o tutoría personalizada.'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Velocidad de respuesta</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-muted-foreground">Velocidad de respuesta</p>
+                      <span className="text-[10px] font-bold text-foreground">{avgTimePerQuiz}s promedio</span>
+                    </div>
                     <Progress value={Math.min(100, avgTimePerQuiz > 0 ? Math.max(0, 100 - avgTimePerQuiz / 2) : 0)} className="h-2 mt-1" />
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {avgTimePerQuiz < 30 ? '⚡ Respuestas rápidas — Buena retención' :
-                       avgTimePerQuiz < 60 ? '⏱️ Tiempo normal — Proceso reflexivo' :
-                       '🐢 Respuestas lentas — Posible inseguridad conceptual'}
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                      {avgTimePerQuiz > 0 && avgTimePerQuiz < 20 ? '⚡ Respuestas muy rápidas. Verificar que no se estén seleccionando opciones al azar. Si la precisión es alta, indica excelente retención y automatización del conocimiento.' :
+                       avgTimePerQuiz < 40 ? '✅ Tiempo de respuesta óptimo. El estudiante procesa las preguntas con agilidad y seguridad. La combinación de velocidad con buena precisión indica dominio efectivo del material.' :
+                       avgTimePerQuiz < 70 ? '⏱️ Tiempo reflexivo. El estudiante analiza las opciones cuidadosamente. Si la precisión es alta, esto es positivo. Si no, puede indicar indecisión por falta de claridad en los conceptos. Reforzar con ejercicios de práctica rápida.' :
+                       avgTimePerQuiz > 0 ? '🐢 Respuestas lentas. El estudiante tarda significativamente en responder, lo que sugiere: 1) Inseguridad conceptual, 2) Necesidad de más práctica con los temas, 3) Posible dificultad de comprensión lectora. Se recomienda: flashcards de repaso rápido y ejercicios cronometrados.' :
+                       '📝 Sin datos suficientes de tiempo. El estudiante necesita completar más quizzes para obtener un análisis preciso de velocidad.'}
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* Overall recommendation */}
+              <div className="mt-4 p-3 rounded-lg bg-[hsl(var(--neon-violet))]/10 border border-[hsl(var(--neon-violet))]/20">
+                <p className="text-xs font-medium text-[hsl(var(--neon-violet))] mb-1">📋 Recomendación General</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {avgAccuracy >= 85 && consistencyScore > 75 && activeDays > 15
+                    ? `Estudiante de alto rendimiento. Precisión del ${avgAccuracy}%, consistencia del ${consistencyScore}% y ${activeDays} días activos demuestran compromiso y dominio. Puede avanzar a contenido avanzado o servir como tutor par para otros estudiantes.`
+                    : avgAccuracy >= 70 && consistencyScore > 60
+                    ? `Estudiante con buen potencial. Precisión del ${avgAccuracy}% con margen de mejora. Enfocarse en las sesiones con menor rendimiento (${sessionChartData.filter(s => s.precision > 0 && s.precision < 70).map(s => s.name).join(', ') || 'ninguna identificada'}) y aumentar la frecuencia de práctica a al menos ${Math.max(15, 30 - activeDays)} días más por mes.`
+                    : avgAccuracy > 0
+                    ? `Estudiante que requiere apoyo. Precisión del ${avgAccuracy}% y consistencia del ${consistencyScore}% indican dificultades. Plan de acción: 1) Revisar sesiones ${sessionChartData.filter(s => s.precision > 0 && s.precision < 60).map(s => s.name).join(', ') || 'con menor rendimiento'}, 2) Establecer rutina diaria de 15 min, 3) Programar seguimiento semanal con el tutor.`
+                    : 'Sin datos suficientes para generar una recomendación. El estudiante debe comenzar a realizar los quizzes de las sesiones asignadas.'}
+                </p>
               </div>
             </CardContent>
           </Card>

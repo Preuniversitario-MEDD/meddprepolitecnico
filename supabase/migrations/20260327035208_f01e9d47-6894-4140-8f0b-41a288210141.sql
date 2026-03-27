@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS idx_progreso_estudiante_user_sesion ON public.progreso_estudiante(user_id, sesion_id);

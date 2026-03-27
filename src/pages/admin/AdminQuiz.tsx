@@ -543,7 +543,7 @@ export default function AdminQuiz() {
         </div>
       </div>
 
-      {/* Search + Filter + Import/Export row */}
+      {/* Search + Filter */}
       <div className="flex gap-2 flex-wrap items-center">
         <Input 
           placeholder="Buscar pregunta..." 
@@ -563,40 +563,48 @@ export default function AdminQuiz() {
             </SelectContent>
           </Select>
         )}
-        <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1" disabled={filteredPreguntas.length === 0}>
+      </div>
+
+      {/* Action buttons - organized in groups */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+        <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1 text-xs h-8" disabled={filteredPreguntas.length === 0}>
           <Download className="w-3 h-3" /> CSV
         </Button>
-        <Button variant="outline" size="sm" onClick={exportQuestions} className="gap-1" disabled={preguntas.length === 0}>
+        <Button variant="outline" size="sm" onClick={exportQuestions} className="gap-1 text-xs h-8" disabled={preguntas.length === 0}>
           <Download className="w-3 h-3" /> JSON
         </Button>
-        <label>
-          <Button variant="outline" size="sm" className="gap-1" asChild>
+        <label className="contents">
+          <Button variant="outline" size="sm" className="gap-1 text-xs h-8 w-full" asChild>
             <span><Upload className="w-3 h-3" /> Importar JSON</span>
           </Button>
           <input type="file" accept=".json" onChange={importJSON} className="hidden" />
         </label>
-        <label>
-          <Button variant="outline" size="sm" className="gap-1" asChild>
+        <label className="contents">
+          <Button variant="outline" size="sm" className="gap-1 text-xs h-8 w-full" asChild>
             <span><FileUp className="w-3 h-3" /> Importar Word</span>
           </Button>
           <input type="file" accept=".docx,.doc" onChange={importWord} className="hidden" />
         </label>
-        <Button variant="outline" size="sm" onClick={() => { setImportSourceSesion(''); setImportSourcePreguntas([]); setImportSelectedIds(new Set()); setImportMoveMode(false); setImportSessionDialogOpen(true); }} className="gap-1">
+        <Button variant="outline" size="sm" onClick={() => { setImportSourceSesion(''); setImportSourcePreguntas([]); setImportSelectedIds(new Set()); setImportMoveMode(false); setImportSessionDialogOpen(true); }} className="gap-1 text-xs h-8">
           <Copy className="w-3 h-3" /> Desde Sesión
         </Button>
-        <Button variant="outline" size="sm" onClick={() => { setAiPreview([]); setAiSelectedIds(new Set()); setAiQuantity(10); setAiGrupo(1); setAiDifficulty('mixto'); setAiCustomTopic(''); setAiEnfoque('quimico'); setAiDocText(''); setAiDocSource('none'); setAiDialogOpen(true); }} className="gap-1 border-primary/30 text-primary hover:bg-primary/10">
-          <Sparkles className="w-3 h-3" /> Generar con IA
+        <Button variant="outline" size="sm" onClick={() => { setAiPreview([]); setAiSelectedIds(new Set()); setAiQuantity(10); setAiGrupo(1); setAiDifficulty('mixto'); setAiCustomTopic(''); setAiEnfoque('quimico'); setAiDocText(''); setAiDocSource('none'); setAiDialogOpen(true); }} className="gap-1 text-xs h-8 border-primary/30 text-primary hover:bg-primary/10">
+          <Sparkles className="w-3 h-3" /> Generar IA
         </Button>
-        <Button size="sm" onClick={() => setReviewDialogOpen(true)} className="gap-1 bg-gradient-to-r from-[hsl(var(--neon-violet))] via-[hsl(var(--neon-fuchsia))] to-[hsl(var(--neon-pink))] text-white hover:opacity-90 shadow-[0_0_12px_hsl(var(--neon-violet)/0.4)] border-0" disabled={filteredPreguntas.length === 0}>
-          <ShieldCheck className="w-3 h-3" /> 🛡️ Revisar con IA {filterGrupo !== 'all' ? `(G${filterGrupo})` : ''} ({filteredPreguntas.length})
+      </div>
+
+      {/* Special action buttons */}
+      <div className="flex gap-2 flex-wrap">
+        <Button size="sm" onClick={() => setReviewDialogOpen(true)} className="gap-1 text-xs h-8 bg-gradient-to-r from-[hsl(var(--neon-violet))] via-[hsl(var(--neon-fuchsia))] to-[hsl(var(--neon-pink))] text-white hover:opacity-90 shadow-[0_0_12px_hsl(var(--neon-violet)/0.4)] border-0" disabled={filteredPreguntas.length === 0}>
+          <ShieldCheck className="w-3 h-3" /> 🛡️ Revisar IA {filterGrupo !== 'all' ? `(G${filterGrupo})` : ''} ({filteredPreguntas.length})
         </Button>
         {preguntas.length > 0 && (
-          <Button variant="outline" size="sm" onClick={() => setStatsDialogOpen(true)} className="gap-1">
+          <Button variant="outline" size="sm" onClick={() => setStatsDialogOpen(true)} className="gap-1 text-xs h-8">
             <BarChart3 className="w-3 h-3" /> Estadísticas
           </Button>
         )}
         {preguntas.length > 0 && (
-          <Button variant="outline" size="sm" onClick={() => { setBulkDeleteMode('grupo'); setBulkDeleteGrupo(''); setBulkDeleteFrom(1); setBulkDeleteTo(filteredPreguntas.length); setBulkDeleteOpen(true); }} className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+          <Button variant="outline" size="sm" onClick={() => { setBulkDeleteMode('grupo'); setBulkDeleteGrupo(''); setBulkDeleteFrom(1); setBulkDeleteTo(filteredPreguntas.length); setBulkDeleteOpen(true); }} className="gap-1 text-xs h-8 text-destructive border-destructive/30 hover:bg-destructive/10">
             <Trash2 className="w-3 h-3" /> Borrar masivo
           </Button>
         )}
