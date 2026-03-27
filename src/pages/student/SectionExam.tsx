@@ -89,6 +89,15 @@ export default function SectionExam() {
     const isFinal = tipo === 'exam_final';
 
     if (cfg) {
+      // Check if this exam is blocked for the student
+      if (user && !isAdminPreview) {
+        const { data: bloqueo } = await supabase.from('exam_bloqueos').select('id').eq('user_id', user.id).eq('exam_tipo', tipo!).maybeSingle();
+        if (bloqueo) {
+          setState('blocked' as any);
+          return;
+        }
+      }
+
       const examCfg: ExamConfig = {
         tiempo_minutos: (cfg as any).tiempo_minutos,
         cantidad_preguntas: (cfg as any).cantidad_preguntas,
