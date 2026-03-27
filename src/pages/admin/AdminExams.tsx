@@ -72,7 +72,7 @@ export default function AdminExams() {
     ]);
 
     if (ses) setSesiones(ses as Sesion[]);
-    if (cfgs) setConfigs(cfgs.map((c: any) => ({ ...c, sessions: c.sessions || [] })));
+    if (cfgs) setConfigs(cfgs.map((c: any) => ({ ...c, sessions: c.sessions || [], modo: c.modo || 'libre' })));
 
     if (cfgs && ses) {
       const counts: Record<string, number> = {};
