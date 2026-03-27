@@ -26,6 +26,7 @@ interface ExamConfig {
   label: string;
   sessions: number[];
   isFinal: boolean;
+  modo: 'libre' | 'secuencial';
 }
 
 const DEFAULT_CONFIG: ExamConfig = {
@@ -35,6 +36,7 @@ const DEFAULT_CONFIG: ExamConfig = {
   label: 'Examen',
   sessions: [],
   isFinal: false,
+  modo: 'libre',
 };
 
 export default function SectionExam() {
@@ -93,6 +95,7 @@ export default function SectionExam() {
         label: (cfg as any).label || 'Examen',
         sessions: (cfg as any).sessions || [],
         isFinal,
+        modo: (cfg as any).modo || 'libre',
       };
       setConfig(examCfg);
       setTimeLeft(examCfg.tiempo_minutos * 60);
@@ -176,14 +179,25 @@ export default function SectionExam() {
   }
 
   function handleAnswer(index: number) {
-    if (answeredMap.has(currentIndex)) return;
     setSelected(index);
     const q = questions[currentIndex];
     const correct = index === q.respuesta_correcta;
     setAnsweredMap(prev => new Map(prev).set(currentIndex, { selected: index, correct }));
+
+    // In sequential mode, auto-advance after selecting
+    if (config.modo === 'secuencial') {
+      setTimeout(() => {
+        if (currentIndex + 1 < questions.length) {
+          setCurrentIndex(prev => prev + 1);
+          setSelected(null);
+        }
+      }, 300);
+    }
   }
 
   function goToQuestion(idx: number) {
+    // In sequential mode, can't go back to previous questions
+    if (config.modo === 'secuencial' && idx < currentIndex) return;
     setCurrentIndex(idx);
     const ans = answeredMap.get(idx);
     setSelected(ans ? ans.selected : null);
@@ -378,11 +392,12 @@ export default function SectionExam() {
                   <button
                     key={idx}
                     onClick={() => goToQuestion(idx)}
+                    disabled={config.modo === 'secuencial' && idx < currentIndex}
                     className={`w-full h-8 rounded text-xs font-bold transition-all ${
                       isActive ? 'ring-2 ring-primary bg-primary text-primary-foreground' :
-                      answered ? 'bg-accent/20 text-accent border border-accent/50' :
-                      'bg-card hover:bg-muted text-muted-foreground border border-border'
-                    }`}
+                      answered ? 'bg-[hsl(160,60%,50%)] text-white border border-[hsl(160,60%,45%)] shadow-[0_0_6px_hsl(160,60%,50%/0.4)]' :
+                      'bg-muted text-muted-foreground border border-border'
+                    } ${config.modo === 'secuencial' && idx < currentIndex ? 'opacity-40 cursor-not-allowed' : ''}`}
                   >
                     {idx + 1}
                   </button>
@@ -412,15 +427,14 @@ export default function SectionExam() {
                     <div className="space-y-2">
                       {currentQ.opciones.map((op, i) => {
                         const ans = answeredMap.get(currentIndex);
-                        const isAnswered = !!ans;
+                        const isSelected = ans?.selected === i;
                         let bg = 'bg-card hover:bg-muted border-border';
-                        if (isAnswered) {
-                          if (i === currentQ.respuesta_correcta) bg = 'bg-accent/20 border-accent';
-                          else if (i === ans.selected && i !== currentQ.respuesta_correcta) bg = 'bg-destructive/20 border-destructive';
+                        if (isSelected) {
+                          bg = 'bg-primary/20 border-primary ring-1 ring-primary';
                         }
                         return (
-                          <button key={i} onClick={() => handleAnswer(i)} disabled={isAnswered}
-                            className={`w-full text-left p-3 rounded-lg border transition-all text-sm text-foreground ${bg} ${!isAnswered ? 'cursor-pointer' : 'cursor-default'}`}
+                          <button key={i} onClick={() => handleAnswer(i)}
+                            className={`w-full text-left p-3 rounded-lg border transition-all text-sm text-foreground ${bg} cursor-pointer`}
                             style={{ userSelect: 'none' }}>
                             <span className="font-medium mr-2 text-primary">{String.fromCharCode(65 + i)}.</span>{op}
                           </button>
@@ -429,7 +443,8 @@ export default function SectionExam() {
                     </div>
                     {/* Navigation */}
                     <div className="flex justify-between mt-4">
-                      <Button size="sm" variant="ghost" disabled={currentIndex === 0}
+                      <Button size="sm" variant="ghost"
+                        disabled={currentIndex === 0 || config.modo === 'secuencial'}
                         onClick={() => goToQuestion(currentIndex - 1)}>← Anterior</Button>
                       <Button size="sm" variant="ghost" disabled={currentIndex === questions.length - 1}
                         onClick={() => goToQuestion(currentIndex + 1)}>Siguiente →</Button>

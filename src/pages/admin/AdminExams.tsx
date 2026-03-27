@@ -23,6 +23,7 @@ interface ExamConfig {
   cantidad_preguntas: number;
   puntaje_aprobacion: number;
   activo: boolean;
+  modo: 'libre' | 'secuencial';
 }
 
 interface ExamResult {
@@ -56,7 +57,7 @@ export default function AdminExams() {
   const [editLabel, setEditLabel] = useState('');
   const [editSessions, setEditSessions] = useState<number[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
-  const [newExam, setNewExam] = useState({ tipo: '', label: '', sessions: [] as number[], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80 });
+  const [newExam, setNewExam] = useState({ tipo: '', label: '', sessions: [] as number[], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80, modo: 'libre' as 'libre' | 'secuencial' });
   const [statusExam, setStatusExam] = useState<string | null>(null);
   const [studentStatuses, setStudentStatuses] = useState<any[]>([]);
 
@@ -71,7 +72,7 @@ export default function AdminExams() {
     ]);
 
     if (ses) setSesiones(ses as Sesion[]);
-    if (cfgs) setConfigs(cfgs.map((c: any) => ({ ...c, sessions: c.sessions || [] })));
+    if (cfgs) setConfigs(cfgs.map((c: any) => ({ ...c, sessions: c.sessions || [], modo: c.modo || 'libre' })));
 
     if (cfgs && ses) {
       const counts: Record<string, number> = {};
@@ -118,10 +119,11 @@ export default function AdminExams() {
       tiempo_minutos: newExam.tiempo_minutos,
       cantidad_preguntas: newExam.cantidad_preguntas,
       puntaje_aprobacion: newExam.puntaje_aprobacion,
+      modo: newExam.modo,
     });
     if (error) { toast.error('Error: ' + error.message); return; }
     setCreateOpen(false);
-    setNewExam({ tipo: '', label: '', sessions: [], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80 });
+    setNewExam({ tipo: '', label: '', sessions: [], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80, modo: 'libre' });
     toast.success('Examen creado');
     loadAll();
   }
@@ -199,6 +201,7 @@ export default function AdminExams() {
                       <p className="text-xs text-muted-foreground">
                         Sesiones: {cfg.sessions.join(', ')} · Banco: {qCount} preguntas
                         {isFinal && ' · Sobre 1000 pts'}
+                        {' · '}{cfg.modo === 'secuencial' ? '➡️ Secuencial' : '🔀 Libre'}
                       </p>
                     </div>
                   </div>
@@ -230,7 +233,7 @@ export default function AdminExams() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   <div>
                     <Label className="text-xs">Temporizador</Label>
                     <Select value={String(cfg.tiempo_minutos)} onValueChange={(v) => updateConfig(cfg.tipo, 'tiempo_minutos', parseInt(v))}>
@@ -262,6 +265,16 @@ export default function AdminExams() {
                     <Button size="sm" variant="outline" onClick={() => assignDifficultyAI(cfg.tipo)} className="w-full gap-1 h-9 text-xs">
                       <Brain className="w-3.5 h-3.5" /> Dificultad IA
                     </Button>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Modo</Label>
+                    <Select value={cfg.modo || 'libre'} onValueChange={(v) => updateConfig(cfg.tipo, 'modo', v)}>
+                      <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="libre">🔀 Libre</SelectItem>
+                        <SelectItem value="secuencial">➡️ Secuencial</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -305,7 +318,7 @@ export default function AdminExams() {
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
                 <Label className="text-xs">Tiempo (min)</Label>
                 <Select value={String(newExam.tiempo_minutos)} onValueChange={v => setNewExam({ ...newExam, tiempo_minutos: parseInt(v) })}>
@@ -323,6 +336,16 @@ export default function AdminExams() {
               <div>
                 <Label className="text-xs">Aprobación</Label>
                 <Input type="number" value={newExam.puntaje_aprobacion} onChange={e => setNewExam({ ...newExam, puntaje_aprobacion: parseInt(e.target.value) || 80 })} />
+              </div>
+              <div>
+                <Label className="text-xs">Modo</Label>
+                <Select value={newExam.modo} onValueChange={v => setNewExam({ ...newExam, modo: v as 'libre' | 'secuencial' })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="libre">🔀 Libre</SelectItem>
+                    <SelectItem value="secuencial">➡️ Secuencial</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <Button onClick={createExam} className="w-full gradient-primary text-primary-foreground">Crear Examen</Button>

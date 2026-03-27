@@ -445,6 +445,7 @@ export type Database = {
           created_at: string
           id: string
           label: string
+          modo: string
           puntaje_aprobacion: number
           sessions: number[]
           tiempo_minutos: number
@@ -457,6 +458,7 @@ export type Database = {
           created_at?: string
           id?: string
           label?: string
+          modo?: string
           puntaje_aprobacion?: number
           sessions?: number[]
           tiempo_minutos?: number
@@ -469,6 +471,7 @@ export type Database = {
           created_at?: string
           id?: string
           label?: string
+          modo?: string
           puntaje_aprobacion?: number
           sessions?: number[]
           tiempo_minutos?: number
