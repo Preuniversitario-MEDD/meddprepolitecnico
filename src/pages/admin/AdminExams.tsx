@@ -263,16 +263,18 @@ export default function AdminExams() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {totalStudents} estudiantes</span>
-                  <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-accent" /> {aprobados} aprobados</span>
-                  <span className="flex items-center gap-1"><XCircle className="w-3 h-3 text-destructive" /> {examRes.length - aprobados} reprobados</span>
-                  <Button size="sm" variant="ghost" className="text-xs h-6 px-2" onClick={() => setSelectedExam(cfg.tipo)}>
-                    <Eye className="w-3 h-3 mr-1" /> Ver resultados
-                  </Button>
-                  <Button size="sm" variant="ghost" className="text-xs h-6 px-2 text-[hsl(var(--neon-violet))]" onClick={() => setStatusExam(cfg.tipo)}>
-                    <Lock className="w-3 h-3 mr-1" /> Estado por estudiante
-                  </Button>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap border-t border-border pt-3 mt-1">
+                  <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-md"><Users className="w-3 h-3" /> {totalStudents}</span>
+                  <span className="flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-md text-accent"><CheckCircle className="w-3 h-3" /> {aprobados}</span>
+                  <span className="flex items-center gap-1 bg-destructive/10 px-2 py-1 rounded-md text-destructive"><XCircle className="w-3 h-3" /> {examRes.length - aprobados}</span>
+                  <div className="ml-auto flex gap-1.5">
+                    <Button size="sm" variant="outline" className="text-xs h-7 px-3" onClick={() => setSelectedExam(cfg.tipo)}>
+                      <Eye className="w-3 h-3 mr-1" /> Resultados
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-xs h-7 px-3 border-[hsl(var(--neon-violet))]/40 text-[hsl(var(--neon-violet))] hover:bg-[hsl(var(--neon-violet))]/10" onClick={() => setStatusExam(cfg.tipo)}>
+                      <Users className="w-3 h-3 mr-1" /> Estado por estudiante
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
