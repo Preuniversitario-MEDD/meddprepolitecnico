@@ -22,6 +22,7 @@ interface ExamBlockConfig {
   puntaje_aprobacion: number;
   activo: boolean;
   isFinal: boolean;
+  bloqueado?: boolean;
 }
 
 export default function StudentDashboard() {
