@@ -51,6 +51,8 @@ export default function StudentDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sesiones' }, () => loadData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sesion_estudiante' }, () => loadData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'progreso_estudiante' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'examenes' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_bloqueos' }, () => loadData())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [effectiveUserId]);
