@@ -493,7 +493,15 @@ export default function AdminMensajes() {
                     const isMine = msg.sender_id === user?.id;
                     return (
                       <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className={`group flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                        {isMine && (
+                          <button onClick={() => deleteMessage(msg.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity self-center mr-1.5 p-1 rounded-full hover:bg-destructive/10"
+                            title="Eliminar mensaje">
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </button>
+                        )}
                         <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${isMine ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'}`}>
                           {tab === 'all' && !isMine && <p className="text-[10px] font-medium mb-1 opacity-70">{getSenderName(msg.sender_id)}</p>}
                           {msg.contenido && (!msg.archivo_url || msg.contenido !== msg.archivo_nombre) && (
@@ -509,6 +517,13 @@ export default function AdminMensajes() {
                             {isMine && <CheckCheck className={`w-3 h-3 ${msg.leido ? 'text-accent' : ''}`} />}
                           </div>
                         </div>
+                        {!isMine && (
+                          <button onClick={() => deleteMessage(msg.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity self-center ml-1.5 p-1 rounded-full hover:bg-destructive/10"
+                            title="Eliminar mensaje">
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </button>
+                        )}
                       </motion.div>
                     );
                   })}
