@@ -4,6 +4,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { usePresenceTracker } from '@/hooks/usePresenceTracker';
+import { useConnectionLogger } from '@/hooks/useConnectionLogger';
 import { ViewAsStudentContext } from '@/hooks/useViewAsStudent';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -45,6 +46,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
   const unreadCount = useUnreadMessages();
   usePresenceTracker();
+  useConnectionLogger();
   const location = useLocation();
   const navigate = useNavigate();
   const [students, setStudents] = useState<{ user_id: string; nombre: string; apellidos: string }[]>([]);
