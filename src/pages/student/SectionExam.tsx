@@ -254,6 +254,8 @@ export default function SectionExam() {
   const isLastFiveMin = timeLeft <= 300 && timeLeft > 10;
   const isLastTenSec = timeLeft <= 10;
 
+  const backPath = isAdminPreview ? '/admin/exams' : '/student';
+
   if (state === 'loading') return <div className="p-6 text-center text-muted-foreground">Cargando examen...</div>;
 
   if ((state as string) === 'blocked') {
