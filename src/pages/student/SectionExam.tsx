@@ -427,15 +427,14 @@ export default function SectionExam() {
                     <div className="space-y-2">
                       {currentQ.opciones.map((op, i) => {
                         const ans = answeredMap.get(currentIndex);
-                        const isAnswered = !!ans;
+                        const isSelected = ans?.selected === i;
                         let bg = 'bg-card hover:bg-muted border-border';
-                        if (isAnswered) {
-                          if (i === currentQ.respuesta_correcta) bg = 'bg-accent/20 border-accent';
-                          else if (i === ans.selected && i !== currentQ.respuesta_correcta) bg = 'bg-destructive/20 border-destructive';
+                        if (isSelected) {
+                          bg = 'bg-primary/20 border-primary ring-1 ring-primary';
                         }
                         return (
-                          <button key={i} onClick={() => handleAnswer(i)} disabled={isAnswered}
-                            className={`w-full text-left p-3 rounded-lg border transition-all text-sm text-foreground ${bg} ${!isAnswered ? 'cursor-pointer' : 'cursor-default'}`}
+                          <button key={i} onClick={() => handleAnswer(i)}
+                            className={`w-full text-left p-3 rounded-lg border transition-all text-sm text-foreground ${bg} cursor-pointer`}
                             style={{ userSelect: 'none' }}>
                             <span className="font-medium mr-2 text-primary">{String.fromCharCode(65 + i)}.</span>{op}
                           </button>
