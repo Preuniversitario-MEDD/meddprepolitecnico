@@ -443,7 +443,8 @@ export default function SectionExam() {
                     </div>
                     {/* Navigation */}
                     <div className="flex justify-between mt-4">
-                      <Button size="sm" variant="ghost" disabled={currentIndex === 0}
+                      <Button size="sm" variant="ghost"
+                        disabled={currentIndex === 0 || config.modo === 'secuencial'}
                         onClick={() => goToQuestion(currentIndex - 1)}>← Anterior</Button>
                       <Button size="sm" variant="ghost" disabled={currentIndex === questions.length - 1}
                         onClick={() => goToQuestion(currentIndex + 1)}>Siguiente →</Button>
