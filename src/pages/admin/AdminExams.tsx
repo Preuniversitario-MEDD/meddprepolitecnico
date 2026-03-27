@@ -441,16 +441,27 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
     const cfg = configs.find(c => c.tipo === examTipo);
     if (!cfg) return;
 
-    // Create fake progress for all required sessions so the student can take the exam
     const sesionIds = sesiones.filter(s => cfg.sessions.includes(s.numero)).map(s => s.id);
     for (const sid of sesionIds) {
-      await supabase.from('progreso_estudiante').upsert({
-        user_id: userId,
-        sesion_id: sid,
-        preguntas_correctas_total: 150,
-        errores_quiz: 0,
-        completada: true,
-      } as any, { onConflict: 'user_id,sesion_id' });
+      // Check if progress exists first
+      const { data: existing } = await supabase.from('progreso_estudiante')
+        .select('id').eq('user_id', userId).eq('sesion_id', sid).maybeSingle();
+      
+      if (existing) {
+        await supabase.from('progreso_estudiante').update({
+          preguntas_correctas_total: 150,
+          errores_quiz: 0,
+          completada: true,
+        }).eq('id', existing.id);
+      } else {
+        await supabase.from('progreso_estudiante').insert({
+          user_id: userId,
+          sesion_id: sid,
+          preguntas_correctas_total: 150,
+          errores_quiz: 0,
+          completada: true,
+        });
+      }
     }
     toast.success('Examen activado para el estudiante');
     loadStatus();
