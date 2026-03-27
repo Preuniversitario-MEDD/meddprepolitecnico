@@ -56,30 +56,32 @@ export default function StudentStatsTab({ students }: { students: Profile[] }) {
 
   async function loadStudentData(userId: string) {
     setLoading(true);
-    const [{ data: prof }, { data: prog }, { data: examData }] = await Promise.all([
+    const [{ data: prof }, { data: prog }, { data: examData }, { data: connLogs }] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).single(),
       supabase.from('progreso_estudiante').select('*').eq('user_id', userId),
       supabase.from('examenes').select('tipo, puntaje, aprobado, fecha').eq('user_id', userId).order('fecha'),
+      supabase.from('connection_logs' as any).select('created_at, event_type, device_type, ip_address, user_agent').eq('user_id', userId).order('created_at', { ascending: false }).limit(500),
     ]);
 
     setProfile(prof);
     setProgress((prog || []) as StudentProgress[]);
     setExams((examData || []).map((e: any) => ({ ...e, puntaje: Number(e.puntaje) })));
 
-    // Build connection history from last_seen_at pattern (simulated from profile data)
-    // In a real scenario you'd have a connections log table. We'll derive from available data.
-    const connLogs: ConnectionLog[] = [];
+    // Build real connection history from connection_logs
+    const logsByDay = new Map<string, number>();
     const today = new Date();
     for (let i = 29; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      // Check if student had activity on this day based on progress dates
-      const hadActivity = (prog || []).some((p: any) => p.fecha?.startsWith(dateStr));
-      const examActivity = (examData || []).some((e: any) => e.fecha?.startsWith(dateStr));
-      connLogs.push({ date: dateStr, count: hadActivity || examActivity ? 1 + Math.floor(Math.random() * 3) : 0 });
+      logsByDay.set(d.toISOString().split('T')[0], 0);
     }
-    setConnectionData(connLogs);
+    (connLogs || []).forEach((log: any) => {
+      const day = log.created_at?.split('T')[0];
+      if (day && logsByDay.has(day)) {
+        logsByDay.set(day, (logsByDay.get(day) || 0) + 1);
+      }
+    });
+    setConnectionData(Array.from(logsByDay.entries()).map(([date, count]) => ({ date, count })));
     setLoading(false);
   }
 
