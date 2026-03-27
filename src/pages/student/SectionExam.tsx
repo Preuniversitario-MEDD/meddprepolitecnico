@@ -130,9 +130,9 @@ export default function SectionExam() {
 
     let pool = allQ;
     if (isFinal && user) {
-      const { data: history } = await supabase.from('examen_historial' as any).select('pregunta_id').eq('user_id', user.id).eq('exam_tipo', tipo!);
+      const { data: history } = await supabase.from('examen_historial').select('pregunta_id').eq('user_id', user.id).eq('exam_tipo', tipo!);
       if (history && history.length > 0) {
-        const answeredIds = new Set((history as any[]).map(h => h.pregunta_id));
+        const answeredIds = new Set(history.map(h => h.pregunta_id));
         const fresh = pool.filter(q => !answeredIds.has(q.id));
         if (fresh.length >= count) pool = fresh;
       }
