@@ -232,7 +232,7 @@ export default function AdminExams() {
                   <div>
                     <Label className="text-xs">Temporizador</Label>
                     <Select value={String(cfg.tiempo_minutos)} onValueChange={(v) => updateConfig(cfg.tipo, 'tiempo_minutos', parseInt(v))}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {TIMER_OPTIONS.map(t => <SelectItem key={t} value={String(t)}>{t} minutos</SelectItem>)}
                       </SelectContent>
@@ -241,7 +241,7 @@ export default function AdminExams() {
                   <div>
                     <Label className="text-xs">Cantidad de preguntas</Label>
                     <Select value={String(cfg.cantidad_preguntas)} onValueChange={(v) => updateConfig(cfg.tipo, 'cantidad_preguntas', parseInt(v))}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {QUESTION_OPTIONS.map(q => <SelectItem key={q} value={String(q)}>{q} preguntas</SelectItem>)}
                       </SelectContent>
@@ -250,15 +250,15 @@ export default function AdminExams() {
                   <div>
                     <Label className="text-xs">Puntaje aprobación</Label>
                     <Select value={String(cfg.puntaje_aprobacion)} onValueChange={(v) => updateConfig(cfg.tipo, 'puntaje_aprobacion', parseInt(v))}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {[60, 70, 80, 90, 900].map(p => <SelectItem key={p} value={String(p)}>{p}/{isFinal ? '1000' : '100'}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="flex items-end">
-                    <Button size="sm" variant="outline" onClick={() => assignDifficultyAI(cfg.tipo)} className="w-full gap-1">
-                      <Brain className="w-4 h-4" /> Asignar dificultad IA
+                    <Button size="sm" variant="outline" onClick={() => assignDifficultyAI(cfg.tipo)} className="w-full gap-1 h-9 text-xs">
+                      <Brain className="w-3.5 h-3.5" /> Dificultad IA
                     </Button>
                   </div>
                 </div>
