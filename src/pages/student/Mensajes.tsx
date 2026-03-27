@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare, Send, Plus, ArrowLeft, Search } from 'lucide-react';
+import { MessageSquare, Send, Plus, ArrowLeft, Search, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { MessageAttachment } from '@/components/messaging/MessageAttachment';
 import { FileUploadButton } from '@/components/messaging/FileUploadButton';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Conversation {
   id: string;
@@ -44,8 +45,10 @@ export default function Mensajes() {
   const [showNewChat, setShowNewChat] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [searchUser, setSearchUser] = useState('');
+  const [searchConv, setSearchConv] = useState('');
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
+  const [convTab, setConvTab] = useState<'all' | 'unread'>('all');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchConversations = useCallback(async () => {
@@ -127,7 +130,6 @@ export default function Mensajes() {
           .eq('conversacion_id', selectedConv)
           .neq('sender_id', user.id)
           .eq('leido', false);
-        // Update local unread count for this conversation
         setConversations(prev => prev.map(c => c.id === selectedConv ? { ...c, unread: 0 } : c));
       }
     };
@@ -143,6 +145,10 @@ export default function Mensajes() {
             playNotification();
             supabase.from('mensajes').update({ leido: true }).eq('id', msg.id);
           }
+        })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'mensajes', filter: `conversacion_id=eq.${selectedConv}` },
+        (payload) => {
+          setMessages(prev => prev.filter(m => m.id !== (payload.old as any).id));
         })
       .subscribe();
 
@@ -183,6 +189,15 @@ export default function Mensajes() {
     setNewMessage('');
     setAttachedFile(null);
     setSending(false);
+  };
+
+  const deleteMessage = async (msgId: string) => {
+    const { error } = await supabase.from('mensajes').delete().eq('id', msgId);
+    if (error) {
+      toast({ title: 'Error', description: 'No se pudo eliminar el mensaje', variant: 'destructive' });
+    } else {
+      setMessages(prev => prev.filter(m => m.id !== msgId));
+    }
   };
 
   const startNewConversation = async (targetUserId: string) => {
@@ -238,17 +253,46 @@ export default function Mensajes() {
     `${u.nombre} ${u.apellidos} ${u.cedula}`.toLowerCase().includes(searchUser.toLowerCase())
   );
 
+  // Filter conversations by tab and search
+  const displayedConversations = conversations.filter(conv => {
+    if (convTab === 'unread' && !(conv.unread && conv.unread > 0)) return false;
+    if (searchConv.trim()) {
+      const name = conv.participants.map(p => `${p.nombre} ${p.apellidos}`).join(' ').toLowerCase();
+      if (!name.includes(searchConv.toLowerCase())) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="h-[calc(100vh-4rem)] md:h-screen flex">
       {/* Sidebar */}
       <div className={`${selectedConv ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border bg-card`}>
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-primary" /> Mensajes
-          </h2>
-          <Button size="sm" variant="outline" onClick={loadUsers}>
-            <Plus className="w-4 h-4" />
-          </Button>
+        <div className="p-3 border-b border-border space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-primary" /> Mensajes
+            </h2>
+            <Button size="sm" variant="outline" onClick={loadUsers}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+          <Tabs value={convTab} onValueChange={v => setConvTab(v as any)}>
+            <TabsList className="w-full h-8">
+              <TabsTrigger value="all" className="flex-1 text-xs">Todos</TabsTrigger>
+              <TabsTrigger value="unread" className="flex-1 text-xs">
+                No leídos
+                {conversations.filter(c => (c.unread || 0) > 0).length > 0 && (
+                  <span className="ml-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] inline-flex items-center justify-center">
+                    {conversations.filter(c => (c.unread || 0) > 0).length}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input placeholder="Buscar conversación..." value={searchConv} onChange={e => setSearchConv(e.target.value)} className="pl-8 h-8 text-xs" />
+          </div>
         </div>
 
         {showNewChat && (
@@ -279,10 +323,12 @@ export default function Mensajes() {
         <ScrollArea className="flex-1">
           {loading ? (
             <div className="p-8 text-center text-muted-foreground text-sm">Cargando...</div>
-          ) : conversations.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground text-sm">No hay conversaciones aún</div>
+          ) : displayedConversations.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground text-sm">
+              {convTab === 'unread' ? 'Sin mensajes no leídos' : 'No hay conversaciones aún'}
+            </div>
           ) : (
-            conversations.map(conv => {
+            displayedConversations.map(conv => {
               const other = conv.participants[0];
               const initials = other ? (other.nombre?.[0] || '') + (other.apellidos?.[0] || '') : '?';
               return (
@@ -330,7 +376,15 @@ export default function Mensajes() {
                     const isMine = msg.sender_id === user?.id;
                     return (
                       <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className={`group flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                        {isMine && (
+                          <button onClick={() => deleteMessage(msg.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity self-center mr-1.5 p-1 rounded-full hover:bg-destructive/10"
+                            title="Eliminar mensaje">
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </button>
+                        )}
                         <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${isMine ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'}`}>
                           {msg.contenido && (!msg.archivo_url || msg.contenido !== msg.archivo_nombre) && (
                             <p className="break-words">{msg.contenido}</p>
