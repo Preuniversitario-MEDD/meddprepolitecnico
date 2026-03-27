@@ -392,11 +392,12 @@ export default function SectionExam() {
                   <button
                     key={idx}
                     onClick={() => goToQuestion(idx)}
+                    disabled={config.modo === 'secuencial' && idx < currentIndex}
                     className={`w-full h-8 rounded text-xs font-bold transition-all ${
                       isActive ? 'ring-2 ring-primary bg-primary text-primary-foreground' :
-                      answered ? 'bg-accent/20 text-accent border border-accent/50' :
-                      'bg-card hover:bg-muted text-muted-foreground border border-border'
-                    }`}
+                      answered ? 'bg-[hsl(160,60%,50%)] text-white border border-[hsl(160,60%,45%)] shadow-[0_0_6px_hsl(160,60%,50%/0.4)]' :
+                      'bg-muted text-muted-foreground border border-border'
+                    } ${config.modo === 'secuencial' && idx < currentIndex ? 'opacity-40 cursor-not-allowed' : ''}`}
                   >
                     {idx + 1}
                   </button>
