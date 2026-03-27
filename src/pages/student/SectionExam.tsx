@@ -134,13 +134,21 @@ export default function SectionExam() {
     if (!allQ || allQ.length === 0) return;
 
     let pool = allQ;
-    if (isFinal && user) {
+    // Avoid repeating questions until bank is exhausted (for all exam types)
+    if (user && !isAdminPreview) {
       const { data: history } = await supabase.from('examen_historial').select('pregunta_id').eq('user_id', user.id).eq('exam_tipo', tipo!);
       if (history && history.length > 0) {
         const answeredIds = new Set(history.map(h => h.pregunta_id));
         const fresh = pool.filter(q => !answeredIds.has(q.id));
-        if (fresh.length >= count) pool = fresh;
+        // If enough fresh questions, use them; otherwise reset (use full bank)
+        if (fresh.length >= count) {
+          pool = fresh;
+        }
+        // If not enough fresh questions, use the full pool (bank exhausted, restart)
       }
+    }
+
+    if (isFinal) {
       const hard = pool.filter(q => q.dificultad >= 4);
       const medium = pool.filter(q => q.dificultad >= 3 && q.dificultad < 4);
       const rest = pool.filter(q => q.dificultad < 3);
