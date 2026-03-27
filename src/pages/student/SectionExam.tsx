@@ -215,7 +215,7 @@ export default function SectionExam() {
 
     const aprobado = finalPct >= config.puntaje_aprobacion;
 
-    if (user) {
+    if (user && !isAdminPreview) {
       await supabase.from('examenes').insert({
         user_id: user.id,
         tipo: tipo!,
