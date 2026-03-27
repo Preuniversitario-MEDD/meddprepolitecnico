@@ -339,7 +339,7 @@ export default function SectionExam() {
             <p className="text-xs text-[hsl(var(--neon-orange))]">✨ Obtuviste ≥70, tienes una oportunidad extra.</p>
           )}
           <div className="flex justify-center gap-3 flex-wrap">
-            <Button variant="outline" onClick={() => setShowReviewState(!showReview)} className="gap-2">
+            <Button variant="outline" onClick={() => setShowReview(!showReview)} className="gap-2">
               <Eye className="w-4 h-4" /> {showReview ? 'Ocultar Revisión' : 'Revisar Respuestas'}
             </Button>
             {!aprobado && (
