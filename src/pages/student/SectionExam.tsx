@@ -26,6 +26,7 @@ interface ExamConfig {
   label: string;
   sessions: number[];
   isFinal: boolean;
+  modo: 'libre' | 'secuencial';
 }
 
 const DEFAULT_CONFIG: ExamConfig = {
