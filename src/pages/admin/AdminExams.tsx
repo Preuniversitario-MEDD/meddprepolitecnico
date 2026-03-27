@@ -508,6 +508,17 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
     loadStatus();
   }
 
+  async function toggleBloqueo(userId: string, currentlyBlocked: boolean) {
+    if (currentlyBlocked) {
+      await supabase.from('exam_bloqueos').delete().eq('user_id', userId).eq('exam_tipo', examTipo!);
+      toast.success('Examen desbloqueado para el estudiante');
+    } else {
+      await supabase.from('exam_bloqueos').insert({ user_id: userId, exam_tipo: examTipo! } as any);
+      toast.success('Examen bloqueado para el estudiante');
+    }
+    loadStatus();
+  }
+
   if (loading) return <p className="text-center text-muted-foreground py-4">Cargando...</p>;
 
   const cfg = configs.find(c => c.tipo === examTipo);
