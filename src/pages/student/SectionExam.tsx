@@ -136,9 +136,9 @@ export default function SectionExam() {
         const fresh = pool.filter(q => !answeredIds.has(q.id));
         if (fresh.length >= count) pool = fresh;
       }
-      const hard = pool.filter(q => (q as any).dificultad >= 4);
-      const medium = pool.filter(q => (q as any).dificultad >= 3 && (q as any).dificultad < 4);
-      const rest = pool.filter(q => (q as any).dificultad < 3);
+      const hard = pool.filter(q => q.dificultad >= 4);
+      const medium = pool.filter(q => q.dificultad >= 3 && q.dificultad < 4);
+      const rest = pool.filter(q => q.dificultad < 3);
       pool = [...hard, ...medium, ...rest];
     }
 
