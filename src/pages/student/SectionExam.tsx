@@ -40,7 +40,9 @@ const DEFAULT_CONFIG: ExamConfig = {
 export default function SectionExam() {
   const { tipo } = useParams<{ tipo: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const location = window.location.pathname;
+  const isAdminPreview = location.startsWith('/admin/exam-preview');
+  const { user, role } = useAuth();
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -95,7 +97,7 @@ export default function SectionExam() {
       setConfig(examCfg);
       setTimeLeft(examCfg.tiempo_minutos * 60);
 
-      if (user) {
+      if (user && !isAdminPreview) {
         const { data: prevExams } = await supabase.from('examenes').select('*').eq('user_id', user.id).eq('tipo', tipo!);
         const attemptCount = prevExams?.length || 0;
         setAttemptNumber(attemptCount + 1);
@@ -213,7 +215,7 @@ export default function SectionExam() {
 
     const aprobado = finalPct >= config.puntaje_aprobacion;
 
-    if (user) {
+    if (user && !isAdminPreview) {
       await supabase.from('examenes').insert({
         user_id: user.id,
         tipo: tipo!,
@@ -252,12 +254,14 @@ export default function SectionExam() {
   const isLastFiveMin = timeLeft <= 300 && timeLeft > 10;
   const isLastTenSec = timeLeft <= 10;
 
+  const backPath = isAdminPreview ? '/admin/exams' : '/student';
+
   if (state === 'loading') return <div className="p-6 text-center text-muted-foreground">Cargando examen...</div>;
 
   if ((state as string) === 'blocked') {
     return (
       <div className="p-4 md:p-6 space-y-6">
-        <Button variant="ghost" onClick={() => navigate('/student')} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
+        <Button variant="ghost" onClick={() => navigate(backPath)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-4 py-12">
           <div className="w-16 h-16 rounded-full bg-destructive/20 flex items-center justify-center mx-auto">
             <AlertTriangle className="w-8 h-8 text-destructive" />
@@ -266,7 +270,7 @@ export default function SectionExam() {
           <p className="text-muted-foreground max-w-md mx-auto">
             Has usado tus 3 intentos sin alcanzar el puntaje mínimo. Debes repasar las sesiones de este examen para poder intentarlo nuevamente.
           </p>
-          <Button onClick={() => navigate('/student')} className="gradient-primary text-primary-foreground">Volver a las sesiones</Button>
+          <Button onClick={() => navigate(backPath)} className="gradient-primary text-primary-foreground">Volver a las sesiones</Button>
         </motion.div>
       </div>
     );
@@ -279,7 +283,7 @@ export default function SectionExam() {
 
     return (
       <div className="p-4 md:p-6 space-y-6">
-        <Button variant="ghost" onClick={() => navigate('/student')} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
+        <Button variant="ghost" onClick={() => navigate(backPath)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-4">
           {config.isFinal && weightedScore >= 900 ? (
             <>
@@ -325,7 +329,7 @@ export default function SectionExam() {
                 <RotateCcw className="w-4 h-4" /> Repetir Examen
               </Button>
             )}
-            <Button variant="outline" onClick={() => navigate('/student')}>Volver al Dashboard</Button>
+            <Button variant="outline" onClick={() => navigate(backPath)}>Volver al Dashboard</Button>
           </div>
         </motion.div>
       </div>
@@ -337,10 +341,15 @@ export default function SectionExam() {
     <div className="h-screen flex flex-col select-none" onContextMenu={e => e.preventDefault()}
       style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
       {/* Top bar with timer */}
+      {isAdminPreview && (
+        <div className="bg-[hsl(var(--neon-violet))]/20 text-[hsl(var(--neon-violet))] text-xs text-center py-1 font-medium">
+          👁️ Vista previa del administrador — Los resultados no se guardarán
+        </div>
+      )}
       <div className="flex items-center justify-between px-4 py-2 border-b bg-card shrink-0">
         <div>
           <h1 className="text-sm font-display font-bold text-foreground">{config.label}</h1>
-          <p className="text-[10px] text-muted-foreground">Intento #{attemptNumber} · {answeredMap.size}/{questions.length} respondidas</p>
+          <p className="text-[10px] text-muted-foreground">{isAdminPreview ? 'Modo vista previa' : `Intento #${attemptNumber}`} · {answeredMap.size}/{questions.length} respondidas</p>
         </div>
         <div className={`flex items-center gap-2 px-4 py-2 rounded-full font-mono font-bold text-lg transition-all ${
           isLastTenSec ? 'bg-destructive text-white animate-pulse scale-110' :

@@ -423,16 +423,16 @@ export default function StudentDashboard() {
           <div>
             <h2 className="font-display font-bold text-lg mb-3 text-[hsl(var(--neon-orange))]">🏆 Examen Final</h2>
             <Card className={`card-elevated border-2 ${finalOpen ? 'border-[hsl(var(--neon-orange))] shadow-[0_0_20px_hsl(var(--neon-orange)/0.4)]' : finalUnlocked ? 'border-[hsl(var(--neon-orange))]' : 'border-muted opacity-60'}`}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-xl bg-[hsl(var(--neon-orange))]/20 flex items-center justify-center ${finalOpen ? 'animate-pulse' : ''}`}>
-                    <Trophy className="w-6 h-6 text-[hsl(var(--neon-orange))]" />
+              <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-start sm:items-center gap-3 min-w-0">
+                  <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[hsl(var(--neon-orange))]/20 flex items-center justify-center shrink-0 ${finalOpen ? 'animate-pulse' : ''}`}>
+                    <Trophy className="w-5 h-5 md:w-6 md:h-6 text-[hsl(var(--neon-orange))]" />
                   </div>
-                  <div>
-                    <p className="font-display font-bold">{finalExam.label}</p>
-                     <p className="text-xs text-muted-foreground">50 preguntas · Alta dificultad · Sobre 1000 puntos · Aprueba con {finalExam.puntaje_aprobacion}/1000</p>
+                  <div className="min-w-0">
+                    <p className="font-display font-bold text-sm md:text-base">{finalExam.label}</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">50 preguntas · Alta dificultad · Sobre 1000 pts · Aprueba con {finalExam.puntaje_aprobacion}/1000</p>
                     {exams[finalExam.tipo] && (
-                      <p className="text-sm font-medium mt-1">
+                      <p className="text-xs md:text-sm font-medium mt-1">
                         Mejor: {exams[finalExam.tipo].puntaje}/1000 {exams[finalExam.tipo].aprobado ? '✅' : ''} · {exams[finalExam.tipo].intentos} intento{exams[finalExam.tipo].intentos > 1 ? 's' : ''} de 3
                       </p>
                     )}
@@ -445,15 +445,17 @@ export default function StudentDashboard() {
                     )}
                   </div>
                 </div>
-                {finalOpen ? (
-                  <Button onClick={() => navigate(`/student/exam/${finalExam.tipo}`)}
-                    className="bg-[hsl(var(--neon-orange))] hover:bg-[hsl(var(--neon-orange))]/90 text-primary-foreground gap-2 animate-pulse">
-                    {exams[finalExam.tipo] ? 'Reintentar' : 'Iniciar'}
-                  </Button>
-                ) : (
-                  !finalUnlocked && <Lock className="w-5 h-5 text-muted-foreground" />
-                )}
-                {exams[finalExam.tipo]?.aprobado && <CheckCircle className="w-6 h-6 text-accent" />}
+                <div className="shrink-0 self-end sm:self-center">
+                  {finalOpen ? (
+                    <Button size="sm" onClick={() => navigate(`/student/exam/${finalExam.tipo}`)}
+                      className="bg-[hsl(var(--neon-orange))] hover:bg-[hsl(var(--neon-orange))]/90 text-primary-foreground gap-2 animate-pulse">
+                      {exams[finalExam.tipo] ? 'Reintentar' : 'Iniciar'}
+                    </Button>
+                  ) : (
+                    !finalUnlocked && <Lock className="w-5 h-5 text-muted-foreground" />
+                  )}
+                  {exams[finalExam.tipo]?.aprobado && <CheckCircle className="w-6 h-6 text-accent" />}
+                </div>
               </CardContent>
             </Card>
           </div>

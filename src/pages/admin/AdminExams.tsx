@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Settings2, Eye, Users, CheckCircle, XCircle, Brain, Pencil, Save, Plus, Trophy, Lock, Unlock, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Settings2, Eye, Users, CheckCircle, XCircle, Brain, Pencil, Save, Plus, Trophy, Lock, Unlock, AlertTriangle, RotateCcw, Play } from 'lucide-react';
 
 interface ExamConfig {
   id: string;
@@ -44,6 +45,7 @@ const TIMER_OPTIONS = [30, 45, 50, 60, 90, 120];
 const QUESTION_OPTIONS = [10, 20, 25, 30, 40, 50];
 
 export default function AdminExams() {
+  const navigate = useNavigate();
   const [configs, setConfigs] = useState<ExamConfig[]>([]);
   const [results, setResults] = useState<ExamResult[]>([]);
   const [selectedExam, setSelectedExam] = useState<string | null>(null);
@@ -267,7 +269,10 @@ export default function AdminExams() {
                   <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-md"><Users className="w-3 h-3" /> {totalStudents}</span>
                   <span className="flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-md text-accent"><CheckCircle className="w-3 h-3" /> {aprobados}</span>
                   <span className="flex items-center gap-1 bg-destructive/10 px-2 py-1 rounded-md text-destructive"><XCircle className="w-3 h-3" /> {examRes.length - aprobados}</span>
-                  <div className="ml-auto flex gap-1.5">
+                  <div className="ml-auto flex gap-1.5 flex-wrap">
+                    <Button size="sm" variant="outline" className="text-xs h-7 px-3 gap-1" onClick={() => navigate(`/admin/exam-preview/${cfg.tipo}`)}>
+                      <Play className="w-3 h-3" /> Vista previa
+                    </Button>
                     <Button size="sm" variant="outline" className="text-xs h-7 px-3" onClick={() => setSelectedExam(cfg.tipo)}>
                       <Eye className="w-3 h-3 mr-1" /> Resultados
                     </Button>
