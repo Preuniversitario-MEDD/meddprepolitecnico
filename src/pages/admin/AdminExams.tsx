@@ -45,6 +45,7 @@ const TIMER_OPTIONS = [30, 45, 50, 60, 90, 120];
 const QUESTION_OPTIONS = [10, 20, 25, 30, 40, 50];
 
 export default function AdminExams() {
+  const navigate = useNavigate();
   const [configs, setConfigs] = useState<ExamConfig[]>([]);
   const [results, setResults] = useState<ExamResult[]>([]);
   const [selectedExam, setSelectedExam] = useState<string | null>(null);
