@@ -261,7 +261,7 @@ export default function SectionExam() {
   if ((state as string) === 'blocked') {
     return (
       <div className="p-4 md:p-6 space-y-6">
-        <Button variant="ghost" onClick={() => navigate('/student')} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
+        <Button variant="ghost" onClick={() => navigate(backPath)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-4 py-12">
           <div className="w-16 h-16 rounded-full bg-destructive/20 flex items-center justify-center mx-auto">
             <AlertTriangle className="w-8 h-8 text-destructive" />
@@ -270,7 +270,7 @@ export default function SectionExam() {
           <p className="text-muted-foreground max-w-md mx-auto">
             Has usado tus 3 intentos sin alcanzar el puntaje mínimo. Debes repasar las sesiones de este examen para poder intentarlo nuevamente.
           </p>
-          <Button onClick={() => navigate('/student')} className="gradient-primary text-primary-foreground">Volver a las sesiones</Button>
+          <Button onClick={() => navigate(backPath)} className="gradient-primary text-primary-foreground">Volver a las sesiones</Button>
         </motion.div>
       </div>
     );
@@ -283,7 +283,7 @@ export default function SectionExam() {
 
     return (
       <div className="p-4 md:p-6 space-y-6">
-        <Button variant="ghost" onClick={() => navigate('/student')} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
+        <Button variant="ghost" onClick={() => navigate(backPath)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-4">
           {config.isFinal && weightedScore >= 900 ? (
             <>
@@ -329,7 +329,7 @@ export default function SectionExam() {
                 <RotateCcw className="w-4 h-4" /> Repetir Examen
               </Button>
             )}
-            <Button variant="outline" onClick={() => navigate('/student')}>Volver al Dashboard</Button>
+            <Button variant="outline" onClick={() => navigate(backPath)}>Volver al Dashboard</Button>
           </div>
         </motion.div>
       </div>
