@@ -179,11 +179,20 @@ export default function SectionExam() {
   }
 
   function handleAnswer(index: number) {
-    if (answeredMap.has(currentIndex)) return;
     setSelected(index);
     const q = questions[currentIndex];
     const correct = index === q.respuesta_correcta;
     setAnsweredMap(prev => new Map(prev).set(currentIndex, { selected: index, correct }));
+
+    // In sequential mode, auto-advance after selecting
+    if (config.modo === 'secuencial') {
+      setTimeout(() => {
+        if (currentIndex + 1 < questions.length) {
+          setCurrentIndex(prev => prev + 1);
+          setSelected(null);
+        }
+      }, 300);
+    }
   }
 
   function goToQuestion(idx: number) {
