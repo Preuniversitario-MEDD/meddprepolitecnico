@@ -58,6 +58,7 @@ export default function SectionExam() {
   const finishedRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const alertPlayedRef = useRef(false);
+  const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
     if (tipo && user) loadExamConfig();
