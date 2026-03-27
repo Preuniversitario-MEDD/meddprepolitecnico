@@ -341,10 +341,15 @@ export default function SectionExam() {
     <div className="h-screen flex flex-col select-none" onContextMenu={e => e.preventDefault()}
       style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
       {/* Top bar with timer */}
+      {isAdminPreview && (
+        <div className="bg-[hsl(var(--neon-violet))]/20 text-[hsl(var(--neon-violet))] text-xs text-center py-1 font-medium">
+          👁️ Vista previa del administrador — Los resultados no se guardarán
+        </div>
+      )}
       <div className="flex items-center justify-between px-4 py-2 border-b bg-card shrink-0">
         <div>
           <h1 className="text-sm font-display font-bold text-foreground">{config.label}</h1>
-          <p className="text-[10px] text-muted-foreground">Intento #{attemptNumber} · {answeredMap.size}/{questions.length} respondidas</p>
+          <p className="text-[10px] text-muted-foreground">{isAdminPreview ? 'Modo vista previa' : `Intento #${attemptNumber}`} · {answeredMap.size}/{questions.length} respondidas</p>
         </div>
         <div className={`flex items-center gap-2 px-4 py-2 rounded-full font-mono font-bold text-lg transition-all ${
           isLastTenSec ? 'bg-destructive text-white animate-pulse scale-110' :
