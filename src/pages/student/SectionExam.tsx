@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Timer, ArrowLeft, CheckCircle, XCircle, AlertTriangle, RotateCcw, Trophy, Flag } from 'lucide-react';
+import { Timer, ArrowLeft, CheckCircle, XCircle, AlertTriangle, RotateCcw, Trophy, Flag, Eye } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface ExamQuestion {
@@ -58,6 +58,7 @@ export default function SectionExam() {
   const finishedRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const alertPlayedRef = useRef(false);
+  const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
     if (tipo && user) loadExamConfig();
@@ -88,6 +89,15 @@ export default function SectionExam() {
     const isFinal = tipo === 'exam_final';
 
     if (cfg) {
+      // Check if this exam is blocked for the student
+      if (user && !isAdminPreview) {
+        const { data: bloqueo } = await supabase.from('exam_bloqueos').select('id').eq('user_id', user.id).eq('exam_tipo', tipo!).maybeSingle();
+        if (bloqueo) {
+          setState('blocked' as any);
+          return;
+        }
+      }
+
       const examCfg: ExamConfig = {
         tiempo_minutos: (cfg as any).tiempo_minutos,
         cantidad_preguntas: (cfg as any).cantidad_preguntas,
@@ -134,13 +144,21 @@ export default function SectionExam() {
     if (!allQ || allQ.length === 0) return;
 
     let pool = allQ;
-    if (isFinal && user) {
+    // Avoid repeating questions until bank is exhausted (for all exam types)
+    if (user && !isAdminPreview) {
       const { data: history } = await supabase.from('examen_historial').select('pregunta_id').eq('user_id', user.id).eq('exam_tipo', tipo!);
       if (history && history.length > 0) {
         const answeredIds = new Set(history.map(h => h.pregunta_id));
         const fresh = pool.filter(q => !answeredIds.has(q.id));
-        if (fresh.length >= count) pool = fresh;
+        // If enough fresh questions, use them; otherwise reset (use full bank)
+        if (fresh.length >= count) {
+          pool = fresh;
+        }
+        // If not enough fresh questions, use the full pool (bank exhausted, restart)
       }
+    }
+
+    if (isFinal) {
       const hard = pool.filter(q => q.dificultad >= 4);
       const medium = pool.filter(q => q.dificultad >= 3 && q.dificultad < 4);
       const rest = pool.filter(q => q.dificultad < 3);
@@ -296,7 +314,7 @@ export default function SectionExam() {
     const aprobado = weightedScore >= config.puntaje_aprobacion;
 
     return (
-      <div className="p-4 md:p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6 max-h-screen overflow-y-auto">
         <Button variant="ghost" onClick={() => navigate(backPath)} className="gap-2"><ArrowLeft className="w-4 h-4" /> Volver</Button>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-4">
           {config.isFinal && weightedScore >= 900 ? (
@@ -329,7 +347,10 @@ export default function SectionExam() {
           {!aprobado && attemptNumber >= 3 && weightedScore >= 70 && (
             <p className="text-xs text-[hsl(var(--neon-orange))]">✨ Obtuviste ≥70, tienes una oportunidad extra.</p>
           )}
-          <div className="flex justify-center gap-3">
+          <div className="flex justify-center gap-3 flex-wrap">
+            <Button variant="outline" onClick={() => setShowReview(!showReview)} className="gap-2">
+              <Eye className="w-4 h-4" /> {showReview ? 'Ocultar Revisión' : 'Revisar Respuestas'}
+            </Button>
             {!aprobado && (
               <Button onClick={() => {
                 finishedRef.current = false;
@@ -346,6 +367,50 @@ export default function SectionExam() {
             <Button variant="outline" onClick={() => navigate(backPath)}>Volver al Dashboard</Button>
           </div>
         </motion.div>
+
+        {/* Answer review */}
+        {showReview && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 pb-6">
+            <h3 className="font-display font-bold text-lg text-foreground">Revisión de Respuestas</h3>
+            {questions.map((q, idx) => {
+              const ans = answeredMap.get(idx);
+              const wasCorrect = ans?.correct;
+              const selectedIdx = ans?.selected;
+              const notAnswered = selectedIdx === undefined;
+              return (
+                <Card key={q.id} className={`border-l-4 ${notAnswered ? 'border-muted' : wasCorrect ? 'border-accent' : 'border-destructive'}`}>
+                  <CardContent className="p-3 md:p-4 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${notAnswered ? 'bg-muted text-muted-foreground' : wasCorrect ? 'bg-accent/20 text-accent' : 'bg-destructive/20 text-destructive'}`}>
+                        {idx + 1}
+                      </span>
+                      <p className="text-sm font-medium text-foreground">{q.pregunta}</p>
+                    </div>
+                    {q.imagen_url && <img src={q.imagen_url} alt="" className="rounded-lg max-w-full h-auto max-h-32" />}
+                    <div className="space-y-1">
+                      {q.opciones.map((op, i) => {
+                        const isCorrectAnswer = i === q.respuesta_correcta;
+                        const wasSelected = selectedIdx === i;
+                        let bg = 'bg-card border-border';
+                        if (isCorrectAnswer) bg = 'bg-accent/15 border-accent text-accent';
+                        else if (wasSelected && !isCorrectAnswer) bg = 'bg-destructive/15 border-destructive text-destructive';
+                        return (
+                          <div key={i} className={`p-2 rounded-lg border text-xs flex items-center gap-2 ${bg}`}>
+                            {isCorrectAnswer && <CheckCircle className="w-3.5 h-3.5 text-accent shrink-0" />}
+                            {wasSelected && !isCorrectAnswer && <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />}
+                            {!isCorrectAnswer && !wasSelected && <span className="w-3.5 shrink-0" />}
+                            <span><span className="font-medium mr-1">{String.fromCharCode(65 + i)}.</span>{op}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {notAnswered && <p className="text-[10px] text-muted-foreground italic">No respondida</p>}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </motion.div>
+        )}
       </div>
     );
   }

@@ -421,13 +421,15 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
     const cfg = configs.find(c => c.tipo === examTipo);
     if (!cfg) { setLoading(false); return; }
 
-    const [{ data: profiles }, { data: allProgress }, { data: allExams }] = await Promise.all([
+    const [{ data: profiles }, { data: allProgress }, { data: allExams }, { data: bloqueos }] = await Promise.all([
       supabase.from('profiles').select('user_id, nombre, apellidos'),
       supabase.from('progreso_estudiante').select('user_id, sesion_id, preguntas_correctas_total, errores_quiz'),
       supabase.from('examenes').select('user_id, tipo, puntaje, aprobado, fecha').eq('tipo', examTipo!),
+      supabase.from('exam_bloqueos').select('user_id, exam_tipo'),
     ]);
 
     const sesionIds = sesiones.filter(s => cfg.sessions.includes(s.numero)).map(s => s.id);
+    const bloqueoSet = new Set((bloqueos || []).map((b: any) => `${b.user_id}:${b.exam_tipo}`));
 
     const studentMap = new Map<string, any>();
     (profiles || []).forEach((p: any) => {
@@ -446,6 +448,7 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
       const approved = studentExams.some((e: any) => e.aprobado);
       const blocked = attempts >= 3 && !approved && bestScore < 70;
       const extraChance = attempts >= 3 && !approved && bestScore >= 70;
+      const examBloqueado = bloqueoSet.has(`${p.user_id}:${examTipo}`);
 
       studentMap.set(p.user_id, {
         ...p,
@@ -456,6 +459,7 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
         approved,
         blocked,
         extraChance,
+        examBloqueado,
       });
     });
 
@@ -501,6 +505,17 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
     await supabase.from('examenes').delete().eq('user_id', userId).eq('tipo', examTipo!);
     await supabase.from('examen_historial').delete().eq('user_id', userId).eq('exam_tipo', examTipo!);
     toast.success('Intentos reseteados');
+    loadStatus();
+  }
+
+  async function toggleBloqueo(userId: string, currentlyBlocked: boolean) {
+    if (currentlyBlocked) {
+      await supabase.from('exam_bloqueos').delete().eq('user_id', userId).eq('exam_tipo', examTipo!);
+      toast.success('Examen desbloqueado para el estudiante');
+    } else {
+      await supabase.from('exam_bloqueos').insert({ user_id: userId, exam_tipo: examTipo! } as any);
+      toast.success('Examen bloqueado para el estudiante');
+    }
     loadStatus();
   }
 
@@ -575,7 +590,11 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
                 </span>
               </TableCell>
               <TableCell>
-                {s.approved ? (
+                {s.examBloqueado ? (
+                  <Badge variant="destructive" className="text-[10px] gap-1">
+                    <Lock className="w-3 h-3" /> Deshabilitado
+                  </Badge>
+                ) : s.approved ? (
                   <Badge className="text-[10px] bg-accent text-accent-foreground">✅ Aprobado</Badge>
                 ) : s.blocked ? (
                   <Badge variant="destructive" className="text-[10px] gap-1">
@@ -600,6 +619,10 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
                       <Unlock className="w-3 h-3" /> Habilitar
                     </Button>
                   )}
+                  <Button size="sm" variant="outline" className={`h-7 text-[10px] gap-1 ${s.examBloqueado ? 'border-accent/50 text-accent hover:bg-accent/10' : 'border-destructive/50 text-destructive hover:bg-destructive/10'}`}
+                    onClick={() => toggleBloqueo(s.user_id, s.examBloqueado)}>
+                    {s.examBloqueado ? <><Unlock className="w-3 h-3" /> Desbloquear</> : <><Lock className="w-3 h-3" /> Bloquear</>}
+                  </Button>
                   {(s.blocked || s.attempts > 0) && !s.approved && (
                     <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 hover:bg-destructive/10" onClick={() => resetAttempts(s.user_id)}>
                       <RotateCcw className="w-3 h-3" /> Reset
