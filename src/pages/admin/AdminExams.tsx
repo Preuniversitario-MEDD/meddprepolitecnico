@@ -269,7 +269,10 @@ export default function AdminExams() {
                   <span className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-md"><Users className="w-3 h-3" /> {totalStudents}</span>
                   <span className="flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-md text-accent"><CheckCircle className="w-3 h-3" /> {aprobados}</span>
                   <span className="flex items-center gap-1 bg-destructive/10 px-2 py-1 rounded-md text-destructive"><XCircle className="w-3 h-3" /> {examRes.length - aprobados}</span>
-                  <div className="ml-auto flex gap-1.5">
+                  <div className="ml-auto flex gap-1.5 flex-wrap">
+                    <Button size="sm" variant="outline" className="text-xs h-7 px-3 gap-1" onClick={() => navigate(`/admin/exam-preview/${cfg.tipo}`)}>
+                      <Play className="w-3 h-3" /> Vista previa
+                    </Button>
                     <Button size="sm" variant="outline" className="text-xs h-7 px-3" onClick={() => setSelectedExam(cfg.tipo)}>
                       <Eye className="w-3 h-3 mr-1" /> Resultados
                     </Button>
