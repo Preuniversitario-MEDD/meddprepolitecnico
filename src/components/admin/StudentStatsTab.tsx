@@ -60,7 +60,7 @@ export default function StudentStatsTab({ students }: { students: Profile[] }) {
       supabase.from('profiles').select('*').eq('user_id', userId).single(),
       supabase.from('progreso_estudiante').select('*').eq('user_id', userId),
       supabase.from('examenes').select('tipo, puntaje, aprobado, fecha').eq('user_id', userId).order('fecha'),
-      supabase.from('connection_logs' as any).select('created_at, event_type, device_type, ip_address, user_agent').eq('user_id', userId).order('created_at', { ascending: false }).limit(500),
+      supabase.from('connection_logs').select('created_at, event_type, device_type, ip_address, user_agent').eq('user_id', userId).order('created_at', { ascending: false }).limit(500),
     ]);
 
     setProfile(prof);

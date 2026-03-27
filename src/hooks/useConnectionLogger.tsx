@@ -29,7 +29,7 @@ export function useConnectionLogger() {
         ip = data.ip || '';
       } catch { /* ignore */ }
 
-      await supabase.from('connection_logs' as any).insert({
+      await supabase.from('connection_logs').insert({
         user_id: user.id,
         event_type: 'login',
         device_type: deviceType,
