@@ -399,7 +399,6 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
 
     const studentMap = new Map<string, any>();
     (profiles || []).forEach((p: any) => {
-      // Check unlock condition: >=80% accuracy in all required sessions
       const sessionStatuses = sesionIds.map(sid => {
         const prog = (allProgress || []).find((pr: any) => pr.user_id === p.user_id && pr.sesion_id === sid);
         if (!prog) return { met: false, accuracy: 0 };
@@ -425,7 +424,6 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
         approved,
         blocked,
         extraChance,
-        lastDate: studentExams.length > 0 ? studentExams[studentExams.length - 1].fecha : null,
       });
     });
 
@@ -435,6 +433,32 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
       return b.bestScore - a.bestScore;
     }));
     setLoading(false);
+  }
+
+  async function forceUnlock(userId: string) {
+    const cfg = configs.find(c => c.tipo === examTipo);
+    if (!cfg) return;
+
+    // Create fake progress for all required sessions so the student can take the exam
+    const sesionIds = sesiones.filter(s => cfg.sessions.includes(s.numero)).map(s => s.id);
+    for (const sid of sesionIds) {
+      await supabase.from('progreso_estudiante').upsert({
+        user_id: userId,
+        sesion_id: sid,
+        preguntas_correctas_total: 150,
+        errores_quiz: 0,
+        completada: true,
+      } as any, { onConflict: 'user_id,sesion_id' });
+    }
+    toast.success('Examen activado para el estudiante');
+    loadStatus();
+  }
+
+  async function resetAttempts(userId: string) {
+    await supabase.from('examenes').delete().eq('user_id', userId).eq('tipo', examTipo!);
+    await supabase.from('examen_historial' as any).delete().eq('user_id', userId).eq('exam_tipo', examTipo!);
+    toast.success('Intentos reseteados');
+    loadStatus();
   }
 
   if (loading) return <p className="text-center text-muted-foreground py-4">Cargando...</p>;
@@ -450,6 +474,7 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
           <TableHead>Intentos</TableHead>
           <TableHead>Mejor nota</TableHead>
           <TableHead>Estado</TableHead>
+          <TableHead>Acciones</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -462,14 +487,9 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
                   <Unlock className="w-3 h-3" /> Desbloqueado
                 </Badge>
               ) : (
-                <div className="flex items-center gap-1">
-                  <Badge variant="outline" className="text-[10px] gap-1 border-destructive text-destructive">
-                    <Lock className="w-3 h-3" /> Bloqueado
-                  </Badge>
-                  <span className="text-[9px] text-muted-foreground">
-                    ({s.sessionAccuracies.filter((a: any) => a.met).length}/{s.sessionAccuracies.length} sesiones)
-                  </span>
-                </div>
+                <Badge variant="outline" className="text-[10px] gap-1 border-destructive text-destructive">
+                  <Lock className="w-3 h-3" /> Bloqueado ({s.sessionAccuracies.filter((a: any) => a.met).length}/{s.sessionAccuracies.length})
+                </Badge>
               )}
             </TableCell>
             <TableCell>
@@ -487,11 +507,11 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
                 <Badge className="text-[10px] bg-[hsl(var(--neon-mint))] text-white">✅ Aprobado</Badge>
               ) : s.blocked ? (
                 <Badge variant="destructive" className="text-[10px] gap-1">
-                  <AlertTriangle className="w-3 h-3" /> Bloqueado (debe repetir sesiones)
+                  <AlertTriangle className="w-3 h-3" /> Bloqueado
                 </Badge>
               ) : s.extraChance ? (
                 <Badge className="text-[10px] bg-[hsl(var(--neon-orange))] text-white gap-1">
-                  <RotateCcw className="w-3 h-3" /> Oportunidad extra (≥70)
+                  <RotateCcw className="w-3 h-3" /> Extra
                 </Badge>
               ) : s.attempts > 0 ? (
                 <Badge variant="outline" className="text-[10px]">En progreso</Badge>
@@ -501,10 +521,24 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
                 <span className="text-[10px] text-muted-foreground">No disponible</span>
               )}
             </TableCell>
+            <TableCell>
+              <div className="flex gap-1">
+                {!s.unlocked && !s.approved && (
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1 text-[hsl(var(--neon-orange))]" onClick={() => forceUnlock(s.user_id)}>
+                    <Unlock className="w-3 h-3" /> Activar
+                  </Button>
+                )}
+                {s.blocked && (
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1" onClick={() => resetAttempts(s.user_id)}>
+                    <RotateCcw className="w-3 h-3" /> Reset
+                  </Button>
+                )}
+              </div>
+            </TableCell>
           </TableRow>
         ))}
         {data.length === 0 && (
-          <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Sin estudiantes</TableCell></TableRow>
+          <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Sin estudiantes</TableCell></TableRow>
         )}
       </TableBody>
     </Table>
