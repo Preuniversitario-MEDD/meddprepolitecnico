@@ -207,6 +207,15 @@ export default function AdminMensajes() {
     setSending(false);
   };
 
+  const deleteMessage = async (msgId: string) => {
+    const { error } = await supabase.from('mensajes').delete().eq('id', msgId);
+    if (error) {
+      toast({ title: 'Error', description: 'No se pudo eliminar el mensaje', variant: 'destructive' });
+    } else {
+      setMessages(prev => prev.filter(m => m.id !== msgId));
+    }
+  };
+
   const startNewConversation = async (targetUserId: string) => {
     if (!user) return;
     const { data: myConvs } = await supabase.from('conversacion_participantes').select('conversacion_id').eq('user_id', user.id);
