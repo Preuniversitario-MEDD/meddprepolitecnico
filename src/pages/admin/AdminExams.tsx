@@ -317,7 +317,7 @@ export default function AdminExams() {
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
                 <Label className="text-xs">Tiempo (min)</Label>
                 <Select value={String(newExam.tiempo_minutos)} onValueChange={v => setNewExam({ ...newExam, tiempo_minutos: parseInt(v) })}>
@@ -335,6 +335,16 @@ export default function AdminExams() {
               <div>
                 <Label className="text-xs">Aprobación</Label>
                 <Input type="number" value={newExam.puntaje_aprobacion} onChange={e => setNewExam({ ...newExam, puntaje_aprobacion: parseInt(e.target.value) || 80 })} />
+              </div>
+              <div>
+                <Label className="text-xs">Modo</Label>
+                <Select value={newExam.modo} onValueChange={v => setNewExam({ ...newExam, modo: v as 'libre' | 'secuencial' })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="libre">🔀 Libre</SelectItem>
+                    <SelectItem value="secuencial">➡️ Secuencial</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <Button onClick={createExam} className="w-full gradient-primary text-primary-foreground">Crear Examen</Button>
