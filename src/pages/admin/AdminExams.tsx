@@ -201,6 +201,7 @@ export default function AdminExams() {
                       <p className="text-xs text-muted-foreground">
                         Sesiones: {cfg.sessions.join(', ')} · Banco: {qCount} preguntas
                         {isFinal && ' · Sobre 1000 pts'}
+                        {' · '}{cfg.modo === 'secuencial' ? '➡️ Secuencial' : '🔀 Libre'}
                       </p>
                     </div>
                   </div>
