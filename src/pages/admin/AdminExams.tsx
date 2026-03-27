@@ -265,6 +265,16 @@ export default function AdminExams() {
                       <Brain className="w-3.5 h-3.5" /> Dificultad IA
                     </Button>
                   </div>
+                  <div>
+                    <Label className="text-xs">Modo</Label>
+                    <Select value={cfg.modo || 'libre'} onValueChange={(v) => updateConfig(cfg.tipo, 'modo', v)}>
+                      <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="libre">🔀 Libre</SelectItem>
+                        <SelectItem value="secuencial">➡️ Secuencial</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap border-t border-border pt-3 mt-1">
