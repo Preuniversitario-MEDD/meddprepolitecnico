@@ -36,6 +36,7 @@ const DEFAULT_CONFIG: ExamConfig = {
   label: 'Examen',
   sessions: [],
   isFinal: false,
+  modo: 'libre',
 };
 
 export default function SectionExam() {
