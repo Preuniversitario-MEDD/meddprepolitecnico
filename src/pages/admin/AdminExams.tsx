@@ -469,7 +469,7 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
 
   async function resetAttempts(userId: string) {
     await supabase.from('examenes').delete().eq('user_id', userId).eq('tipo', examTipo!);
-    await supabase.from('examen_historial' as any).delete().eq('user_id', userId).eq('exam_tipo', examTipo!);
+    await supabase.from('examen_historial').delete().eq('user_id', userId).eq('exam_tipo', examTipo!);
     toast.success('Intentos reseteados');
     loadStatus();
   }
