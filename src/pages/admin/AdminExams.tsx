@@ -590,7 +590,11 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
                 </span>
               </TableCell>
               <TableCell>
-                {s.approved ? (
+                {s.examBloqueado ? (
+                  <Badge variant="destructive" className="text-[10px] gap-1">
+                    <Lock className="w-3 h-3" /> Deshabilitado
+                  </Badge>
+                ) : s.approved ? (
                   <Badge className="text-[10px] bg-accent text-accent-foreground">✅ Aprobado</Badge>
                 ) : s.blocked ? (
                   <Badge variant="destructive" className="text-[10px] gap-1">
@@ -615,6 +619,10 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
                       <Unlock className="w-3 h-3" /> Habilitar
                     </Button>
                   )}
+                  <Button size="sm" variant="outline" className={`h-7 text-[10px] gap-1 ${s.examBloqueado ? 'border-accent/50 text-accent hover:bg-accent/10' : 'border-destructive/50 text-destructive hover:bg-destructive/10'}`}
+                    onClick={() => toggleBloqueo(s.user_id, s.examBloqueado)}>
+                    {s.examBloqueado ? <><Unlock className="w-3 h-3" /> Desbloquear</> : <><Lock className="w-3 h-3" /> Bloquear</>}
+                  </Button>
                   {(s.blocked || s.attempts > 0) && !s.approved && (
                     <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 hover:bg-destructive/10" onClick={() => resetAttempts(s.user_id)}>
                       <RotateCcw className="w-3 h-3" /> Reset
