@@ -23,6 +23,7 @@ interface ExamConfig {
   cantidad_preguntas: number;
   puntaje_aprobacion: number;
   activo: boolean;
+  modo: 'libre' | 'secuencial';
 }
 
 interface ExamResult {
