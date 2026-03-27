@@ -196,6 +196,8 @@ export default function SectionExam() {
   }
 
   function goToQuestion(idx: number) {
+    // In sequential mode, can't go back to previous questions
+    if (config.modo === 'secuencial' && idx < currentIndex) return;
     setCurrentIndex(idx);
     const ans = answeredMap.get(idx);
     setSelected(ans ? ans.selected : null);
