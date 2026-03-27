@@ -1,0 +1,1 @@
+ALTER TABLE public.exam_configuracion ADD COLUMN IF NOT EXISTS modo text NOT NULL DEFAULT 'libre';
