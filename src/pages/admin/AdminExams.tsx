@@ -57,7 +57,7 @@ export default function AdminExams() {
   const [editLabel, setEditLabel] = useState('');
   const [editSessions, setEditSessions] = useState<number[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
-  const [newExam, setNewExam] = useState({ tipo: '', label: '', sessions: [] as number[], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80 });
+  const [newExam, setNewExam] = useState({ tipo: '', label: '', sessions: [] as number[], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80, modo: 'libre' as 'libre' | 'secuencial' });
   const [statusExam, setStatusExam] = useState<string | null>(null);
   const [studentStatuses, setStudentStatuses] = useState<any[]>([]);
 
