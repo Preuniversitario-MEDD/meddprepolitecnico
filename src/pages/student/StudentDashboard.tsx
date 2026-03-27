@@ -309,11 +309,56 @@ export default function StudentDashboard() {
         </div>
       </div>
 
+      {/* Active exam banner */}
+      {(() => {
+        const activeExams = blockExams.filter(block => {
+          const unlocked = isExamUnlocked(block);
+          const exam = exams[block.tipo];
+          const attemptStatus = getExamAttemptStatus(block);
+          return unlocked && !exam?.aprobado && attemptStatus.canTake;
+        });
+        if (activeExams.length === 0) return null;
+        return (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="border-2 border-[hsl(var(--neon-orange))] bg-[hsl(var(--neon-orange))]/5 shadow-[0_0_20px_hsl(var(--neon-orange)/0.15)]">
+              <CardContent className="p-3 md:p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-[hsl(var(--neon-orange))]/20 flex items-center justify-center animate-pulse">
+                    <FileText className="w-4 h-4 text-[hsl(var(--neon-orange))]" />
+                  </div>
+                  <p className="font-display font-bold text-sm text-[hsl(var(--neon-orange))]">📋 Exámenes Activos</p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {activeExams.map(block => {
+                    const exam = exams[block.tipo];
+                    return (
+                      <div key={block.tipo} className="flex items-center justify-between p-2 rounded-lg bg-card border border-[hsl(var(--neon-orange))]/30">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{block.label}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Aprueba con: {block.puntaje_aprobacion}/{block.isFinal ? '1000' : '100'}
+                            {exam ? ` · Intento ${exam.intentos + 1} de 3` : ' · Intento 1 de 3'}
+                          </p>
+                        </div>
+                        <Button size="sm" onClick={() => navigate(`/student/exam/${block.tipo}`)}
+                          className="bg-[hsl(var(--neon-orange))] hover:bg-[hsl(var(--neon-orange))]/90 text-primary-foreground text-xs shrink-0">
+                          Iniciar
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        );
+      })()}
+
       {/* Block exams */}
       {blockExams.length > 0 && (
         <div>
           <h2 className="font-display font-bold text-lg mb-3 text-neon-fuchsia">Exámenes por Bloque</h2>
-          <p className="text-xs text-muted-foreground mb-2">Se desbloquean al alcanzar ≥80% de aciertos en el quiz de cada sesión del bloque</p>
+          <p className="text-xs text-muted-foreground mb-2">Se desbloquean al alcanzar ≥80% de aciertos en el quiz de cada sesión del bloque, o por decisión del administrador</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {blockExams.map(block => {
               const unlocked = isExamUnlocked(block);
@@ -326,11 +371,11 @@ export default function StudentDashboard() {
                   exam?.aprobado ? 'border-l-4 border-accent' : 
                   isOpen ? 'border-2 border-[hsl(var(--neon-orange))] shadow-[0_0_15px_hsl(var(--neon-orange)/0.3)]' : ''
                 }`}>
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileText className={`w-5 h-5 ${exam?.aprobado ? 'text-accent' : isOpen ? 'text-[hsl(var(--neon-orange))]' : unlocked ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <div>
-                        <p className={`text-sm font-medium ${isOpen ? 'text-[hsl(var(--neon-orange))]' : ''}`}>{block.label}</p>
+                  <CardContent className="p-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className={`w-5 h-5 shrink-0 ${exam?.aprobado ? 'text-accent' : isOpen ? 'text-[hsl(var(--neon-orange))]' : unlocked ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <div className="min-w-0">
+                        <p className={`text-sm font-medium truncate ${isOpen ? 'text-[hsl(var(--neon-orange))]' : 'text-foreground'}`}>{block.label}</p>
                         <p className="text-[10px] text-muted-foreground">Aprueba con: {block.puntaje_aprobacion}/{block.isFinal ? '1000' : '100'}</p>
                         {exam && <p className="text-xs text-muted-foreground">{exam.puntaje}/100 {exam.aprobado ? '✅' : '❌'} · {exam.intentos} intento{exam.intentos > 1 ? 's' : ''} de 3</p>}
                         {!unlocked && (
@@ -355,12 +400,12 @@ export default function StudentDashboard() {
                     </div>
                     {isOpen && (
                       <Button size="sm" onClick={() => navigate(`/student/exam/${block.tipo}`)}
-                        className="bg-[hsl(var(--neon-orange))] hover:bg-[hsl(var(--neon-orange))]/90 text-primary-foreground text-xs animate-pulse">
+                        className="bg-[hsl(var(--neon-orange))] hover:bg-[hsl(var(--neon-orange))]/90 text-primary-foreground text-xs animate-pulse shrink-0">
                         {exam ? 'Repetir' : 'Iniciar'}
                       </Button>
                     )}
-                    {!unlocked && <Lock className="w-4 h-4 text-muted-foreground" />}
-                    {exam?.aprobado && <CheckCircle className="w-5 h-5 text-accent" />}
+                    {!unlocked && <Lock className="w-4 h-4 text-muted-foreground shrink-0" />}
+                    {exam?.aprobado && <CheckCircle className="w-5 h-5 text-accent shrink-0" />}
                   </CardContent>
                 </Card>
               );

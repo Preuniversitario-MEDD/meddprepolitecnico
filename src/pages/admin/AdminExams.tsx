@@ -381,6 +381,8 @@ export default function AdminExams() {
 function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { examTipo: string | null; configs: ExamConfig[]; sesiones: Sesion[]; results: ExamResult[] }) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [forceExamUserId, setForceExamUserId] = useState<string | null>(null);
+  const activeConfigs = configs.filter(c => c.activo);
 
   useEffect(() => {
     if (examTipo) loadStatus();
@@ -437,13 +439,12 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
     setLoading(false);
   }
 
-  async function forceUnlock(userId: string) {
-    const cfg = configs.find(c => c.tipo === examTipo);
+  async function forceUnlockExam(userId: string, targetTipo: string) {
+    const cfg = configs.find(c => c.tipo === targetTipo);
     if (!cfg) return;
 
     const sesionIds = sesiones.filter(s => cfg.sessions.includes(s.numero)).map(s => s.id);
     for (const sid of sesionIds) {
-      // Check if progress exists first
       const { data: existing } = await supabase.from('progreso_estudiante')
         .select('id').eq('user_id', userId).eq('sesion_id', sid).maybeSingle();
       
@@ -463,7 +464,8 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
         });
       }
     }
-    toast.success('Examen activado para el estudiante');
+    toast.success(`Examen "${cfg.label}" activado para el estudiante`);
+    setForceExamUserId(null);
     loadStatus();
   }
 
@@ -479,81 +481,111 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
   const cfg = configs.find(c => c.tipo === examTipo);
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Estudiante</TableHead>
-          <TableHead>Desbloqueo</TableHead>
-          <TableHead>Intentos</TableHead>
-          <TableHead>Mejor nota</TableHead>
-          <TableHead>Estado</TableHead>
-          <TableHead>Acciones</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.map(s => (
-          <TableRow key={s.user_id}>
-            <TableCell className="font-medium text-sm">{s.nombre} {s.apellidos}</TableCell>
-            <TableCell>
-              {s.unlocked ? (
-                <Badge variant="outline" className="text-[10px] gap-1 border-[hsl(var(--neon-mint))] text-[hsl(var(--neon-mint))]">
-                  <Unlock className="w-3 h-3" /> Desbloqueado
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-[10px] gap-1 border-destructive text-destructive">
-                  <Lock className="w-3 h-3" /> Bloqueado ({s.sessionAccuracies.filter((a: any) => a.met).length}/{s.sessionAccuracies.length})
-                </Badge>
-              )}
-            </TableCell>
-            <TableCell>
-              <span className={`text-sm font-bold ${s.attempts >= 3 ? 'text-destructive' : 'text-foreground'}`}>
-                {s.attempts}/3
-              </span>
-            </TableCell>
-            <TableCell>
-              <span className={`text-sm font-bold ${s.bestScore >= (cfg?.puntaje_aprobacion || 80) ? 'text-[hsl(var(--neon-mint))]' : s.bestScore > 0 ? 'text-[hsl(var(--neon-orange))]' : 'text-muted-foreground'}`}>
-                {s.bestScore > 0 ? `${s.bestScore}/${cfg?.tipo === 'exam_final' ? '1000' : '100'}` : '—'}
-              </span>
-            </TableCell>
-            <TableCell>
-              {s.approved ? (
-                <Badge className="text-[10px] bg-[hsl(var(--neon-mint))] text-white">✅ Aprobado</Badge>
-              ) : s.blocked ? (
-                <Badge variant="destructive" className="text-[10px] gap-1">
-                  <AlertTriangle className="w-3 h-3" /> Bloqueado
-                </Badge>
-              ) : s.extraChance ? (
-                <Badge className="text-[10px] bg-[hsl(var(--neon-orange))] text-white gap-1">
-                  <RotateCcw className="w-3 h-3" /> Extra
-                </Badge>
-              ) : s.attempts > 0 ? (
-                <Badge variant="outline" className="text-[10px]">En progreso</Badge>
-              ) : s.unlocked ? (
-                <Badge variant="outline" className="text-[10px] text-[hsl(var(--neon-orange))]">Pendiente</Badge>
-              ) : (
-                <span className="text-[10px] text-muted-foreground">No disponible</span>
-              )}
-            </TableCell>
-            <TableCell>
-              <div className="flex gap-1">
-                {!s.unlocked && !s.approved && (
-                  <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1 text-[hsl(var(--neon-orange))]" onClick={() => forceUnlock(s.user_id)}>
-                    <Unlock className="w-3 h-3" /> Activar
-                  </Button>
-                )}
-                {s.blocked && (
-                  <Button size="sm" variant="outline" className="h-6 text-[10px] gap-1" onClick={() => resetAttempts(s.user_id)}>
-                    <RotateCcw className="w-3 h-3" /> Reset
-                  </Button>
-                )}
-              </div>
-            </TableCell>
+    <>
+      {/* Force-enable exam selector dialog */}
+      <Dialog open={!!forceExamUserId} onOpenChange={() => setForceExamUserId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">Habilitar Examen</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground mb-3">
+            Selecciona el examen que deseas activar para este estudiante:
+          </p>
+          <div className="space-y-2">
+            {activeConfigs.map(c => (
+              <Button
+                key={c.tipo}
+                variant="outline"
+                className="w-full justify-start gap-2 h-auto py-3 text-left"
+                onClick={() => forceExamUserId && forceUnlockExam(forceExamUserId, c.tipo)}
+              >
+                <Unlock className="w-4 h-4 text-[hsl(var(--neon-orange))] shrink-0" />
+                <div>
+                  <p className="font-medium text-sm">{c.label}</p>
+                  <p className="text-[10px] text-muted-foreground">Sesiones: {c.sessions.join(', ')}</p>
+                </div>
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Estudiante</TableHead>
+            <TableHead className="hidden sm:table-cell">Desbloqueo</TableHead>
+            <TableHead>Intentos</TableHead>
+            <TableHead>Mejor nota</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead>Acciones</TableHead>
           </TableRow>
-        ))}
-        {data.length === 0 && (
-          <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Sin estudiantes</TableCell></TableRow>
-        )}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {data.map(s => (
+            <TableRow key={s.user_id}>
+              <TableCell className="font-medium text-sm">{s.nombre} {s.apellidos}</TableCell>
+              <TableCell className="hidden sm:table-cell">
+                {s.unlocked ? (
+                  <Badge variant="outline" className="text-[10px] gap-1 border-accent text-accent">
+                    <Unlock className="w-3 h-3" /> Desbloqueado
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] gap-1 border-destructive text-destructive">
+                    <Lock className="w-3 h-3" /> Bloqueado ({s.sessionAccuracies.filter((a: any) => a.met).length}/{s.sessionAccuracies.length})
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell>
+                <span className={`text-sm font-bold ${s.attempts >= 3 ? 'text-destructive' : 'text-foreground'}`}>
+                  {s.attempts}/3
+                </span>
+              </TableCell>
+              <TableCell>
+                <span className={`text-sm font-bold ${s.bestScore >= (cfg?.puntaje_aprobacion || 80) ? 'text-accent' : s.bestScore > 0 ? 'text-[hsl(var(--neon-orange))]' : 'text-muted-foreground'}`}>
+                  {s.bestScore > 0 ? `${s.bestScore}/${cfg?.tipo === 'exam_final' ? '1000' : '100'}` : '—'}
+                </span>
+              </TableCell>
+              <TableCell>
+                {s.approved ? (
+                  <Badge className="text-[10px] bg-accent text-accent-foreground">✅ Aprobado</Badge>
+                ) : s.blocked ? (
+                  <Badge variant="destructive" className="text-[10px] gap-1">
+                    <AlertTriangle className="w-3 h-3" /> Bloqueado
+                  </Badge>
+                ) : s.extraChance ? (
+                  <Badge className="text-[10px] bg-[hsl(var(--neon-orange))] text-primary-foreground gap-1">
+                    <RotateCcw className="w-3 h-3" /> Extra
+                  </Badge>
+                ) : s.attempts > 0 ? (
+                  <Badge variant="outline" className="text-[10px]">En progreso</Badge>
+                ) : s.unlocked ? (
+                  <Badge variant="outline" className="text-[10px] border-[hsl(var(--neon-orange))] text-[hsl(var(--neon-orange))]">Pendiente</Badge>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground">No disponible</span>
+                )}
+              </TableCell>
+              <TableCell>
+                <div className="flex gap-1 flex-wrap">
+                  {!s.approved && (
+                    <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 border-[hsl(var(--neon-orange))]/50 text-[hsl(var(--neon-orange))] hover:bg-[hsl(var(--neon-orange))]/10" onClick={() => setForceExamUserId(s.user_id)}>
+                      <Unlock className="w-3 h-3" /> Habilitar
+                    </Button>
+                  )}
+                  {(s.blocked || s.attempts > 0) && !s.approved && (
+                    <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 hover:bg-destructive/10" onClick={() => resetAttempts(s.user_id)}>
+                      <RotateCcw className="w-3 h-3" /> Reset
+                    </Button>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+          {data.length === 0 && (
+            <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Sin estudiantes</TableCell></TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </>
   );
 }
