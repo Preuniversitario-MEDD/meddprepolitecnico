@@ -562,25 +562,33 @@ function StudentExamStatusTable({ examTipo, configs, sesiones, results }: { exam
               </TableCell>
               <TableCell>
                 {s.examBloqueado ? (
-                  <Badge variant="destructive" className="text-[10px] gap-1">
+                  <Badge className="text-[10px] gap-1 bg-destructive/15 text-destructive border border-destructive/40 font-semibold">
                     <Lock className="w-3 h-3" /> Deshabilitado
                   </Badge>
                 ) : s.approved ? (
-                  <Badge className="text-[10px] bg-accent text-accent-foreground">✅ Aprobado</Badge>
+                  <Badge className="text-[10px] gap-1 bg-[hsl(var(--neon-mint))]/15 text-[hsl(var(--neon-mint))] border border-[hsl(var(--neon-mint))]/40 font-semibold">
+                    <CheckCircle className="w-3 h-3" /> Aprobado
+                  </Badge>
                 ) : s.blocked ? (
-                  <Badge variant="destructive" className="text-[10px] gap-1">
+                  <Badge className="text-[10px] gap-1 bg-[hsl(var(--neon-pink))]/15 text-[hsl(var(--neon-pink))] border border-[hsl(var(--neon-pink))]/40 font-semibold">
                     <AlertTriangle className="w-3 h-3" /> Bloqueado
                   </Badge>
                 ) : s.extraChance ? (
-                  <Badge className="text-[10px] bg-[hsl(var(--neon-orange))] text-primary-foreground gap-1">
+                  <Badge className="text-[10px] gap-1 bg-[hsl(var(--neon-orange))]/15 text-[hsl(var(--neon-orange))] border border-[hsl(var(--neon-orange))]/40 font-semibold">
                     <RotateCcw className="w-3 h-3" /> Extra
                   </Badge>
                 ) : s.attempts > 0 ? (
-                  <Badge variant="outline" className="text-[10px]">En progreso</Badge>
+                  <Badge className="text-[10px] gap-1 bg-[hsl(var(--neon-blue))]/15 text-[hsl(var(--neon-blue))] border border-[hsl(var(--neon-blue))]/40 font-semibold">
+                    <Zap className="w-3 h-3" /> En progreso
+                  </Badge>
                 ) : s.unlocked ? (
-                  <Badge variant="outline" className="text-[10px] border-[hsl(var(--neon-orange))] text-[hsl(var(--neon-orange))]">Pendiente</Badge>
+                  <Badge className="text-[10px] gap-1 bg-[hsl(var(--neon-orange))]/10 text-[hsl(var(--neon-orange))] border border-[hsl(var(--neon-orange))]/30 font-semibold">
+                    <Clock className="w-3 h-3" /> Pendiente
+                  </Badge>
                 ) : (
-                  <span className="text-[10px] text-muted-foreground">No disponible</span>
+                  <Badge className="text-[10px] gap-1 bg-muted/50 text-muted-foreground border border-border font-medium">
+                    No disponible
+                  </Badge>
                 )}
               </TableCell>
               <TableCell>
