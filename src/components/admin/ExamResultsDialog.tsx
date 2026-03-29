@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckCircle, XCircle, Eye, Clock, Zap, BookOpen, AlertTriangle, TrendingUp, ArrowLeft, HelpCircle, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import meddLogo from '@/assets/medd-logo.png';
 
 interface ExamConfig {
   tipo: string;
@@ -209,7 +210,7 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
   }
 
   // --- PDF Export ---
-  function exportDetailPDF(result: ExamResultRow) {
+  async function exportDetailPDF(result: ExamResultRow) {
     if (questionDetails.length === 0) return;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
@@ -232,17 +233,44 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
       }
     };
 
+    // Load logo as base64
+    let logoBase64: string | null = null;
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject();
+        img.src = meddLogo;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+      logoBase64 = canvas.toDataURL('image/png');
+    } catch { /* ignore logo errors */ }
+
     // Header bar
     doc.setFillColor(90, 50, 150);
     doc.rect(0, 0, pageW, 28, 'F');
+
+    // Add logo to header
+    if (logoBase64) {
+      doc.addImage(logoBase64, 'PNG', margin, 3, 22, 22);
+    }
+
+    const textX = logoBase64 ? margin + 25 : margin;
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Reporte de Examen - ${cfg?.label || examTipo}`, margin, 12);
+    doc.text('Preuniversitario MEDD', textX, 10);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(studentName, margin, 20);
-    doc.text(`Fecha: ${new Date(result.fecha).toLocaleDateString('es-EC')}`, pageW - margin, 20, { align: 'right' });
+    doc.text(`Reporte de Examen - ${cfg?.label || examTipo}`, textX, 16);
+    doc.setFontSize(9);
+    doc.text(studentName, textX, 22);
+    doc.text(`Fecha: ${new Date(result.fecha).toLocaleDateString('es-EC')}`, pageW - margin, 22, { align: 'right' });
     y = 36;
 
     // Summary metrics table
