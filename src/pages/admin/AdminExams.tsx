@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Settings2, Eye, Users, CheckCircle, XCircle, Brain, Pencil, Save, Plus, Trophy, Lock, Unlock, AlertTriangle, RotateCcw, Play } from 'lucide-react';
+import ExamResultsDialog from '@/components/admin/ExamResultsDialog';
 
 interface ExamConfig {
   id: string;
@@ -354,42 +355,12 @@ export default function AdminExams() {
       </Dialog>
 
       {/* Results dialog */}
-      <Dialog open={!!selectedExam} onOpenChange={() => setSelectedExam(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Resultados: {configs.find(c => c.tipo === selectedExam)?.label}</DialogTitle>
-          </DialogHeader>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Estudiante</TableHead>
-                <TableHead>Puntaje</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {examResults(selectedExam || '').map(r => {
-                const cfg = configs.find(c => c.tipo === r.tipo);
-                const isFinal = r.tipo === 'exam_final';
-                return (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.profile ? `${r.profile.nombre} ${r.profile.apellidos}` : r.user_id.slice(0, 8)}</TableCell>
-                    <TableCell>{r.puntaje}/{isFinal ? '1000' : '100'}</TableCell>
-                    <TableCell>
-                      <Badge variant={r.aprobado ? 'default' : 'destructive'}>{r.aprobado ? 'Aprobado' : 'Reprobado'}</Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">{new Date(r.fecha).toLocaleDateString('es-EC')}</TableCell>
-                  </TableRow>
-                );
-              })}
-              {examResults(selectedExam || '').length === 0 && (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Sin resultados aún</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </DialogContent>
-      </Dialog>
+      <ExamResultsDialog
+        open={!!selectedExam}
+        onOpenChange={() => setSelectedExam(null)}
+        examTipo={selectedExam}
+        configs={configs}
+      />
 
       {/* Student exam status dialog */}
       <Dialog open={!!statusExam} onOpenChange={() => setStatusExam(null)}>

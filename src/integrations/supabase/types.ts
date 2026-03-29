@@ -535,6 +535,8 @@ export type Database = {
         Row: {
           aprobado: boolean | null
           fecha: string | null
+          hora_fin: string | null
+          hora_inicio: string | null
           id: string
           puntaje: number | null
           respuestas: Json | null
@@ -544,6 +546,8 @@ export type Database = {
         Insert: {
           aprobado?: boolean | null
           fecha?: string | null
+          hora_fin?: string | null
+          hora_inicio?: string | null
           id?: string
           puntaje?: number | null
           respuestas?: Json | null
@@ -553,6 +557,8 @@ export type Database = {
         Update: {
           aprobado?: boolean | null
           fecha?: string | null
+          hora_fin?: string | null
+          hora_inicio?: string | null
           id?: string
           puntaje?: number | null
           respuestas?: Json | null

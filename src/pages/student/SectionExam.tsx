@@ -59,6 +59,7 @@ export default function SectionExam() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const alertPlayedRef = useRef(false);
   const [showReview, setShowReview] = useState(false);
+  const examStartRef = useRef<Date | null>(null);
 
   useEffect(() => {
     if (tipo && user) loadExamConfig();
@@ -180,6 +181,7 @@ export default function SectionExam() {
     setQuestions(mapped);
     setState('playing');
     alertPlayedRef.current = false;
+    examStartRef.current = new Date();
     startTimer();
   }
 
@@ -248,13 +250,16 @@ export default function SectionExam() {
     const aprobado = finalPct >= config.puntaje_aprobacion;
 
     if (user && !isAdminPreview) {
+      const horaFin = new Date();
       await supabase.from('examenes').insert({
         user_id: user.id,
         tipo: tipo!,
         puntaje: finalPct,
         aprobado,
         respuestas: answeredArr as any,
-      });
+        hora_inicio: examStartRef.current?.toISOString() || horaFin.toISOString(),
+        hora_fin: horaFin.toISOString(),
+      } as any);
 
       if (answeredArr.length > 0) {
         const historyRows = answeredArr.map(a => ({
