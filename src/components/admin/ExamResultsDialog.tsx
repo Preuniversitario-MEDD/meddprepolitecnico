@@ -466,7 +466,7 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
                     {isCorrectOpt
                       ? <CheckCircle className="w-3.5 h-3.5 text-[hsl(var(--neon-mint))] shrink-0" />
                       : isStudentAnswer && !d.correct
-                        ? <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                        ? <XCircle className="w-3.5 h-3.5 text-[hsl(var(--neon-pink))] shrink-0" />
                         : <span className="w-3.5 shrink-0" />
                     }
                     <span><span className="font-semibold mr-1">{String.fromCharCode(65 + i)}.</span>{op}</span>
