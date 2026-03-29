@@ -258,7 +258,29 @@ function isImageUrl(url: string): boolean {
   return /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url);
 }
 
+function isVideoUrl(url: string): boolean {
+  return /youtu\.?be|youtube|vimeo|dailymotion/i.test(url);
+}
+
+function isPdfUrl(url: string): boolean {
+  return /\.pdf(\/|$|\?)/i.test(url);
+}
+
+function getLinkIcon(url: string) {
+  if (isVideoUrl(url)) return Play;
+  if (isPdfUrl(url)) return FileText;
+  return Download;
+}
+
 function getLinkLabel(url: string): string {
+  if (isVideoUrl(url)) return 'Ver video';
+  if (isPdfUrl(url)) {
+    try {
+      const parts = new URL(url).pathname.split('/');
+      const filename = parts.find(p => p.endsWith('.pdf')) || 'Documento PDF';
+      return filename.length > 40 ? filename.substring(0, 37) + '...' : filename;
+    } catch { return 'Documento PDF'; }
+  }
   try {
     const pathname = new URL(url).pathname;
     const filename = pathname.split('/').pop() || url;
