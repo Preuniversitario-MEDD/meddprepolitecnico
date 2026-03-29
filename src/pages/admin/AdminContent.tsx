@@ -114,6 +114,21 @@ export default function AdminContent() {
     loadSesiones();
   }
 
+  async function uploadFileToLink(file: File, idx: number) {
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: 'Error', description: 'El archivo no puede superar 20MB', variant: 'destructive' });
+      return;
+    }
+    const ext = file.name.split('.').pop() || 'bin';
+    const fileName = `content-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+    toast({ title: 'Subiendo archivo...' });
+    const { data: uploaded, error } = await supabase.storage.from('quiz-images').upload(fileName, file);
+    if (error) { toast({ title: 'Error al subir', description: error.message, variant: 'destructive' }); return; }
+    const { data: urlData } = supabase.storage.from('quiz-images').getPublicUrl(uploaded.path);
+    setLinkFields(prev => { const updated = [...prev]; updated[idx] = urlData.publicUrl; return updated; });
+    toast({ title: '✅ Archivo subido correctamente' });
+  }
+
   async function saveContent() {
     const joinedLinks = linkFields.filter(l => l.trim()).join('\n');
     const payload: any = {
