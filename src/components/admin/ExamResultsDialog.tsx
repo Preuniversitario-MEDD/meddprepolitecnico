@@ -125,12 +125,6 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
             porcentaje: pct,
             estado: (pct >= 80 ? 'dominado' : pct >= 50 ? 'en_proceso' : 'requiere_retroalimentacion') as TopicAnalysis['estado'],
           };
-            sesionTitulo: ses.titulo,
-            total: data.total,
-            correctas: data.correctas,
-            porcentaje: pct,
-            estado: pct >= 80 ? 'dominado' : pct >= 50 ? 'en_proceso' : 'requiere_retroalimentacion',
-          };
         }).sort((a, b) => a.sesionNumero - b.sesionNumero);
         setTopicAnalysis(analysis);
       }
