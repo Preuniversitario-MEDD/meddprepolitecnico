@@ -368,7 +368,7 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
 
     renderSection(`Preguntas Correctas (${correctQs.length})`, correctQs, [34, 139, 34]);
     renderSection(`Preguntas En Blanco (${blankQs.length})`, blankQs, [200, 140, 0]);
-    renderSection(`Preguntas Erróneas (${incorrectQs.length})`, incorrectQs, [200, 50, 50]);
+    renderSection(`Preguntas Erróneas (${incorrectQs.length})`, incorrectQs, [220, 50, 120]);
 
     // Footer on all pages
     const totalPages = doc.getNumberOfPages();
