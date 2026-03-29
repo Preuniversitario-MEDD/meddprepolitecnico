@@ -254,12 +254,25 @@ export default function SessionDetail() {
   );
 }
 
+function isImageUrl(url: string): boolean {
+  return /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url);
+}
+
+function getLinkLabel(url: string): string {
+  try {
+    const pathname = new URL(url).pathname;
+    const filename = pathname.split('/').pop() || url;
+    return filename.length > 40 ? filename.substring(0, 37) + '...' : filename;
+  } catch { return url.length > 40 ? url.substring(0, 37) + '...' : url; }
+}
+
 function ContentItem({ item, index, showSolutions, onToggleSolution }: {
   item: Contenido; index: number;
   showSolutions: Record<string, boolean>;
   onToggleSolution: (id: string) => void;
 }) {
   const hasSolution = !!(item.solucion);
+  const links = (item.imagen_url || '').split('\n').filter(l => l.trim());
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }}>
@@ -267,7 +280,27 @@ function ContentItem({ item, index, showSolutions, onToggleSolution }: {
         <CardContent className="p-4">
           <h3 className="font-display font-bold text-sm mb-2">{item.titulo}</h3>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{item.texto}</p>
-          {item.imagen_url && <img src={item.imagen_url} alt={item.titulo} className="mt-3 rounded-lg max-w-full h-auto" />}
+          
+          {/* Render multiple links: images inline, others as download/open buttons */}
+          {links.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {links.map((link, i) => {
+                const trimmed = link.trim();
+                if (isImageUrl(trimmed)) {
+                  return <img key={i} src={trimmed} alt={`${item.titulo} - ${i + 1}`} className="rounded-lg max-w-full h-auto" />;
+                }
+                return (
+                  <a key={i} href={trimmed} target="_blank" rel="noopener noreferrer" download
+                    className="flex items-center gap-2 p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors text-sm text-secondary">
+                    <Download className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{getLinkLabel(trimmed)}</span>
+                    <ExternalLink className="w-3 h-3 shrink-0 ml-auto" />
+                  </a>
+                );
+              })}
+            </div>
+          )}
+
           {item.url && (
             <a href={item.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-secondary underline">Ver recurso →</a>
           )}
