@@ -529,30 +529,51 @@ export default function AdminContent() {
             </div>
             <div><Label>URL (link, PDF, video)</Label><Input value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://..." /></div>
             <div>
-              <Label>URL de Imagen</Label>
-              <Input value={form.imagen_url} onChange={e => setForm({ ...form, imagen_url: e.target.value })} placeholder="https://... o pega imagen en el texto"
-                onPaste={async (e) => {
-                  const items = e.clipboardData?.items;
-                  if (!items) return;
-                  for (const item of Array.from(items)) {
-                    if (item.type.startsWith('image/')) {
-                      e.preventDefault();
-                      const file = item.getAsFile();
-                      if (!file) return;
-                      const ext = file.type.split('/')[1] || 'png';
-                      const fileName = `content-${Date.now()}.${ext}`;
-                      toast({ title: 'Subiendo imagen...' });
-                      const { data: uploaded, error } = await supabase.storage.from('quiz-images').upload(fileName, file);
-                      if (error) { toast({ title: 'Error al subir imagen', variant: 'destructive' }); return; }
-                      const { data: urlData } = supabase.storage.from('quiz-images').getPublicUrl(uploaded.path);
-                      setForm(prev => ({ ...prev, imagen_url: urlData.publicUrl }));
-                      toast({ title: '✅ Imagen pegada y subida' });
-                      return;
-                    }
-                  }
-                }}
-              />
-              {form.imagen_url && <img src={form.imagen_url} alt="Preview" className="mt-2 max-h-32 rounded-md border" />}
+              <Label>Enlaces / Imágenes (hasta 4)</Label>
+              <p className="text-xs text-muted-foreground mb-2">Pega URLs de imágenes, PDFs, videos o cualquier recurso. Las imágenes se mostrarán directamente; otros enlaces aparecerán como descarga.</p>
+              {linkFields.map((link, idx) => (
+                <div key={idx} className="flex gap-2 mb-2 items-center">
+                  <Input
+                    value={link}
+                    onChange={e => { const updated = [...linkFields]; updated[idx] = e.target.value; setLinkFields(updated); }}
+                    placeholder={`https://... (enlace ${idx + 1})`}
+                    onPaste={async (e) => {
+                      const items = e.clipboardData?.items;
+                      if (!items) return;
+                      for (const item of Array.from(items)) {
+                        if (item.type.startsWith('image/')) {
+                          e.preventDefault();
+                          const file = item.getAsFile();
+                          if (!file) return;
+                          const ext = file.type.split('/')[1] || 'png';
+                          const fileName = `content-${Date.now()}.${ext}`;
+                          toast({ title: 'Subiendo imagen...' });
+                          const { data: uploaded, error } = await supabase.storage.from('quiz-images').upload(fileName, file);
+                          if (error) { toast({ title: 'Error al subir imagen', variant: 'destructive' }); return; }
+                          const { data: urlData } = supabase.storage.from('quiz-images').getPublicUrl(uploaded.path);
+                          const updated = [...linkFields]; updated[idx] = urlData.publicUrl; setLinkFields(updated);
+                          toast({ title: '✅ Imagen pegada y subida' });
+                          return;
+                        }
+                      }
+                    }}
+                  />
+                  {linkFields.length > 1 && (
+                    <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => setLinkFields(linkFields.filter((_, i) => i !== idx))}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {linkFields.length < 4 && (
+                <Button variant="outline" size="sm" className="gap-1" onClick={() => setLinkFields([...linkFields, ''])}>
+                  <Plus className="w-3 h-3" /> Agregar enlace
+                </Button>
+              )}
+              {/* Preview images */}
+              {linkFields.filter(l => l.trim() && /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(l.trim())).map((url, i) => (
+                <img key={i} src={url.trim()} alt={`Preview ${i + 1}`} className="mt-2 max-h-32 rounded-md border" />
+              ))}
             </div>
             <div><Label>Grupo (para agrupar en desplegable)</Label><Input value={form.grupo_nombre} onChange={e => setForm({ ...form, grupo_nombre: e.target.value })} placeholder="Ej: Fundamentos, Avanzado..." /></div>
             {(form.tipo === 'ejercicio' || form.solucion) && (
