@@ -132,6 +132,7 @@ export default function AdminContent() {
     setAddOpen(false);
     setEditItem(null);
     setForm({ tipo: '', titulo: '', texto: '', url: '', imagen_url: '', solucion: '', grupo_nombre: '' });
+    setLinkFields(['']);
     loadContenido();
   }
 
