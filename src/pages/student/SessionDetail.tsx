@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ArrowLeft, BookOpen, Lightbulb, PenTool, Brain, Eye, EyeOff, Sparkles, Loader2, Timer, Target, AlertTriangle, Trophy, PartyPopper, ChevronDown, Download, ExternalLink } from 'lucide-react';
+import { ArrowLeft, BookOpen, Lightbulb, PenTool, Brain, Eye, EyeOff, Sparkles, Loader2, Timer, Target, AlertTriangle, Trophy, PartyPopper, ChevronDown, Download, ExternalLink, Play, FileText } from 'lucide-react';
 import QuizComponent from '@/components/quiz/QuizComponent';
 import { useToast } from '@/hooks/use-toast';
 import type { Tables } from '@/integrations/supabase/types';
@@ -258,7 +258,29 @@ function isImageUrl(url: string): boolean {
   return /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url);
 }
 
+function isVideoUrl(url: string): boolean {
+  return /youtu\.?be|youtube|vimeo|dailymotion/i.test(url);
+}
+
+function isPdfUrl(url: string): boolean {
+  return /\.pdf(\/|$|\?)/i.test(url);
+}
+
+function getLinkIcon(url: string) {
+  if (isVideoUrl(url)) return Play;
+  if (isPdfUrl(url)) return FileText;
+  return Download;
+}
+
 function getLinkLabel(url: string): string {
+  if (isVideoUrl(url)) return 'Ver video';
+  if (isPdfUrl(url)) {
+    try {
+      const parts = new URL(url).pathname.split('/');
+      const filename = parts.find(p => p.endsWith('.pdf')) || 'Documento PDF';
+      return filename.length > 40 ? filename.substring(0, 37) + '...' : filename;
+    } catch { return 'Documento PDF'; }
+  }
   try {
     const pathname = new URL(url).pathname;
     const filename = pathname.split('/').pop() || url;
@@ -289,10 +311,11 @@ function ContentItem({ item, index, showSolutions, onToggleSolution }: {
                 if (isImageUrl(trimmed)) {
                   return <img key={i} src={trimmed} alt={`${item.titulo} - ${i + 1}`} className="rounded-lg max-w-full h-auto" />;
                 }
+                const Icon = getLinkIcon(trimmed);
                 return (
-                  <a key={i} href={trimmed} target="_blank" rel="noopener noreferrer" download
+                  <a key={i} href={trimmed} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-2 p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors text-sm text-secondary">
-                    <Download className="w-4 h-4 shrink-0" />
+                    <Icon className="w-4 h-4 shrink-0" />
                     <span className="truncate">{getLinkLabel(trimmed)}</span>
                     <ExternalLink className="w-3 h-3 shrink-0 ml-auto" />
                   </a>
