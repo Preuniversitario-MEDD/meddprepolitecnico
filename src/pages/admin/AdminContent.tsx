@@ -466,7 +466,7 @@ export default function AdminContent() {
                   // Ungrouped items
                   return groupItems.map((item, i) => (
                     <ContentCard key={item.id} item={item} index={i}
-                      onEdit={() => { setEditItem(item); setForm({ tipo: item.tipo, titulo: item.titulo, texto: item.texto || '', url: item.url || '', imagen_url: item.imagen_url || '', solucion: item.solucion || '', grupo_nombre: (item as any).grupo_nombre || '' }); setAddOpen(true); }}
+                      onEdit={() => { setEditItem(item); const links = (item.imagen_url || '').split('\n').filter(Boolean); setLinkFields(links.length ? links : ['']); setForm({ tipo: item.tipo, titulo: item.titulo, texto: item.texto || '', url: item.url || '', imagen_url: item.imagen_url || '', solucion: item.solucion || '', grupo_nombre: (item as any).grupo_nombre || '' }); setAddOpen(true); }}
                       onDelete={() => deleteContent(item.id)}
                       onMove={(dir) => moveContent(item, dir)} />
                   ));
