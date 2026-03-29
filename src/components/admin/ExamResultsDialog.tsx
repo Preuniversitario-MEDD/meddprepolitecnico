@@ -460,13 +460,13 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
                 const isStudentAnswer = !blank && d.answer === i;
                 let classes = 'border-border bg-card';
                 if (isCorrectOpt) classes = 'border-[hsl(var(--neon-mint))] bg-[hsl(var(--neon-mint))]/10';
-                else if (isStudentAnswer && !d.correct) classes = 'border-destructive bg-destructive/10';
+                else if (isStudentAnswer && !d.correct) classes = 'border-[hsl(var(--neon-pink))] bg-[hsl(var(--neon-pink))]/15';
                 return (
                   <div key={i} className={`p-2 rounded-lg border text-[11px] flex items-center gap-2 ${classes}`}>
                     {isCorrectOpt
                       ? <CheckCircle className="w-3.5 h-3.5 text-[hsl(var(--neon-mint))] shrink-0" />
                       : isStudentAnswer && !d.correct
-                        ? <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                        ? <XCircle className="w-3.5 h-3.5 text-[hsl(var(--neon-pink))] shrink-0" />
                         : <span className="w-3.5 shrink-0" />
                     }
                     <span><span className="font-semibold mr-1">{String.fromCharCode(65 + i)}.</span>{op}</span>
