@@ -383,9 +383,20 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
     doc.save(`Examen_${cfg?.label || examTipo}_${studentName.replace(/\s/g, '_')}.pdf`);
   }
 
-  // Classify questions
+  // Classify questions - handle both old format (no answer field) and new format
   function isBlank(d: any) {
-    return d.answer === undefined || d.answer === null || d.answer === -1;
+    // New format: answer field exists
+    if ('answer' in d) {
+      return d.answer === undefined || d.answer === null || d.answer === -1;
+    }
+    // Old format: no answer field, use correct to determine if answered
+    // If correct is explicitly true or false (and question exists), it was answered
+    // Old format only saved answered questions, so if it exists it was answered
+    return false;
+  }
+
+  function isCorrect(d: any) {
+    return d.correct === true;
   }
 
   // Detail view
