@@ -447,7 +447,7 @@ export default function AdminContent() {
           {pestanas.map(tab => (
             <TabsContent key={tab.clave} value={tab.clave} className="space-y-3">
               <div className="flex gap-2">
-                <Button onClick={() => { setForm({ tipo: tab.clave, titulo: '', texto: '', url: '', imagen_url: '', solucion: '', grupo_nombre: '' }); setEditItem(null); setAddOpen(true); }}
+                <Button onClick={() => { setForm({ tipo: tab.clave, titulo: '', texto: '', url: '', imagen_url: '', solucion: '', grupo_nombre: '' }); setLinkFields(['']); setEditItem(null); setAddOpen(true); }}
                   className="gradient-primary text-primary-foreground gap-2" size="sm">
                   <Plus className="w-4 h-4" /> Agregar contenido
                 </Button>
