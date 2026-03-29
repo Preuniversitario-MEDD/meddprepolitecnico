@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Settings2, Eye, Users, CheckCircle, XCircle, Brain, Pencil, Save, Plus, Trophy, Lock, Unlock, AlertTriangle, RotateCcw, Play } from 'lucide-react';
+import ExamResultsDialog from '@/components/admin/ExamResultsDialog';
 
 interface ExamConfig {
   id: string;
