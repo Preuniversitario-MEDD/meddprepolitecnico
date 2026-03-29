@@ -614,7 +614,7 @@ function ContentCard({ item, index, onEdit, onDelete, onMove }: {
               <p className="font-semibold text-sm">{item.titulo}</p>
               <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{item.texto}</p>
               {item.url && <p className="text-xs text-secondary mt-1 truncate">🔗 {item.url}</p>}
-              {item.imagen_url && <p className="text-xs text-neon-pink mt-1 truncate">🖼️ {item.imagen_url}</p>}
+              {item.imagen_url && (() => { const links = item.imagen_url!.split('\n').filter(Boolean); return <p className="text-xs text-neon-pink mt-1 truncate">🔗 {links.length} enlace{links.length > 1 ? 's' : ''}</p>; })()}
               {item.solucion && <p className="text-xs text-accent mt-1 truncate">✅ Con solución</p>}
               {(item as any).grupo_nombre && <p className="text-xs text-muted-foreground mt-1">📁 {(item as any).grupo_nombre}</p>}
             </div>
