@@ -115,9 +115,10 @@ export default function AdminContent() {
   }
 
   async function saveContent() {
+    const joinedLinks = linkFields.filter(l => l.trim()).join('\n');
     const payload: any = {
       tipo: form.tipo, titulo: form.titulo, texto: form.texto,
-      url: form.url, imagen_url: form.imagen_url, grupo_nombre: form.grupo_nombre
+      url: form.url, imagen_url: joinedLinks, grupo_nombre: form.grupo_nombre
     };
     if (form.tipo === 'ejercicio' || form.solucion) payload.solucion = form.solucion;
 
