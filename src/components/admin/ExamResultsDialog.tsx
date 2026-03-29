@@ -349,7 +349,7 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
     }
 
     // Question sections helper
-    const renderSection = (title: string, questions: any[], colorRGB: number[]) => {
+    const renderSection = (title: string, questions: any[], colorRGB: [number, number, number]) => {
       if (questions.length === 0) return;
       addNewPageIfNeeded(18);
       doc.setFontSize(11);
