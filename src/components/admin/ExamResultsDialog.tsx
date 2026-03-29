@@ -376,8 +376,8 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
       doc.setPage(i);
       doc.setFontSize(7);
       doc.setTextColor(150, 150, 150);
-      doc.text(`Página ${i} de ${totalPages}`, pageW / 2, pageH - 8, { align: 'center' });
-      doc.text('MeddPrep Politécnico — Reporte generado automáticamente', pageW / 2, pageH - 4, { align: 'center' });
+      doc.text(`Página ${i} de ${totalPages}`, pageW / 2, pageH - 12, { align: 'center' });
+      doc.text('Preuniversitario MEDD — Reporte generado automáticamente', pageW / 2, pageH - 7, { align: 'center' });
     }
 
     doc.save(`Examen_${cfg?.label || examTipo}_${studentName.replace(/\s/g, '_')}.pdf`);
