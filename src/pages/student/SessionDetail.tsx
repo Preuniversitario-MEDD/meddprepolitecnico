@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ArrowLeft, BookOpen, Lightbulb, PenTool, Brain, Eye, EyeOff, Sparkles, Loader2, Timer, Target, AlertTriangle, Trophy, PartyPopper, ChevronDown } from 'lucide-react';
+import { ArrowLeft, BookOpen, Lightbulb, PenTool, Brain, Eye, EyeOff, Sparkles, Loader2, Timer, Target, AlertTriangle, Trophy, PartyPopper, ChevronDown, Download, ExternalLink } from 'lucide-react';
 import QuizComponent from '@/components/quiz/QuizComponent';
 import { useToast } from '@/hooks/use-toast';
 import type { Tables } from '@/integrations/supabase/types';
