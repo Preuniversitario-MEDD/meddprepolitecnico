@@ -280,9 +280,9 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
     doc.setTextColor(200, 120, 0);
     doc.text(`○ En blanco: ${blankQs.length}`, margin + contentW / 3 + 4, y + 7);
 
-    doc.setFillColor(255, 230, 230);
+    doc.setFillColor(255, 220, 240);
     doc.roundedRect(margin + (contentW / 3) * 2, y, contentW / 3, 12, 2, 2, 'F');
-    doc.setTextColor(200, 50, 50);
+    doc.setTextColor(220, 50, 120);
     doc.text(`✗ Erróneas: ${incorrectQs.length}`, margin + (contentW / 3) * 2 + 4, y + 7);
     y += 18;
 
