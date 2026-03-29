@@ -8,8 +8,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ArrowLeft, BookOpen, Lightbulb, PenTool, Brain, Eye, EyeOff, Sparkles, Loader2, Timer, Target, AlertTriangle, Trophy, PartyPopper, ChevronDown, Download, ExternalLink, Play, FileText } from 'lucide-react';
+import { ArrowLeft, Brain, Sparkles, Loader2, Timer, Target, AlertTriangle, Trophy, PartyPopper, ChevronDown, Eye, EyeOff, BookOpen, Lightbulb, PenTool } from 'lucide-react';
 import QuizComponent from '@/components/quiz/QuizComponent';
+import ContentItem from '@/components/session/ContentItem';
 import { useToast } from '@/hooks/use-toast';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -18,6 +19,13 @@ type Sesion = Tables<'sesiones'>;
 
 interface Pestana { id: string; sesion_id: string; nombre: string; clave: string; orden: number; }
 interface AIExercise { titulo: string; enunciado: string; solucion: string; }
+
+const TAB_ICONS: Record<string, typeof BookOpen> = {
+  teoria: BookOpen,
+  truco: Lightbulb,
+  ejercicio: PenTool,
+  quiz: Brain,
+};
 
 export default function SessionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -35,12 +43,9 @@ export default function SessionDetail() {
   const [stats, setStats] = useState({ intentos: 0, errores: 0, tiempo: 0, correctasTotal: 0 });
   const [sessionProgress, setSessionProgress] = useState(0);
   const [show80Message, setShow80Message] = useState(false);
-  // Accordion: only one group open at a time
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
   useEffect(() => { if (id) loadData(); }, [id]);
-
-  // Reset open group when tab changes
   useEffect(() => { setOpenGroup(null); }, [activeTab]);
 
   async function loadData() {
@@ -51,7 +56,7 @@ export default function SessionDetail() {
     ]);
     setSesion(s);
     setContenido(c || []);
-    
+
     const tabList = (tabs || []) as Pestana[];
     setPestanas(tabList);
     if (tabList.length > 0 && !activeTab) setActiveTab(tabList[0].clave);
@@ -103,74 +108,108 @@ export default function SessionDetail() {
     return groups;
   }
 
-  if (!sesion) return <div className="p-6 text-center text-muted-foreground">Cargando sesión...</div>;
+  if (!sesion) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+    </div>
+  );
 
   const allTabs = [...pestanas, { id: 'quiz', sesion_id: id!, nombre: 'Quiz', clave: 'quiz', orden: 999 }];
 
+  const statCards = [
+    { icon: Target, label: 'Intentos Quiz', value: stats.intentos, gradient: 'from-primary/20 to-primary/5', borderColor: 'border-primary/30', iconColor: 'text-primary' },
+    { icon: AlertTriangle, label: 'Errores', value: stats.errores, gradient: 'from-destructive/20 to-destructive/5', borderColor: 'border-destructive/30', iconColor: 'text-destructive' },
+    { icon: Timer, label: 'Tiempo', value: formatTime(stats.tiempo), gradient: 'from-neon-orange/20 to-neon-orange/5', borderColor: 'border-neon-orange/30', iconColor: 'text-neon-orange' },
+    { icon: Trophy, label: 'Correctas', value: `${stats.correctasTotal}/150`, gradient: 'from-neon-mint/20 to-neon-mint/5', borderColor: 'border-neon-mint/30', iconColor: 'text-neon-mint' },
+  ];
+
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5" /></Button>
+    <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mt-0.5 shrink-0 hover:bg-primary/10">
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl md:text-2xl font-display font-bold truncate">Sesión {sesion.numero}: {sesion.titulo}</h1>
-          <p className="text-sm text-muted-foreground">{sesion.descripcion}</p>
+          <h1 className="text-xl md:text-2xl font-display font-bold truncate text-foreground">
+            Sesión {sesion.numero}: {sesion.titulo}
+          </h1>
+          {sesion.descripcion && (
+            <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{sesion.descripcion}</p>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {[
-          { icon: Target, label: 'Intentos Quiz', value: stats.intentos, color: 'text-primary' },
-          { icon: AlertTriangle, label: 'Errores', value: stats.errores, color: 'text-destructive' },
-          { icon: Timer, label: 'Tiempo', value: formatTime(stats.tiempo), color: 'text-neon-orange' },
-          { icon: Trophy, label: 'Correctas', value: `${stats.correctasTotal}/150`, color: 'text-accent' },
-        ].map(({ icon: Icon, label, value, color }) => (
-          <Card key={label} className="card-elevated">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        {statCards.map(({ icon: Icon, label, value, gradient, borderColor, iconColor }) => (
+          <Card key={label} className={`border ${borderColor} bg-gradient-to-br ${gradient} backdrop-blur-sm`}>
             <CardContent className="p-3 text-center">
-              <Icon className={`w-4 h-4 mx-auto mb-1 ${color}`} />
-              <p className="text-lg font-bold">{value}</p>
-              <p className="text-[10px] text-muted-foreground">{label}</p>
+              <div className={`w-8 h-8 rounded-lg bg-background/60 flex items-center justify-center mx-auto mb-1.5`}>
+                <Icon className={`w-4 h-4 ${iconColor}`} />
+              </div>
+              <p className="text-lg font-bold font-display text-foreground">{value}</p>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{label}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card className="card-elevated">
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium">Progreso de la Sesión</span>
-            <span className="text-sm font-bold text-primary">{sessionProgress}%</span>
+      {/* Progress */}
+      <Card className="border-border/50 bg-card">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Progreso de la Sesión</span>
+            <span className="text-sm font-bold font-display text-primary">{sessionProgress}%</span>
           </div>
-          <Progress value={sessionProgress} className="h-2" />
-          <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+          <div className="relative">
+            <Progress value={sessionProgress} className="h-2.5" />
+          </div>
+          <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5 font-medium">
             <span>Ejercicios (40%)</span>
             <span>Quiz (60%)</span>
           </div>
         </CardContent>
       </Card>
 
+      {/* 80% Message */}
       <AnimatePresence>
         {show80Message && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="p-3 rounded-lg bg-accent/10 border border-accent/30">
-            <div className="flex items-center gap-2">
-              <PartyPopper className="w-5 h-5 text-accent shrink-0" />
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            className="p-4 rounded-xl bg-neon-mint/10 border border-neon-mint/30"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-neon-mint/20 flex items-center justify-center shrink-0">
+                <PartyPopper className="w-5 h-5 text-neon-mint" />
+              </div>
               <div>
-                <p className="text-sm font-bold text-accent">¡Felicitaciones! Llevas {sessionProgress}%</p>
-                <p className="text-xs text-muted-foreground">Para completar: responde 20 ejercicios correctamente y alcanza 150/200 correctas en el quiz.</p>
+                <p className="text-sm font-bold text-neon-mint font-display">¡Felicitaciones! Llevas {sessionProgress}%</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Para completar: responde 20 ejercicios correctamente y alcanza 150/200 correctas en el quiz.</p>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Tabs */}
       <Tabs value={activeTab || allTabs[0]?.clave} onValueChange={setActiveTab}>
-        <TabsList className="w-full flex-wrap h-auto">
-          {allTabs.map(tab => (
-            <TabsTrigger key={tab.clave} value={tab.clave} className="gap-1 text-xs md:text-sm">
-              {tab.clave === 'quiz' && <Brain className="w-3.5 h-3.5" />}
-              {tab.nombre}
-            </TabsTrigger>
-          ))}
+        <TabsList className="w-full flex-wrap h-auto gap-1 bg-muted/50 p-1 rounded-xl">
+          {allTabs.map(tab => {
+            const TabIcon = TAB_ICONS[tab.clave];
+            return (
+              <TabsTrigger
+                key={tab.clave}
+                value={tab.clave}
+                className="gap-1.5 text-xs md:text-sm rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+              >
+                {TabIcon && <TabIcon className="w-3.5 h-3.5" />}
+                {tab.nombre}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         {pestanas.map(tab => {
@@ -178,28 +217,38 @@ export default function SessionDetail() {
           const hasExercises = tab.clave === 'ejercicio';
 
           return (
-            <TabsContent key={tab.clave} value={tab.clave} className="space-y-3 mt-4">
+            <TabsContent key={tab.clave} value={tab.clave} className="space-y-3 mt-5">
               {Array.from(groups.entries()).map(([groupName, items]) => {
                 if (!groupName) {
                   return items.map((item, i) => (
-                    <ContentItem key={item.id} item={item} index={i}
+                    <ContentItem
+                      key={item.id}
+                      item={item}
+                      index={i}
                       showSolutions={showSolutions}
-                      onToggleSolution={(id) => setShowSolutions(prev => ({ ...prev, [id]: !prev[id] }))} />
+                      onToggleSolution={(id) => setShowSolutions(prev => ({ ...prev, [id]: !prev[id] }))}
+                    />
                   ));
                 }
                 const isOpen = openGroup === `${tab.clave}::${groupName}`;
                 return (
                   <Collapsible key={groupName} open={isOpen} onOpenChange={(open) => setOpenGroup(open ? `${tab.clave}::${groupName}` : null)}>
-                    <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-muted/50 transition-colors">
-                      <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
-                      <span className="font-semibold text-sm">{groupName}</span>
-                      <span className="text-xs text-muted-foreground">({items.length})</span>
+                    <CollapsibleTrigger className="flex items-center gap-2.5 w-full p-3 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-all group">
+                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <ChevronDown className={`w-4 h-4 text-primary transition-transform duration-200 ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
+                      </div>
+                      <span className="font-display font-semibold text-sm text-foreground">{groupName}</span>
+                      <span className="text-xs text-muted-foreground ml-auto bg-muted/60 px-2 py-0.5 rounded-full">{items.length}</span>
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-2 pl-4 border-l-2 border-muted ml-2 mt-1">
+                    <CollapsibleContent className="space-y-2.5 pl-4 border-l-2 border-primary/20 ml-3.5 mt-2">
                       {items.map((item, i) => (
-                        <ContentItem key={item.id} item={item} index={i}
+                        <ContentItem
+                          key={item.id}
+                          item={item}
+                          index={i}
                           showSolutions={showSolutions}
-                          onToggleSolution={(id) => setShowSolutions(prev => ({ ...prev, [id]: !prev[id] }))} />
+                          onToggleSolution={(id) => setShowSolutions(prev => ({ ...prev, [id]: !prev[id] }))}
+                        />
                       ))}
                     </CollapsibleContent>
                   </Collapsible>
@@ -207,34 +256,58 @@ export default function SessionDetail() {
               })}
 
               {Array.from(groups.values()).flat().length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No hay contenido aún</p>
+                <div className="text-center py-12">
+                  <BookOpen className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">No hay contenido aún</p>
+                </div>
               )}
 
               {hasExercises && (
                 <>
-                  <Button onClick={generateAIExercise} disabled={aiLoading} variant="outline" className="w-full gap-2 neon-border">
+                  <Button
+                    onClick={generateAIExercise}
+                    disabled={aiLoading}
+                    className="w-full gap-2.5 h-12 rounded-xl bg-gradient-to-r from-neon-fuchsia/20 to-neon-violet/20 border border-neon-fuchsia/30 text-foreground hover:from-neon-fuchsia/30 hover:to-neon-violet/30 transition-all"
+                    variant="outline"
+                  >
                     {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-neon-fuchsia" />}
-                    {aiLoading ? 'Generando...' : 'Generar ejercicio con IA'}
+                    {aiLoading ? 'Generando ejercicio...' : 'Generar ejercicio con IA'}
                   </Button>
                   <AnimatePresence>
                     {aiExercise && (
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                        <Card className="card-elevated neon-border">
-                          <CardContent className="p-4">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Sparkles className="w-4 h-4 text-neon-fuchsia" />
-                              <h3 className="font-display font-bold text-sm">🤖 {aiExercise.titulo}</h3>
+                        <Card className="border-neon-fuchsia/30 bg-gradient-to-br from-neon-fuchsia/5 to-neon-violet/5 overflow-hidden">
+                          <CardContent className="p-4 md:p-5 space-y-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-lg bg-neon-fuchsia/15 flex items-center justify-center">
+                                <Sparkles className="w-4 h-4 text-neon-fuchsia" />
+                              </div>
+                              <h3 className="font-display font-bold text-sm text-foreground">🤖 {aiExercise.titulo}</h3>
                             </div>
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{aiExercise.enunciado}</p>
-                            <Button variant="outline" size="sm" onClick={() => setShowAiSolution(!showAiSolution)} className="mt-3 gap-2">
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words leading-relaxed">{aiExercise.enunciado}</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowAiSolution(!showAiSolution)}
+                              className="gap-2 border-neon-mint/30 hover:bg-neon-mint/10"
+                            >
                               {showAiSolution ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                               {showAiSolution ? 'Ocultar' : 'Ver solución'}
                             </Button>
-                            {showAiSolution && (
-                              <div className="mt-2 p-3 rounded-lg bg-accent/10 text-sm whitespace-pre-wrap break-words max-w-full">
-                                {aiExercise.solucion}
-                              </div>
-                            )}
+                            <AnimatePresence>
+                              {showAiSolution && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="p-4 rounded-xl bg-neon-mint/10 border border-neon-mint/20 text-sm whitespace-pre-wrap break-words text-foreground leading-relaxed">
+                                    {aiExercise.solucion}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </CardContent>
                         </Card>
                       </motion.div>
@@ -246,107 +319,10 @@ export default function SessionDetail() {
           );
         })}
 
-        <TabsContent value="quiz" className="mt-4">
+        <TabsContent value="quiz" className="mt-5">
           {id && user && <QuizComponent sesionId={id} userId={user.id} />}
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-function isImageUrl(url: string): boolean {
-  return /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url);
-}
-
-function isVideoUrl(url: string): boolean {
-  return /youtu\.?be|youtube|vimeo|dailymotion/i.test(url);
-}
-
-function isPdfUrl(url: string): boolean {
-  return /\.pdf(\/|$|\?)/i.test(url);
-}
-
-function getLinkIcon(url: string) {
-  if (isVideoUrl(url)) return Play;
-  if (isPdfUrl(url)) return FileText;
-  return Download;
-}
-
-function getLinkLabel(url: string): string {
-  if (isVideoUrl(url)) return 'Ver video';
-  if (isPdfUrl(url)) {
-    try {
-      const parts = new URL(url).pathname.split('/');
-      const filename = parts.find(p => p.endsWith('.pdf')) || 'Documento PDF';
-      return filename.length > 40 ? filename.substring(0, 37) + '...' : filename;
-    } catch { return 'Documento PDF'; }
-  }
-  try {
-    const pathname = new URL(url).pathname;
-    const filename = pathname.split('/').pop() || url;
-    return filename.length > 40 ? filename.substring(0, 37) + '...' : filename;
-  } catch { return url.length > 40 ? url.substring(0, 37) + '...' : url; }
-}
-
-function ContentItem({ item, index, showSolutions, onToggleSolution }: {
-  item: Contenido; index: number;
-  showSolutions: Record<string, boolean>;
-  onToggleSolution: (id: string) => void;
-}) {
-  const hasSolution = !!(item.solucion);
-  const links = (item.imagen_url || '').split('\n').filter(l => l.trim());
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }}>
-      <Card className="card-elevated">
-        <CardContent className="p-4">
-          <h3 className="font-display font-bold text-sm mb-2">{item.titulo}</h3>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{item.texto}</p>
-          
-          {/* Render multiple links: images inline, others as download/open buttons */}
-          {links.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {links.map((link, i) => {
-                const trimmed = link.trim();
-                if (isImageUrl(trimmed)) {
-                  return <img key={i} src={trimmed} alt={`${item.titulo} - ${i + 1}`} className="rounded-lg max-w-full h-auto" />;
-                }
-                const Icon = getLinkIcon(trimmed);
-                return (
-                  <a key={i} href={trimmed} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors text-sm text-secondary">
-                    <Icon className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{getLinkLabel(trimmed)}</span>
-                    <ExternalLink className="w-3 h-3 shrink-0 ml-auto" />
-                  </a>
-                );
-              })}
-            </div>
-          )}
-
-          {item.url && (
-            <a href={item.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-secondary underline">Ver recurso →</a>
-          )}
-          {hasSolution && (
-            <>
-              <Button variant="outline" size="sm"
-                onClick={() => onToggleSolution(item.id)}
-                className="mt-3 gap-2">
-                {showSolutions[item.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                {showSolutions[item.id] ? 'Ocultar solución' : 'Ver solución'}
-              </Button>
-              <AnimatePresence>
-                {showSolutions[item.id] && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                    className="mt-2 p-3 rounded-lg bg-accent/10 text-sm overflow-hidden break-words max-w-full whitespace-pre-wrap">
-                    {item.solucion}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
   );
 }
