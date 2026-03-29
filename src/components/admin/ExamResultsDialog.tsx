@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, XCircle, Eye, Clock, Zap, BookOpen, AlertTriangle, TrendingUp, ArrowLeft, HelpCircle, Download, FileSpreadsheet } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, Clock, Zap, BookOpen, AlertTriangle, TrendingUp, ArrowLeft, HelpCircle, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface ExamConfig {
   tipo: string;
