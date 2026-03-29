@@ -460,7 +460,7 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
                 const isStudentAnswer = !blank && d.answer === i;
                 let classes = 'border-border bg-card';
                 if (isCorrectOpt) classes = 'border-[hsl(var(--neon-mint))] bg-[hsl(var(--neon-mint))]/10';
-                else if (isStudentAnswer && !d.correct) classes = 'border-destructive bg-destructive/10';
+                else if (isStudentAnswer && !d.correct) classes = 'border-[hsl(var(--neon-pink))] bg-[hsl(var(--neon-pink))]/15';
                 return (
                   <div key={i} className={`p-2 rounded-lg border text-[11px] flex items-center gap-2 ${classes}`}>
                     {isCorrectOpt
