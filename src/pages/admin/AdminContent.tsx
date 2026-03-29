@@ -39,6 +39,7 @@ export default function AdminContent() {
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<Contenido | null>(null);
   const [form, setForm] = useState({ tipo: '', titulo: '', texto: '', url: '', imagen_url: '', solucion: '', grupo_nombre: '' });
+  const [linkFields, setLinkFields] = useState<string[]>(['']);
   const [editingSesion, setEditingSesion] = useState(false);
   const [sesionForm, setSesionForm] = useState({ titulo: '', descripcion: '' });
   const [tabDialogOpen, setTabDialogOpen] = useState(false);
