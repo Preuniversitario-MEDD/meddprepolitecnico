@@ -230,11 +230,15 @@ export default function SectionExam() {
     setState('results');
 
     const isFinal = config.isFinal;
-    const answeredArr = Array.from(answeredMap.entries()).map(([idx, ans]) => ({
-      questionId: questions[idx].id,
-      correct: ans.correct,
-      dificultad: questions[idx].dificultad,
-    }));
+    const answeredArr = questions.map((q, idx) => {
+      const ans = answeredMap.get(idx);
+      return {
+        questionId: q.id,
+        answer: ans ? ans.selected : -1,
+        correct: ans ? ans.correct : false,
+        dificultad: q.dificultad,
+      };
+    });
 
     let finalPct: number;
     if (isFinal) {
