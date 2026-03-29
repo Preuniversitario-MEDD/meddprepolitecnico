@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2, Copy, AlertTriangle, MoreVertical } from 'lucide-react';
+import { Plus, Trash2, Edit, Lock, Unlock, ArrowUp, ArrowDown, Pencil, Check, X, ChevronDown, FolderPlus, Settings2, Copy, AlertTriangle, MoreVertical, Upload } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { Tables } from '@/integrations/supabase/types';
@@ -112,6 +112,21 @@ export default function AdminContent() {
     toast({ title: 'Sesión actualizada' });
     setEditingSesion(false);
     loadSesiones();
+  }
+
+  async function uploadFileToLink(file: File, idx: number) {
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: 'Error', description: 'El archivo no puede superar 20MB', variant: 'destructive' });
+      return;
+    }
+    const ext = file.name.split('.').pop() || 'bin';
+    const fileName = `content-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+    toast({ title: 'Subiendo archivo...' });
+    const { data: uploaded, error } = await supabase.storage.from('quiz-images').upload(fileName, file);
+    if (error) { toast({ title: 'Error al subir', description: error.message, variant: 'destructive' }); return; }
+    const { data: urlData } = supabase.storage.from('quiz-images').getPublicUrl(uploaded.path);
+    setLinkFields(prev => { const updated = [...prev]; updated[idx] = urlData.publicUrl; return updated; });
+    toast({ title: '✅ Archivo subido correctamente' });
   }
 
   async function saveContent() {
@@ -530,34 +545,45 @@ export default function AdminContent() {
             <div><Label>URL (link, PDF, video)</Label><Input value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://..." /></div>
             <div>
               <Label>Enlaces / Imágenes (hasta 4)</Label>
-              <p className="text-xs text-muted-foreground mb-2">Pega URLs de imágenes, PDFs, videos o cualquier recurso. Las imágenes se mostrarán directamente; otros enlaces aparecerán como descarga.</p>
+              <p className="text-xs text-muted-foreground mb-2">Pega URLs, arrastra archivos o haz clic para subir. Imágenes se muestran directamente; otros enlaces como descarga.</p>
+              
               {linkFields.map((link, idx) => (
                 <div key={idx} className="flex gap-2 mb-2 items-center">
-                  <Input
-                    value={link}
-                    onChange={e => { const updated = [...linkFields]; updated[idx] = e.target.value; setLinkFields(updated); }}
-                    placeholder={`https://... (enlace ${idx + 1})`}
-                    onPaste={async (e) => {
-                      const items = e.clipboardData?.items;
-                      if (!items) return;
-                      for (const item of Array.from(items)) {
-                        if (item.type.startsWith('image/')) {
-                          e.preventDefault();
-                          const file = item.getAsFile();
-                          if (!file) return;
-                          const ext = file.type.split('/')[1] || 'png';
-                          const fileName = `content-${Date.now()}.${ext}`;
-                          toast({ title: 'Subiendo imagen...' });
-                          const { data: uploaded, error } = await supabase.storage.from('quiz-images').upload(fileName, file);
-                          if (error) { toast({ title: 'Error al subir imagen', variant: 'destructive' }); return; }
-                          const { data: urlData } = supabase.storage.from('quiz-images').getPublicUrl(uploaded.path);
-                          const updated = [...linkFields]; updated[idx] = urlData.publicUrl; setLinkFields(updated);
-                          toast({ title: '✅ Imagen pegada y subida' });
-                          return;
+                  <div className="flex-1 relative">
+                    <Input
+                      value={link}
+                      onChange={e => { const updated = [...linkFields]; updated[idx] = e.target.value; setLinkFields(updated); }}
+                      placeholder={`https://... (enlace ${idx + 1})`}
+                      onPaste={async (e) => {
+                        const items = e.clipboardData?.items;
+                        if (!items) return;
+                        for (const item of Array.from(items)) {
+                          if (item.type.startsWith('image/')) {
+                            e.preventDefault();
+                            const file = item.getAsFile();
+                            if (!file) return;
+                            await uploadFileToLink(file, idx);
+                            return;
+                          }
                         }
-                      }
-                    }}
-                  />
+                      }}
+                      onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('ring-2', 'ring-primary'); }}
+                      onDragLeave={e => { e.currentTarget.classList.remove('ring-2', 'ring-primary'); }}
+                      onDrop={async (e) => {
+                        e.preventDefault();
+                        e.currentTarget.classList.remove('ring-2', 'ring-primary');
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) await uploadFileToLink(file, idx);
+                      }}
+                    />
+                  </div>
+                  <label className="shrink-0 cursor-pointer">
+                    <input type="file" className="hidden" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
+                      onChange={async (e) => { const file = e.target.files?.[0]; if (file) await uploadFileToLink(file, idx); e.target.value = ''; }} />
+                    <div className="h-8 w-8 flex items-center justify-center rounded-md border border-input bg-background hover:bg-muted transition-colors">
+                      <Upload className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
+                  </label>
                   {linkFields.length > 1 && (
                     <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => setLinkFields(linkFields.filter((_, i) => i !== idx))}>
                       <X className="w-3 h-3" />
@@ -565,13 +591,59 @@ export default function AdminContent() {
                   )}
                 </div>
               ))}
+
+              {/* General drop zone when less than 4 links */}
+              {linkFields.length < 4 && (
+                <div
+                  className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors mb-2"
+                  onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('border-primary', 'bg-primary/5'); }}
+                  onDragLeave={e => { e.currentTarget.classList.remove('border-primary', 'bg-primary/5'); }}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-primary', 'bg-primary/5');
+                    const files = Array.from(e.dataTransfer.files).slice(0, 4 - linkFields.length);
+                    for (const file of files) {
+                      const emptyIdx = linkFields.findIndex(l => !l.trim());
+                      if (emptyIdx >= 0) {
+                        await uploadFileToLink(file, emptyIdx);
+                      } else if (linkFields.length < 4) {
+                        setLinkFields(prev => [...prev, '']);
+                        await uploadFileToLink(file, linkFields.length);
+                      }
+                    }
+                  }}
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.multiple = true;
+                    input.accept = 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar';
+                    input.onchange = async () => {
+                      const files = Array.from(input.files || []).slice(0, 4 - linkFields.length);
+                      for (const file of files) {
+                        const emptyIdx = linkFields.findIndex(l => !l.trim());
+                        if (emptyIdx >= 0) {
+                          await uploadFileToLink(file, emptyIdx);
+                        } else if (linkFields.length < 4) {
+                          setLinkFields(prev => [...prev, '']);
+                          await uploadFileToLink(file, linkFields.length);
+                        }
+                      }
+                    };
+                    input.click();
+                  }}
+                >
+                  <Upload className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">Arrastra archivos aquí o haz clic para subir</p>
+                </div>
+              )}
+
               {linkFields.length < 4 && (
                 <Button variant="outline" size="sm" className="gap-1" onClick={() => setLinkFields([...linkFields, ''])}>
-                  <Plus className="w-3 h-3" /> Agregar enlace
+                  <Plus className="w-3 h-3" /> Agregar enlace manual
                 </Button>
               )}
               {/* Preview images */}
-              {linkFields.filter(l => l.trim() && /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(l.trim())).map((url, i) => (
+              {linkFields.filter(l => l.trim() && /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(l.trim())).map((url, i) => (
                 <img key={i} src={url.trim()} alt={`Preview ${i + 1}`} className="mt-2 max-h-32 rounded-md border" />
               ))}
             </div>
