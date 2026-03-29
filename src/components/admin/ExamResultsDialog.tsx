@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, XCircle, Eye, Clock, Zap, BookOpen, AlertTriangle, TrendingUp, ArrowLeft, HelpCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, Clock, Zap, BookOpen, AlertTriangle, TrendingUp, ArrowLeft, HelpCircle, Download, FileSpreadsheet } from 'lucide-react';
 
 interface ExamConfig {
   tipo: string;
@@ -151,30 +151,109 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
     return `${mins}m ${secs}s`;
   }
 
+  // --- Export functions ---
+  function exportResultsCSV() {
+    if (results.length === 0) return;
+    const headers = ['Estudiante', 'Puntaje', 'Max', 'Estado', 'Fecha', 'Hora Inicio', 'Hora Fin', 'Duración', 'Vel. Promedio (s)'];
+    const rows = results.map(r => {
+      const avgSpeed = calcAvgSpeed(r);
+      return [
+        r.profile ? `${r.profile.nombre} ${r.profile.apellidos}` : r.user_id.slice(0, 8),
+        r.puntaje,
+        maxScore,
+        r.aprobado ? 'Aprobado' : 'Reprobado',
+        new Date(r.fecha).toLocaleDateString('es-EC'),
+        r.hora_inicio ? new Date(r.hora_inicio).toLocaleTimeString('es-EC') : '',
+        r.hora_fin ? new Date(r.hora_fin).toLocaleTimeString('es-EC') : '',
+        formatDuration(r),
+        avgSpeed ?? '',
+      ].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    downloadFile(csv, `resultados_${examTipo}.csv`, 'text/csv');
+  }
+
+  function exportDetailCSV(result: ExamResultRow) {
+    if (questionDetails.length === 0) return;
+    const studentName = result.profile ? `${result.profile.nombre} ${result.profile.apellidos}` : 'Estudiante';
+    const headers = ['#', 'Pregunta', 'Sesión', 'Respuesta Correcta', 'Estado'];
+    const rows = questionDetails.map((d: any, idx: number) => {
+      const q = d.question;
+      if (!q) return [idx + 1, 'N/A', '', '', ''].join(',');
+      const sesInfo = sesionesMap[q.sesion_id];
+      const opciones = (q.opciones as string[]) || [];
+      const isBlank = d.answer === undefined || d.answer === null || d.answer === -1;
+      const estado = isBlank ? 'No contestada' : d.correct ? 'Correcta' : 'Errónea';
+      return [
+        idx + 1,
+        `"${(q.pregunta || '').replace(/"/g, '""')}"`,
+        sesInfo ? `S${sesInfo.numero}: ${sesInfo.titulo}` : '',
+        `"${opciones[q.respuesta_correcta] || ''}"`,
+        estado,
+      ].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    downloadFile(csv, `detalle_${examTipo}_${studentName.replace(/\s/g, '_')}.csv`, 'text/csv');
+  }
+
+  function downloadFile(content: string, filename: string, type: string) {
+    const blob = new Blob(['\ufeff' + content], { type: `${type};charset=utf-8;` });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Classify questions
+  function isBlank(d: any) {
+    return d.answer === undefined || d.answer === null || d.answer === -1;
+  }
+
   // Detail view
   if (selectedResult) {
     const avgSpeed = calcAvgSpeed(selectedResult);
-    const correctCount = selectedResult.respuestas?.filter((r: any) => r.correct).length || 0;
-    const totalQ = selectedResult.respuestas?.length || 0;
-    const incorrectCount = totalQ - correctCount;
+    const totalQ = questionDetails.length;
+    const blankQuestions = questionDetails.filter((d: any) => isBlank(d));
+    const answeredQuestions = questionDetails.filter((d: any) => !isBlank(d));
+    const correctQuestions = answeredQuestions.filter((d: any) => d.correct);
+    const incorrectQuestions = answeredQuestions.filter((d: any) => !d.correct);
+    const correctCount = correctQuestions.length;
+    const blankCount = blankQuestions.length;
+    const incorrectCount = incorrectQuestions.length;
     const dominados = topicAnalysis.filter(t => t.estado === 'dominado');
     const enProceso = topicAnalysis.filter(t => t.estado === 'en_proceso');
     const retroalimentacion = topicAnalysis.filter(t => t.estado === 'requiere_retroalimentacion');
 
-    const correctQuestions = questionDetails.filter((d: any) => d.correct);
-    const incorrectQuestions = questionDetails.filter((d: any) => !d.correct);
-
-    const renderQuestionCard = (d: any, idx: number) => {
+    const renderQuestionCard = (d: any, globalIdx: number) => {
       const q = d.question;
       if (!q) return null;
       const opciones = (q.opciones as string[]) || [];
       const sesInfo = sesionesMap[q.sesion_id];
+      const blank = isBlank(d);
+      const borderColor = blank
+        ? 'border-[hsl(var(--neon-orange))]'
+        : d.correct
+          ? 'border-[hsl(var(--neon-mint))]'
+          : 'border-destructive';
+      const badgeClasses = blank
+        ? 'bg-[hsl(var(--neon-orange))]/20 text-[hsl(var(--neon-orange))]'
+        : d.correct
+          ? 'bg-[hsl(var(--neon-mint))]/20 text-[hsl(var(--neon-mint))]'
+          : 'bg-destructive/20 text-destructive';
+      const icon = blank
+        ? <HelpCircle className="w-4 h-4 text-[hsl(var(--neon-orange))] shrink-0" />
+        : d.correct
+          ? <CheckCircle className="w-4 h-4 text-[hsl(var(--neon-mint))] shrink-0" />
+          : <XCircle className="w-4 h-4 text-destructive shrink-0" />;
+
       return (
-        <Card key={idx} className={`border-l-4 ${d.correct ? 'border-[hsl(var(--neon-mint))]' : 'border-destructive'}`}>
+        <Card key={globalIdx} className={`border-l-4 ${borderColor}`}>
           <CardContent className="p-3 space-y-2">
             <div className="flex items-start gap-2">
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${d.correct ? 'bg-[hsl(var(--neon-mint))]/20 text-[hsl(var(--neon-mint))]' : 'bg-destructive/20 text-destructive'}`}>
-                {idx + 1}
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${badgeClasses}`}>
+                {globalIdx + 1}
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-foreground leading-snug">{q.pregunta}</p>
@@ -184,22 +263,23 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
                   </p>
                 )}
               </div>
-              {d.correct
-                ? <CheckCircle className="w-4 h-4 text-[hsl(var(--neon-mint))] shrink-0" />
-                : <XCircle className="w-4 h-4 text-destructive shrink-0" />
-              }
+              {icon}
             </div>
             {q.imagen_url && <img src={q.imagen_url} alt="" className="rounded max-h-28 object-contain" />}
             <div className="space-y-1">
               {opciones.map((op: string, i: number) => {
-                const isCorrect = i === q.respuesta_correcta;
+                const isCorrectOpt = i === q.respuesta_correcta;
+                const isStudentAnswer = !blank && d.answer === i;
                 let classes = 'border-border bg-card';
-                if (isCorrect) classes = 'border-[hsl(var(--neon-mint))] bg-[hsl(var(--neon-mint))]/10';
+                if (isCorrectOpt) classes = 'border-[hsl(var(--neon-mint))] bg-[hsl(var(--neon-mint))]/10';
+                else if (isStudentAnswer && !d.correct) classes = 'border-destructive bg-destructive/10';
                 return (
                   <div key={i} className={`p-2 rounded-lg border text-[11px] flex items-center gap-2 ${classes}`}>
-                    {isCorrect
+                    {isCorrectOpt
                       ? <CheckCircle className="w-3.5 h-3.5 text-[hsl(var(--neon-mint))] shrink-0" />
-                      : <span className="w-3.5 shrink-0" />
+                      : isStudentAnswer && !d.correct
+                        ? <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                        : <span className="w-3.5 shrink-0" />
                     }
                     <span><span className="font-semibold mr-1">{String.fromCharCode(65 + i)}.</span>{op}</span>
                   </div>
@@ -219,14 +299,17 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
               <Button variant="ghost" size="sm" onClick={() => { setSelectedResult(null); setQuestionDetails([]); }} className="mr-1 h-7 w-7 p-0">
                 <ArrowLeft className="w-4 h-4" />
               </Button>
-              <span className="truncate">
+              <span className="truncate flex-1">
                 {selectedResult.profile ? `${selectedResult.profile.nombre} ${selectedResult.profile.apellidos}` : 'Estudiante'}
               </span>
+              <Button size="sm" variant="outline" onClick={() => exportDetailCSV(selectedResult)} className="h-7 text-xs gap-1 ml-auto">
+                <FileSpreadsheet className="w-3.5 h-3.5" /> Exportar CSV
+              </Button>
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1">
-            <div className="space-y-4 pr-2">
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="space-y-4 pr-4 pb-4">
               {/* Summary cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Card className={`border ${selectedResult.aprobado ? 'border-[hsl(var(--neon-mint))]/40' : 'border-destructive/40'}`}>
@@ -338,37 +421,64 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
                 </h4>
 
                 <Tabs defaultValue="todas" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3 h-9">
-                    <TabsTrigger value="todas" className="text-xs gap-1.5 data-[state=active]:bg-[hsl(var(--neon-violet))]/20 data-[state=active]:text-[hsl(var(--neon-violet))]">
-                      <BookOpen className="w-3.5 h-3.5" />
+                  <TabsList className="grid w-full grid-cols-4 h-9">
+                    <TabsTrigger value="todas" className="text-[11px] gap-1 data-[state=active]:bg-[hsl(var(--neon-violet))]/20 data-[state=active]:text-[hsl(var(--neon-violet))]">
+                      <BookOpen className="w-3 h-3" />
                       Todas ({totalQ})
                     </TabsTrigger>
-                    <TabsTrigger value="correctas" className="text-xs gap-1.5 data-[state=active]:bg-[hsl(var(--neon-mint))]/20 data-[state=active]:text-[hsl(var(--neon-mint))]">
-                      <CheckCircle className="w-3.5 h-3.5" />
+                    <TabsTrigger value="correctas" className="text-[11px] gap-1 data-[state=active]:bg-[hsl(var(--neon-mint))]/20 data-[state=active]:text-[hsl(var(--neon-mint))]">
+                      <CheckCircle className="w-3 h-3" />
                       Correctas ({correctCount})
                     </TabsTrigger>
-                    <TabsTrigger value="incorrectas" className="text-xs gap-1.5 data-[state=active]:bg-destructive/20 data-[state=active]:text-destructive">
-                      <XCircle className="w-3.5 h-3.5" />
+                    <TabsTrigger value="blanco" className="text-[11px] gap-1 data-[state=active]:bg-[hsl(var(--neon-orange))]/20 data-[state=active]:text-[hsl(var(--neon-orange))]">
+                      <HelpCircle className="w-3 h-3" />
+                      En blanco ({blankCount})
+                    </TabsTrigger>
+                    <TabsTrigger value="incorrectas" className="text-[11px] gap-1 data-[state=active]:bg-destructive/20 data-[state=active]:text-destructive">
+                      <XCircle className="w-3 h-3" />
                       Erróneas ({incorrectCount})
                     </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="todas" className="mt-3 space-y-2">
-                    {questionDetails.map((d: any, idx: number) => renderQuestionCard(d, idx))}
+                  <TabsContent value="todas" className="mt-3">
+                    <ScrollArea className="h-[40vh]">
+                      <div className="space-y-2 pr-3">
+                        {questionDetails.map((d: any, idx: number) => renderQuestionCard(d, idx))}
+                      </div>
+                    </ScrollArea>
                   </TabsContent>
 
-                  <TabsContent value="correctas" className="mt-3 space-y-2">
-                    {correctQuestions.length > 0
-                      ? correctQuestions.map((d: any, idx: number) => renderQuestionCard(d, idx))
-                      : <p className="text-center text-muted-foreground text-sm py-6">No hay preguntas correctas</p>
-                    }
+                  <TabsContent value="correctas" className="mt-3">
+                    <ScrollArea className="h-[40vh]">
+                      <div className="space-y-2 pr-3">
+                        {correctQuestions.length > 0
+                          ? correctQuestions.map((d: any, idx: number) => renderQuestionCard(d, questionDetails.indexOf(d)))
+                          : <p className="text-center text-muted-foreground text-sm py-6">No hay preguntas correctas</p>
+                        }
+                      </div>
+                    </ScrollArea>
                   </TabsContent>
 
-                  <TabsContent value="incorrectas" className="mt-3 space-y-2">
-                    {incorrectQuestions.length > 0
-                      ? incorrectQuestions.map((d: any, idx: number) => renderQuestionCard(d, idx))
-                      : <p className="text-center text-muted-foreground text-sm py-6">No hay preguntas erróneas</p>
-                    }
+                  <TabsContent value="blanco" className="mt-3">
+                    <ScrollArea className="h-[40vh]">
+                      <div className="space-y-2 pr-3">
+                        {blankQuestions.length > 0
+                          ? blankQuestions.map((d: any) => renderQuestionCard(d, questionDetails.indexOf(d)))
+                          : <p className="text-center text-muted-foreground text-sm py-6">No hay preguntas en blanco</p>
+                        }
+                      </div>
+                    </ScrollArea>
+                  </TabsContent>
+
+                  <TabsContent value="incorrectas" className="mt-3">
+                    <ScrollArea className="h-[40vh]">
+                      <div className="space-y-2 pr-3">
+                        {incorrectQuestions.length > 0
+                          ? incorrectQuestions.map((d: any) => renderQuestionCard(d, questionDetails.indexOf(d)))
+                          : <p className="text-center text-muted-foreground text-sm py-6">No hay preguntas erróneas</p>
+                        }
+                      </div>
+                    </ScrollArea>
                   </TabsContent>
                 </Tabs>
               </div>
@@ -382,74 +492,79 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
   // List view
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Eye className="w-5 h-5 text-[hsl(var(--neon-violet))]" />
-            Resultados: {cfg?.label}
+            <span className="flex-1">Resultados: {cfg?.label}</span>
+            <Button size="sm" variant="outline" onClick={exportResultsCSV} className="h-7 text-xs gap-1" disabled={results.length === 0}>
+              <Download className="w-3.5 h-3.5" /> Exportar CSV
+            </Button>
           </DialogTitle>
         </DialogHeader>
         {loading ? (
           <p className="text-center text-muted-foreground py-4">Cargando...</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Estudiante</TableHead>
-                <TableHead>Puntaje</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Inicio</TableHead>
-                <TableHead>Fin</TableHead>
-                <TableHead>Vel/preg</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {results.map(r => {
-                const avgSpeed = calcAvgSpeed(r);
-                return (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium text-sm">{r.profile ? `${r.profile.nombre} ${r.profile.apellidos}` : r.user_id.slice(0, 8)}</TableCell>
-                    <TableCell>
-                      <span className={`font-bold ${r.aprobado ? 'text-[hsl(var(--neon-mint))]' : 'text-destructive'}`}>
-                        {r.puntaje}/{maxScore}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`text-[10px] ${r.aprobado
-                        ? 'bg-[hsl(var(--neon-mint))]/15 text-[hsl(var(--neon-mint))] border border-[hsl(var(--neon-mint))]/30'
-                        : 'bg-destructive/15 text-destructive border border-destructive/30'
-                      }`}>
-                        {r.aprobado ? '✅ Aprobado' : '❌ Reprobado'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">{new Date(r.fecha).toLocaleDateString('es-EC')}</TableCell>
-                    <TableCell className="text-xs text-[hsl(var(--neon-blue))]">
-                      {r.hora_inicio ? new Date(r.hora_inicio).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : '—'}
-                    </TableCell>
-                    <TableCell className="text-xs text-[hsl(var(--neon-orange))]">
-                      {r.hora_fin ? new Date(r.hora_fin).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : '—'}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs font-medium text-[hsl(var(--neon-violet))]">
-                        {avgSpeed ? `${avgSpeed}s` : '—'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="outline" onClick={() => viewExamDetail(r)}
-                        className="h-7 text-xs gap-1 border-[hsl(var(--neon-violet))]/40 text-[hsl(var(--neon-violet))] hover:bg-[hsl(var(--neon-violet))]/10">
-                        <Eye className="w-3 h-3" /> Ver
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {results.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Sin resultados aún</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <ScrollArea className="flex-1 min-h-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Estudiante</TableHead>
+                  <TableHead>Puntaje</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Inicio</TableHead>
+                  <TableHead>Fin</TableHead>
+                  <TableHead>Vel/preg</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {results.map(r => {
+                  const avgSpeed = calcAvgSpeed(r);
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-medium text-sm">{r.profile ? `${r.profile.nombre} ${r.profile.apellidos}` : r.user_id.slice(0, 8)}</TableCell>
+                      <TableCell>
+                        <span className={`font-bold ${r.aprobado ? 'text-[hsl(var(--neon-mint))]' : 'text-destructive'}`}>
+                          {r.puntaje}/{maxScore}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`text-[10px] ${r.aprobado
+                          ? 'bg-[hsl(var(--neon-mint))]/15 text-[hsl(var(--neon-mint))] border border-[hsl(var(--neon-mint))]/30'
+                          : 'bg-destructive/15 text-destructive border border-destructive/30'
+                        }`}>
+                          {r.aprobado ? '✅ Aprobado' : '❌ Reprobado'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">{new Date(r.fecha).toLocaleDateString('es-EC')}</TableCell>
+                      <TableCell className="text-xs text-[hsl(var(--neon-blue))]">
+                        {r.hora_inicio ? new Date(r.hora_inicio).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </TableCell>
+                      <TableCell className="text-xs text-[hsl(var(--neon-orange))]">
+                        {r.hora_fin ? new Date(r.hora_fin).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs font-medium text-[hsl(var(--neon-violet))]">
+                          {avgSpeed ? `${avgSpeed}s` : '—'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="outline" onClick={() => viewExamDetail(r)}
+                          className="h-7 text-xs gap-1 border-[hsl(var(--neon-violet))]/40 text-[hsl(var(--neon-violet))] hover:bg-[hsl(var(--neon-violet))]/10">
+                          <Eye className="w-3 h-3" /> Ver
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {results.length === 0 && (
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Sin resultados aún</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         )}
       </DialogContent>
     </Dialog>
