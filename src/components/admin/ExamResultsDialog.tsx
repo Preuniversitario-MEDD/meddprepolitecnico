@@ -349,7 +349,7 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
     }
 
     // Question sections helper
-    const renderSection = (title: string, questions: any[], colorRGB: number[]) => {
+    const renderSection = (title: string, questions: any[], colorRGB: [number, number, number]) => {
       if (questions.length === 0) return;
       addNewPageIfNeeded(18);
       doc.setFontSize(11);
@@ -395,8 +395,8 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
           if (data.section === 'body' && data.column.index === 2) {
             const d = questions[data.row.index];
             if (d && !isBlank(d) && !d.correct) {
-              data.cell.styles.textColor = [220, 50, 120];
-              data.cell.styles.fillColor = [255, 230, 245];
+              data.cell.styles.textColor = [220, 50, 120] as [number, number, number];
+              data.cell.styles.fillColor = [255, 230, 245] as [number, number, number];
             }
           }
         },
