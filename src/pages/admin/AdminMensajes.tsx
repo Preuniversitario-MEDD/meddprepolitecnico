@@ -534,9 +534,23 @@ export default function AdminMensajes() {
 
             {adminIsParticipant && (
               <div className="p-3 border-t border-border">
-                <form onSubmit={e => { e.preventDefault(); sendMessage(); }} className="flex gap-2 items-center">
+                <form onSubmit={e => { e.preventDefault(); sendMessage(); }} className="flex gap-2 items-center"
+                  onPaste={e => {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+                    for (const item of Array.from(items)) {
+                      if (item.type.startsWith('image/')) {
+                        e.preventDefault();
+                        const file = item.getAsFile();
+                        if (file && file.size <= 10 * 1024 * 1024) setAttachedFile(file);
+                        else if (file) toast({ title: 'Error', description: 'La imagen no puede superar 10MB', variant: 'destructive' });
+                        return;
+                      }
+                    }
+                  }}
+                >
                   <FileUploadButton file={attachedFile} onFileSelect={setAttachedFile} disabled={sending} />
-                  <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Escribe un mensaje..." className="flex-1" maxLength={2000} />
+                  <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Escribe un mensaje o pega una imagen..." className="flex-1" maxLength={2000} />
                   <Button type="submit" size="icon" disabled={(!newMessage.trim() && !attachedFile) || sending}><Send className="w-4 h-4" /></Button>
                 </form>
               </div>
