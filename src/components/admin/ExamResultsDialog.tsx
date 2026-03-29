@@ -280,9 +280,9 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
     doc.setTextColor(200, 120, 0);
     doc.text(`○ En blanco: ${blankQs.length}`, margin + contentW / 3 + 4, y + 7);
 
-    doc.setFillColor(255, 230, 230);
+    doc.setFillColor(255, 220, 240);
     doc.roundedRect(margin + (contentW / 3) * 2, y, contentW / 3, 12, 2, 2, 'F');
-    doc.setTextColor(200, 50, 50);
+    doc.setTextColor(220, 50, 120);
     doc.text(`✗ Erróneas: ${incorrectQs.length}`, margin + (contentW / 3) * 2 + 4, y + 7);
     y += 18;
 
@@ -362,13 +362,23 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
           3: { cellWidth: contentW * 0.26 },
         },
         styles: { cellPadding: 2, overflow: 'linebreak' },
+        didParseCell: (data: any) => {
+          // Pink highlight for student's incorrect answer column
+          if (data.section === 'body' && data.column.index === 2) {
+            const d = questions[data.row.index];
+            if (d && !isBlank(d) && !d.correct) {
+              data.cell.styles.textColor = [220, 50, 120];
+              data.cell.styles.fillColor = [255, 230, 245];
+            }
+          }
+        },
       });
       y = (doc as any).lastAutoTable.finalY + 8;
     };
 
     renderSection(`Preguntas Correctas (${correctQs.length})`, correctQs, [34, 139, 34]);
     renderSection(`Preguntas En Blanco (${blankQs.length})`, blankQs, [200, 140, 0]);
-    renderSection(`Preguntas Erróneas (${incorrectQs.length})`, incorrectQs, [200, 50, 50]);
+    renderSection(`Preguntas Erróneas (${incorrectQs.length})`, incorrectQs, [220, 50, 120]);
 
     // Footer on all pages
     const totalPages = doc.getNumberOfPages();
@@ -376,8 +386,8 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
       doc.setPage(i);
       doc.setFontSize(7);
       doc.setTextColor(150, 150, 150);
-      doc.text(`Página ${i} de ${totalPages}`, pageW / 2, pageH - 8, { align: 'center' });
-      doc.text('MeddPrep Politécnico — Reporte generado automáticamente', pageW / 2, pageH - 4, { align: 'center' });
+      doc.text(`Página ${i} de ${totalPages}`, pageW / 2, pageH - 12, { align: 'center' });
+      doc.text('Preuniversitario MEDD — Reporte generado automáticamente', pageW / 2, pageH - 7, { align: 'center' });
     }
 
     doc.save(`Examen_${cfg?.label || examTipo}_${studentName.replace(/\s/g, '_')}.pdf`);
