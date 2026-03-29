@@ -479,9 +479,14 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
               <span className="truncate flex-1">
                 {selectedResult.profile ? `${selectedResult.profile.nombre} ${selectedResult.profile.apellidos}` : 'Estudiante'}
               </span>
-              <Button size="sm" variant="outline" onClick={() => exportDetailCSV(selectedResult)} className="h-7 text-xs gap-1 ml-auto">
-                <FileSpreadsheet className="w-3.5 h-3.5" /> Exportar CSV
-              </Button>
+              <div className="flex gap-1.5 ml-auto">
+                <Button size="sm" variant="outline" onClick={() => exportDetailPDF(selectedResult)} className="h-7 text-xs gap-1">
+                  <FileText className="w-3.5 h-3.5" /> PDF
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => exportDetailCSV(selectedResult)} className="h-7 text-xs gap-1">
+                  <FileSpreadsheet className="w-3.5 h-3.5" /> CSV
+                </Button>
+              </div>
             </DialogTitle>
           </DialogHeader>
 
