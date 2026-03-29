@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckCircle, XCircle, Eye, Clock, Zap, BookOpen, AlertTriangle, TrendingUp, ArrowLeft, HelpCircle, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import meddLogo from '@/assets/medd-logo.png';
 
 interface ExamConfig {
@@ -275,7 +275,7 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
 
     // Summary metrics table
     doc.setTextColor(50, 50, 50);
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       margin: { left: margin, right: margin },
       head: [['Puntaje', 'Estado', 'Duración', 'Vel. Promedio', 'Precisión', 'Hora Inicio', 'Hora Fin']],
@@ -327,7 +327,7 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
         const estado = t.estado === 'dominado' ? '✓ Dominado' : t.estado === 'en_proceso' ? '▸ En proceso' : '✗ Requiere retroalimentación';
         return [`S${t.sesionNumero}: ${t.sesionTitulo}`, `${t.correctas}/${t.total}`, `${t.porcentaje}%`, estado];
       });
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: y,
         margin: { left: margin, right: margin },
         head: [['Tema', 'Aciertos', '%', 'Estado']],
@@ -375,7 +375,7 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
         ];
       });
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: y,
         margin: { left: margin, right: margin },
         head: [['Pregunta', 'Sesión', 'Respuesta del estudiante', 'Respuesta correcta']],
