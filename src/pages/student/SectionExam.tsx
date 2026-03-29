@@ -181,6 +181,7 @@ export default function SectionExam() {
     setQuestions(mapped);
     setState('playing');
     alertPlayedRef.current = false;
+    examStartRef.current = new Date();
     startTimer();
   }
 
