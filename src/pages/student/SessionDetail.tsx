@@ -311,10 +311,11 @@ function ContentItem({ item, index, showSolutions, onToggleSolution }: {
                 if (isImageUrl(trimmed)) {
                   return <img key={i} src={trimmed} alt={`${item.titulo} - ${i + 1}`} className="rounded-lg max-w-full h-auto" />;
                 }
+                const Icon = getLinkIcon(trimmed);
                 return (
-                  <a key={i} href={trimmed} target="_blank" rel="noopener noreferrer" download
+                  <a key={i} href={trimmed} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-2 p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors text-sm text-secondary">
-                    <Download className="w-4 h-4 shrink-0" />
+                    <Icon className="w-4 h-4 shrink-0" />
                     <span className="truncate">{getLinkLabel(trimmed)}</span>
                     <ExternalLink className="w-3 h-3 shrink-0 ml-auto" />
                   </a>
