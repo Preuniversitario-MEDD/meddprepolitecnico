@@ -39,6 +39,7 @@ export default function AdminContent() {
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<Contenido | null>(null);
   const [form, setForm] = useState({ tipo: '', titulo: '', texto: '', url: '', imagen_url: '', solucion: '', grupo_nombre: '' });
+  const [linkFields, setLinkFields] = useState<string[]>(['']);
   const [editingSesion, setEditingSesion] = useState(false);
   const [sesionForm, setSesionForm] = useState({ titulo: '', descripcion: '' });
   const [tabDialogOpen, setTabDialogOpen] = useState(false);
@@ -114,9 +115,10 @@ export default function AdminContent() {
   }
 
   async function saveContent() {
+    const joinedLinks = linkFields.filter(l => l.trim()).join('\n');
     const payload: any = {
       tipo: form.tipo, titulo: form.titulo, texto: form.texto,
-      url: form.url, imagen_url: form.imagen_url, grupo_nombre: form.grupo_nombre
+      url: form.url, imagen_url: joinedLinks, grupo_nombre: form.grupo_nombre
     };
     if (form.tipo === 'ejercicio' || form.solucion) payload.solucion = form.solucion;
 
@@ -131,6 +133,7 @@ export default function AdminContent() {
     setAddOpen(false);
     setEditItem(null);
     setForm({ tipo: '', titulo: '', texto: '', url: '', imagen_url: '', solucion: '', grupo_nombre: '' });
+    setLinkFields(['']);
     loadContenido();
   }
 
@@ -444,7 +447,7 @@ export default function AdminContent() {
           {pestanas.map(tab => (
             <TabsContent key={tab.clave} value={tab.clave} className="space-y-3">
               <div className="flex gap-2">
-                <Button onClick={() => { setForm({ tipo: tab.clave, titulo: '', texto: '', url: '', imagen_url: '', solucion: '', grupo_nombre: '' }); setEditItem(null); setAddOpen(true); }}
+                <Button onClick={() => { setForm({ tipo: tab.clave, titulo: '', texto: '', url: '', imagen_url: '', solucion: '', grupo_nombre: '' }); setLinkFields(['']); setEditItem(null); setAddOpen(true); }}
                   className="gradient-primary text-primary-foreground gap-2" size="sm">
                   <Plus className="w-4 h-4" /> Agregar contenido
                 </Button>
@@ -463,7 +466,7 @@ export default function AdminContent() {
                   // Ungrouped items
                   return groupItems.map((item, i) => (
                     <ContentCard key={item.id} item={item} index={i}
-                      onEdit={() => { setEditItem(item); setForm({ tipo: item.tipo, titulo: item.titulo, texto: item.texto || '', url: item.url || '', imagen_url: item.imagen_url || '', solucion: item.solucion || '', grupo_nombre: (item as any).grupo_nombre || '' }); setAddOpen(true); }}
+                      onEdit={() => { setEditItem(item); const links = (item.imagen_url || '').split('\n').filter(Boolean); setLinkFields(links.length ? links : ['']); setForm({ tipo: item.tipo, titulo: item.titulo, texto: item.texto || '', url: item.url || '', imagen_url: item.imagen_url || '', solucion: item.solucion || '', grupo_nombre: (item as any).grupo_nombre || '' }); setAddOpen(true); }}
                       onDelete={() => deleteContent(item.id)}
                       onMove={(dir) => moveContent(item, dir)} />
                   ));
@@ -479,7 +482,7 @@ export default function AdminContent() {
                     <CollapsibleContent className="space-y-2 pl-4 border-l-2 border-muted ml-2 mt-1">
                       {groupItems.map((item, i) => (
                         <ContentCard key={item.id} item={item} index={i}
-                          onEdit={() => { setEditItem(item); setForm({ tipo: item.tipo, titulo: item.titulo, texto: item.texto || '', url: item.url || '', imagen_url: item.imagen_url || '', solucion: item.solucion || '', grupo_nombre: (item as any).grupo_nombre || '' }); setAddOpen(true); }}
+                          onEdit={() => { setEditItem(item); const links = (item.imagen_url || '').split('\n').filter(Boolean); setLinkFields(links.length ? links : ['']); setForm({ tipo: item.tipo, titulo: item.titulo, texto: item.texto || '', url: item.url || '', imagen_url: item.imagen_url || '', solucion: item.solucion || '', grupo_nombre: (item as any).grupo_nombre || '' }); setAddOpen(true); }}
                           onDelete={() => deleteContent(item.id)}
                           onMove={(dir) => moveContent(item, dir)} />
                       ))}
@@ -526,30 +529,51 @@ export default function AdminContent() {
             </div>
             <div><Label>URL (link, PDF, video)</Label><Input value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://..." /></div>
             <div>
-              <Label>URL de Imagen</Label>
-              <Input value={form.imagen_url} onChange={e => setForm({ ...form, imagen_url: e.target.value })} placeholder="https://... o pega imagen en el texto"
-                onPaste={async (e) => {
-                  const items = e.clipboardData?.items;
-                  if (!items) return;
-                  for (const item of Array.from(items)) {
-                    if (item.type.startsWith('image/')) {
-                      e.preventDefault();
-                      const file = item.getAsFile();
-                      if (!file) return;
-                      const ext = file.type.split('/')[1] || 'png';
-                      const fileName = `content-${Date.now()}.${ext}`;
-                      toast({ title: 'Subiendo imagen...' });
-                      const { data: uploaded, error } = await supabase.storage.from('quiz-images').upload(fileName, file);
-                      if (error) { toast({ title: 'Error al subir imagen', variant: 'destructive' }); return; }
-                      const { data: urlData } = supabase.storage.from('quiz-images').getPublicUrl(uploaded.path);
-                      setForm(prev => ({ ...prev, imagen_url: urlData.publicUrl }));
-                      toast({ title: '✅ Imagen pegada y subida' });
-                      return;
-                    }
-                  }
-                }}
-              />
-              {form.imagen_url && <img src={form.imagen_url} alt="Preview" className="mt-2 max-h-32 rounded-md border" />}
+              <Label>Enlaces / Imágenes (hasta 4)</Label>
+              <p className="text-xs text-muted-foreground mb-2">Pega URLs de imágenes, PDFs, videos o cualquier recurso. Las imágenes se mostrarán directamente; otros enlaces aparecerán como descarga.</p>
+              {linkFields.map((link, idx) => (
+                <div key={idx} className="flex gap-2 mb-2 items-center">
+                  <Input
+                    value={link}
+                    onChange={e => { const updated = [...linkFields]; updated[idx] = e.target.value; setLinkFields(updated); }}
+                    placeholder={`https://... (enlace ${idx + 1})`}
+                    onPaste={async (e) => {
+                      const items = e.clipboardData?.items;
+                      if (!items) return;
+                      for (const item of Array.from(items)) {
+                        if (item.type.startsWith('image/')) {
+                          e.preventDefault();
+                          const file = item.getAsFile();
+                          if (!file) return;
+                          const ext = file.type.split('/')[1] || 'png';
+                          const fileName = `content-${Date.now()}.${ext}`;
+                          toast({ title: 'Subiendo imagen...' });
+                          const { data: uploaded, error } = await supabase.storage.from('quiz-images').upload(fileName, file);
+                          if (error) { toast({ title: 'Error al subir imagen', variant: 'destructive' }); return; }
+                          const { data: urlData } = supabase.storage.from('quiz-images').getPublicUrl(uploaded.path);
+                          const updated = [...linkFields]; updated[idx] = urlData.publicUrl; setLinkFields(updated);
+                          toast({ title: '✅ Imagen pegada y subida' });
+                          return;
+                        }
+                      }
+                    }}
+                  />
+                  {linkFields.length > 1 && (
+                    <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => setLinkFields(linkFields.filter((_, i) => i !== idx))}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {linkFields.length < 4 && (
+                <Button variant="outline" size="sm" className="gap-1" onClick={() => setLinkFields([...linkFields, ''])}>
+                  <Plus className="w-3 h-3" /> Agregar enlace
+                </Button>
+              )}
+              {/* Preview images */}
+              {linkFields.filter(l => l.trim() && /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(l.trim())).map((url, i) => (
+                <img key={i} src={url.trim()} alt={`Preview ${i + 1}`} className="mt-2 max-h-32 rounded-md border" />
+              ))}
             </div>
             <div><Label>Grupo (para agrupar en desplegable)</Label><Input value={form.grupo_nombre} onChange={e => setForm({ ...form, grupo_nombre: e.target.value })} placeholder="Ej: Fundamentos, Avanzado..." /></div>
             {(form.tipo === 'ejercicio' || form.solucion) && (
@@ -590,7 +614,7 @@ function ContentCard({ item, index, onEdit, onDelete, onMove }: {
               <p className="font-semibold text-sm">{item.titulo}</p>
               <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{item.texto}</p>
               {item.url && <p className="text-xs text-secondary mt-1 truncate">🔗 {item.url}</p>}
-              {item.imagen_url && <p className="text-xs text-neon-pink mt-1 truncate">🖼️ {item.imagen_url}</p>}
+              {item.imagen_url && (() => { const links = item.imagen_url!.split('\n').filter(Boolean); return <p className="text-xs text-neon-pink mt-1 truncate">🔗 {links.length} enlace{links.length > 1 ? 's' : ''}</p>; })()}
               {item.solucion && <p className="text-xs text-accent mt-1 truncate">✅ Con solución</p>}
               {(item as any).grupo_nombre && <p className="text-xs text-muted-foreground mt-1">📁 {(item as any).grupo_nombre}</p>}
             </div>
