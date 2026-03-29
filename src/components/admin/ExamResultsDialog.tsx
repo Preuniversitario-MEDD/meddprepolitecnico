@@ -208,6 +208,181 @@ export default function ExamResultsDialog({ open, onOpenChange, examTipo, config
     URL.revokeObjectURL(url);
   }
 
+  // --- PDF Export ---
+  function exportDetailPDF(result: ExamResultRow) {
+    if (questionDetails.length === 0) return;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    const contentW = pageW - margin * 2;
+    let y = margin;
+
+    const studentName = result.profile ? `${result.profile.nombre} ${result.profile.apellidos}` : 'Estudiante';
+    const avgSpeed = calcAvgSpeed(result);
+    const blankQs = questionDetails.filter((d: any) => isBlank(d));
+    const answeredQs = questionDetails.filter((d: any) => !isBlank(d));
+    const correctQs = answeredQs.filter((d: any) => d.correct);
+    const incorrectQs = answeredQs.filter((d: any) => !d.correct);
+
+    const addNewPageIfNeeded = (needed: number) => {
+      if (y + needed > pageH - 15) {
+        doc.addPage();
+        y = margin;
+      }
+    };
+
+    // Header bar
+    doc.setFillColor(90, 50, 150);
+    doc.rect(0, 0, pageW, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Reporte de Examen - ${cfg?.label || examTipo}`, margin, 12);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(studentName, margin, 20);
+    doc.text(`Fecha: ${new Date(result.fecha).toLocaleDateString('es-EC')}`, pageW - margin, 20, { align: 'right' });
+    y = 36;
+
+    // Summary metrics table
+    doc.setTextColor(50, 50, 50);
+    (doc as any).autoTable({
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['Puntaje', 'Estado', 'Duración', 'Vel. Promedio', 'Precisión', 'Hora Inicio', 'Hora Fin']],
+      body: [[
+        `${result.puntaje}/${maxScore}`,
+        result.aprobado ? 'Aprobado' : 'Reprobado',
+        formatDuration(result),
+        avgSpeed ? `${avgSpeed}s/preg` : '—',
+        `${questionDetails.length > 0 ? Math.round((correctQs.length / questionDetails.length) * 100) : 0}%`,
+        result.hora_inicio ? new Date(result.hora_inicio).toLocaleTimeString('es-EC') : '—',
+        result.hora_fin ? new Date(result.hora_fin).toLocaleTimeString('es-EC') : '—',
+      ]],
+      theme: 'grid',
+      headStyles: { fillColor: [90, 50, 150], fontSize: 8, halign: 'center' },
+      bodyStyles: { fontSize: 9, halign: 'center' },
+      styles: { cellPadding: 3 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+
+    // Summary counts
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setFillColor(230, 255, 240);
+    doc.roundedRect(margin, y, contentW / 3 - 2, 12, 2, 2, 'F');
+    doc.setTextColor(34, 139, 34);
+    doc.text(`✓ Correctas: ${correctQs.length}`, margin + 4, y + 7);
+
+    doc.setFillColor(255, 243, 224);
+    doc.roundedRect(margin + contentW / 3, y, contentW / 3 - 2, 12, 2, 2, 'F');
+    doc.setTextColor(200, 120, 0);
+    doc.text(`○ En blanco: ${blankQs.length}`, margin + contentW / 3 + 4, y + 7);
+
+    doc.setFillColor(255, 230, 230);
+    doc.roundedRect(margin + (contentW / 3) * 2, y, contentW / 3, 12, 2, 2, 'F');
+    doc.setTextColor(200, 50, 50);
+    doc.text(`✗ Erróneas: ${incorrectQs.length}`, margin + (contentW / 3) * 2 + 4, y + 7);
+    y += 18;
+
+    // Topic analysis
+    if (topicAnalysis.length > 0) {
+      addNewPageIfNeeded(20);
+      doc.setTextColor(50, 50, 50);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Análisis por Tema', margin, y);
+      y += 5;
+
+      const topicRows = topicAnalysis.map(t => {
+        const estado = t.estado === 'dominado' ? '✓ Dominado' : t.estado === 'en_proceso' ? '▸ En proceso' : '✗ Requiere retroalimentación';
+        return [`S${t.sesionNumero}: ${t.sesionTitulo}`, `${t.correctas}/${t.total}`, `${t.porcentaje}%`, estado];
+      });
+      (doc as any).autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        head: [['Tema', 'Aciertos', '%', 'Estado']],
+        body: topicRows,
+        theme: 'striped',
+        headStyles: { fillColor: [90, 50, 150], fontSize: 8 },
+        bodyStyles: { fontSize: 8 },
+        styles: { cellPadding: 2.5 },
+        didParseCell: (data: any) => {
+          if (data.section === 'body' && data.column.index === 3) {
+            const val = data.cell.raw as string;
+            if (val.startsWith('✓')) data.cell.styles.textColor = [34, 139, 34];
+            else if (val.startsWith('▸')) data.cell.styles.textColor = [200, 120, 0];
+            else data.cell.styles.textColor = [200, 50, 50];
+          }
+        },
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+    }
+
+    // Question sections helper
+    const renderSection = (title: string, questions: any[], colorRGB: number[]) => {
+      if (questions.length === 0) return;
+      addNewPageIfNeeded(18);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(colorRGB[0], colorRGB[1], colorRGB[2]);
+      doc.text(title, margin, y);
+      y += 5;
+
+      const rows = questions.map((d: any) => {
+        const q = d.question;
+        if (!q) return ['—', '—', '—', '—'];
+        const opciones = (q.opciones as string[]) || [];
+        const sesInfo = sesionesMap[q.sesion_id];
+        const globalIdx = questionDetails.indexOf(d) + 1;
+        const correctAnswer = opciones[q.respuesta_correcta] ? `${String.fromCharCode(65 + q.respuesta_correcta)}. ${opciones[q.respuesta_correcta]}` : '—';
+        const studentAnswer = isBlank(d) ? 'No contestó' :
+          opciones[d.answer] ? `${String.fromCharCode(65 + d.answer)}. ${opciones[d.answer]}` : '—';
+        return [
+          `${globalIdx}. ${q.pregunta}`,
+          sesInfo ? `S${sesInfo.numero}` : '—',
+          studentAnswer,
+          correctAnswer,
+        ];
+      });
+
+      (doc as any).autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        head: [['Pregunta', 'Sesión', 'Respuesta del estudiante', 'Respuesta correcta']],
+        body: rows,
+        theme: 'striped',
+        headStyles: { fillColor: colorRGB, fontSize: 7.5 },
+        bodyStyles: { fontSize: 7, valign: 'top' },
+        columnStyles: {
+          0: { cellWidth: contentW * 0.4 },
+          1: { cellWidth: contentW * 0.08, halign: 'center' },
+          2: { cellWidth: contentW * 0.26 },
+          3: { cellWidth: contentW * 0.26 },
+        },
+        styles: { cellPadding: 2, overflow: 'linebreak' },
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+    };
+
+    renderSection(`Preguntas Correctas (${correctQs.length})`, correctQs, [34, 139, 34]);
+    renderSection(`Preguntas En Blanco (${blankQs.length})`, blankQs, [200, 140, 0]);
+    renderSection(`Preguntas Erróneas (${incorrectQs.length})`, incorrectQs, [200, 50, 50]);
+
+    // Footer on all pages
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Página ${i} de ${totalPages}`, pageW / 2, pageH - 8, { align: 'center' });
+      doc.text('MeddPrep Politécnico — Reporte generado automáticamente', pageW / 2, pageH - 4, { align: 'center' });
+    }
+
+    doc.save(`Examen_${cfg?.label || examTipo}_${studentName.replace(/\s/g, '_')}.pdf`);
+  }
+
   // Classify questions
   function isBlank(d: any) {
     return d.answer === undefined || d.answer === null || d.answer === -1;
