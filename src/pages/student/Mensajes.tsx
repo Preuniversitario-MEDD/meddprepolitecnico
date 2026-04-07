@@ -332,6 +332,12 @@ export default function Mensajes() {
 
   const dayGroups = useMemo(() => groupMessagesByDay(filteredMessages), [filteredMessages]);
 
+  // Auto-collapse all day groups except "Hoy"
+  useEffect(() => {
+    const nonToday = dayGroups.filter(g => g.label !== 'Hoy').map(g => g.date);
+    setCollapsedDays(new Set(nonToday));
+  }, [dayGroups.length]);
+
   const toggleDay = (date: string) => {
     setCollapsedDays(prev => {
       const next = new Set(prev);
