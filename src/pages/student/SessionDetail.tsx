@@ -212,12 +212,21 @@ export default function SessionDetail() {
           })}
         </TabsList>
 
-        {pestanas.map(tab => {
+        <AnimatePresence mode="wait">
+        {pestanas.filter(tab => tab.clave === activeTab).map(tab => {
           const groups = getGroupedContent(tab.clave);
           const hasExercises = tab.clave === 'ejercicio';
 
           return (
-            <TabsContent key={tab.clave} value={tab.clave} className="space-y-3 mt-5">
+            <TabsContent key={tab.clave} value={tab.clave} className="space-y-3 mt-5" forceMount>
+              <motion.div
+                key={tab.clave}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-3"
+              >
               {Array.from(groups.entries()).map(([groupName, items]) => {
                 if (!groupName) {
                   return items.map((item, i) => (
@@ -315,13 +324,24 @@ export default function SessionDetail() {
                   </AnimatePresence>
                 </>
               )}
+              </motion.div>
             </TabsContent>
           );
         })}
-
-        <TabsContent value="quiz" className="mt-5">
-          {id && user && <QuizComponent sesionId={id} userId={user.id} />}
-        </TabsContent>
+        {activeTab === 'quiz' && (
+          <TabsContent value="quiz" className="mt-5" forceMount>
+            <motion.div
+              key="quiz"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              {id && user && <QuizComponent sesionId={id} userId={user.id} />}
+            </motion.div>
+          </TabsContent>
+        )}
+        </AnimatePresence>
       </Tabs>
     </div>
   );

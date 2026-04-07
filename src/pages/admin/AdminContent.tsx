@@ -459,8 +459,17 @@ export default function AdminContent() {
             ))}
           </TabsList>
 
-          {pestanas.map(tab => (
-            <TabsContent key={tab.clave} value={tab.clave} className="space-y-3">
+          <AnimatePresence mode="wait">
+          {pestanas.filter(tab => tab.clave === activeTab).map(tab => (
+            <TabsContent key={tab.clave} value={tab.clave} className="space-y-3" forceMount>
+              <motion.div
+                key={tab.clave}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-3"
+              >
               <div className="flex gap-2">
                 <Button onClick={() => { setForm({ tipo: tab.clave, titulo: '', texto: '', url: '', imagen_url: '', solucion: '', grupo_nombre: '' }); setLinkFields(['']); setEditItem(null); setAddOpen(true); }}
                   className="gradient-primary text-primary-foreground gap-2" size="sm">
@@ -505,8 +514,10 @@ export default function AdminContent() {
                   </Collapsible>
                 );
               })}
+              </motion.div>
             </TabsContent>
           ))}
+          </AnimatePresence>
         </Tabs>
       )}
 
