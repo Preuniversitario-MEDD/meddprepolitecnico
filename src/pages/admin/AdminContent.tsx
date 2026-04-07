@@ -514,8 +514,10 @@ export default function AdminContent() {
                   </Collapsible>
                 );
               })}
+              </motion.div>
             </TabsContent>
           ))}
+          </AnimatePresence>
         </Tabs>
       )}
 
