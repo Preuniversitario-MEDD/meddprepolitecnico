@@ -324,13 +324,24 @@ export default function SessionDetail() {
                   </AnimatePresence>
                 </>
               )}
+              </motion.div>
             </TabsContent>
           );
         })}
-
-        <TabsContent value="quiz" className="mt-5">
-          {id && user && <QuizComponent sesionId={id} userId={user.id} />}
-        </TabsContent>
+        {activeTab === 'quiz' && (
+          <TabsContent value="quiz" className="mt-5" forceMount>
+            <motion.div
+              key="quiz"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              {id && user && <QuizComponent sesionId={id} userId={user.id} />}
+            </motion.div>
+          </TabsContent>
+        )}
+        </AnimatePresence>
       </Tabs>
     </div>
   );
