@@ -10,7 +10,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, Settings, LogOut,
-  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, ChevronDown, FileText
+  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, ChevronDown, FileText, Compass
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,6 +37,7 @@ const studentLinks = [
   { path: '/student/sessions', icon: BookOpen, label: 'Sesiones' },
   { path: '/student/library', icon: Library, label: 'Biblioteca' },
   { path: '/student/competencia', icon: Zap, label: 'Competencia' },
+  { path: '/student/vocacional', icon: Compass, label: 'Vocacional' },
   { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes' },
   { path: '/student/profile', icon: GraduationCap, label: 'Perfil' },
 ];

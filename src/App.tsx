@@ -27,6 +27,7 @@ import AdminCompetenciaLive from "./pages/admin/AdminCompetenciaLive";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminExams from "./pages/admin/AdminExams";
 import StudentCompetencia from "./pages/student/StudentCompetencia";
+import VocationalTestPage from "./pages/student/VocationalTestPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,6 +73,7 @@ function AppRoutes() {
       <Route path="/student/mensajes" element={<ProtectedRoute><Mensajes /></ProtectedRoute>} />
       <Route path="/student/profile" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
       <Route path="/student/competencia" element={<ProtectedRoute><StudentCompetencia /></ProtectedRoute>} />
+      <Route path="/student/vocacional" element={<ProtectedRoute><VocationalTestPage /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
