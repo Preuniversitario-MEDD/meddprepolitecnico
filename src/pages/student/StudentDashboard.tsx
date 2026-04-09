@@ -11,6 +11,9 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, CheckCircle, Clock, FlaskConical, FileText, Zap, Trophy, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import StudyTimeline from '@/components/dashboard/StudyTimeline';
+import PerformanceCharts from '@/components/dashboard/PerformanceCharts';
+import WeakAreas from '@/components/dashboard/WeakAreas';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
@@ -297,6 +300,21 @@ export default function StudentDashboard() {
           })}
         </div>
       </div>
+
+      {/* Performance Charts */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+        <PerformanceCharts sesiones={sesiones} progress={progress} />
+      </motion.div>
+
+      {/* Weak Areas */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+        <WeakAreas sesiones={sesiones} progress={progress} onReview={(id) => navigate(`/student/session/${id}`)} />
+      </motion.div>
+
+      {/* Study Timeline */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+        <StudyTimeline sesiones={sesiones} progress={progress} onNavigate={(id) => navigate(`/student/session/${id}`)} />
+      </motion.div>
 
       {/* Active exam banner */}
       {(() => {
