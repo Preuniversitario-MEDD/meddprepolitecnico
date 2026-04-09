@@ -11,6 +11,9 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, CheckCircle, Clock, FlaskConical, FileText, Zap, Trophy, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import StudyTimeline from '@/components/dashboard/StudyTimeline';
+import PerformanceCharts from '@/components/dashboard/PerformanceCharts';
+import WeakAreas from '@/components/dashboard/WeakAreas';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
