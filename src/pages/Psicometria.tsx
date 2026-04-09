@@ -7,6 +7,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import {
   allTests, testsByArea, Test, InterpretResult,
 } from "@/data/testData";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 // ── Tipos ────────────────────────────────────────────────────
 type Phase = "home" | "test" | "results";
@@ -486,12 +488,38 @@ function Dashboard({ sessions, onViewResult }: {
 // PÁGINA PRINCIPAL
 // ══════════════════════════════════════════════════════════════
 export default function Psicometria() {
+  const { user } = useAuth();
   const [phase, setPhase] = useState<Phase>("home");
   const [activeTest, setActiveTest] = useState<Test | null>(null);
   const [results, setResults] = useState<InterpretResult[]>([]);
   const [sessions, setSessions] = useState<SessionResult[]>([]);
   const [activeArea, setActiveArea] = useState("all");
   const [viewingSession, setViewingSession] = useState<SessionResult | null>(null);
+  const [loadingDb, setLoadingDb] = useState(true);
+
+  // Load saved sessions from DB
+  useEffect(() => {
+    if (!user) { setLoadingDb(false); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("psychometric_results")
+        .select("test_key, scores, answers")
+        .eq("user_id", user.id);
+      if (data && data.length > 0) {
+        const loaded: SessionResult[] = [];
+        const testsMap = Object.fromEntries(allTests.map(t => [t.id, t]));
+        for (const row of data) {
+          const test = testsMap[row.test_key];
+          if (!test) continue;
+          const scores = row.scores as Record<string, number>;
+          const interpretedResults = test.interpret(scores);
+          loaded.push({ test, results: interpretedResults, date: "" });
+        }
+        setSessions(loaded);
+      }
+      setLoadingDb(false);
+    })();
+  }, [user]);
 
   const startTest = useCallback((test: Test) => {
     setActiveTest(test); setPhase("test"); setViewingSession(null);
@@ -505,8 +533,19 @@ export default function Psicometria() {
         const filtered = prev.filter(s => s.test.id !== activeTest.id);
         return [session, ...filtered];
       });
+      // Save to DB
+      if (user) {
+        const scores: Record<string, number> = {};
+        r.forEach(res => { scores[res.category] = res.score; });
+        supabase.from("psychometric_results").upsert({
+          user_id: user.id,
+          test_key: activeTest.id,
+          scores,
+          answers: {},
+        }, { onConflict: "user_id,test_key" }).then(() => {});
+      }
     }
-  }, [activeTest]);
+  }, [activeTest, user]);
 
   const goHome = useCallback(() => {
     setPhase("home"); setActiveTest(null); setResults([]); setViewingSession(null);
