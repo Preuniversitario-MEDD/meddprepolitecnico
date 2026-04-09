@@ -1,0 +1,1 @@
+ALTER TABLE public.psychometric_results ADD CONSTRAINT psychometric_results_user_test_unique UNIQUE (user_id, test_key);
