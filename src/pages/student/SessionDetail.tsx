@@ -218,6 +218,7 @@ export default function SessionDetail() {
         {pestanas.filter(tab => tab.clave === activeTab).map(tab => {
           const groups = getGroupedContent(tab.clave);
           const hasExercises = tab.clave === 'ejercicio';
+          const isTheory = tab.clave === 'teoria';
 
           return (
             <TabsContent key={tab.clave} value={tab.clave} className="space-y-3 mt-5" forceMount>
@@ -230,7 +231,6 @@ export default function SessionDetail() {
                 className="space-y-3"
               >
               {Array.from(groups.entries()).map(([groupName, items]) => {
-                const isTheory = tab.clave === 'teoria';
                 const ItemComponent = isTheory ? TheoryContentItem : ContentItem;
                 if (!groupName) {
                   return items.map((item, i) => (
