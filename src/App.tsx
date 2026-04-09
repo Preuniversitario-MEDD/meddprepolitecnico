@@ -30,6 +30,7 @@ import StudentCompetencia from "./pages/student/StudentCompetencia";
 import VocationalTestPage from "./pages/student/VocationalTestPage";
 import AssessmentPage from "./pages/student/AssessmentPage";
 import AdminPsychometric from "./pages/admin/AdminPsychometric";
+import Psicometria from "./pages/Psicometria";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ function AppRoutes() {
       <Route path="/student/competencia" element={<ProtectedRoute><StudentCompetencia /></ProtectedRoute>} />
       <Route path="/student/vocacional" element={<ProtectedRoute><VocationalTestPage /></ProtectedRoute>} />
       <Route path="/student/assessment" element={<ProtectedRoute><AssessmentPage /></ProtectedRoute>} />
+      <Route path="/student/psicometria" element={<ProtectedRoute><Psicometria /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>

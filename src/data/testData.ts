@@ -13,8 +13,8 @@ export type Test = {
   description: string; icon: string;
   area: "personalidad" | "vocacional" | "emocional" | "actitudes" | "aptitudes" | "aprendizaje" | "bienestar" | "inteligencias";
   estimatedMinutes: number; questions: Question[];
-  categories: { [key: string]: string };
-  interpret: (scores: { [key: string]: number }) => InterpretResult[];
+  categories: Record<string, string>;
+  interpret: (scores: Record<string, number>) => InterpretResult[];
 };
 export type InterpretResult = {
   category: string; label: string; score: number; max: number;
