@@ -11,6 +11,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ArrowLeft, Brain, Sparkles, Loader2, Timer, Target, AlertTriangle, Trophy, PartyPopper, ChevronDown, Eye, EyeOff, BookOpen, Lightbulb, PenTool } from 'lucide-react';
 import QuizComponent from '@/components/quiz/QuizComponent';
 import ContentItem from '@/components/session/ContentItem';
+import TheoryContentItem from '@/components/session/TheoryContentItem';
+import PracticalApplications from '@/components/session/PracticalApplications';
 import { useToast } from '@/hooks/use-toast';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -216,6 +218,7 @@ export default function SessionDetail() {
         {pestanas.filter(tab => tab.clave === activeTab).map(tab => {
           const groups = getGroupedContent(tab.clave);
           const hasExercises = tab.clave === 'ejercicio';
+          const isTheory = tab.clave === 'teoria';
 
           return (
             <TabsContent key={tab.clave} value={tab.clave} className="space-y-3 mt-5" forceMount>
@@ -228,9 +231,10 @@ export default function SessionDetail() {
                 className="space-y-3"
               >
               {Array.from(groups.entries()).map(([groupName, items]) => {
+                const ItemComponent = isTheory ? TheoryContentItem : ContentItem;
                 if (!groupName) {
                   return items.map((item, i) => (
-                    <ContentItem
+                    <ItemComponent
                       key={item.id}
                       item={item}
                       index={i}
@@ -251,7 +255,7 @@ export default function SessionDetail() {
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-2.5 pl-4 border-l-2 border-primary/20 ml-3.5 mt-2">
                       {items.map((item, i) => (
-                        <ContentItem
+                        <ItemComponent
                           key={item.id}
                           item={item}
                           index={i}
@@ -263,6 +267,11 @@ export default function SessionDetail() {
                   </Collapsible>
                 );
               })}
+
+              {/* Practical Applications block for theory tab */}
+              {isTheory && Array.from(groups.values()).flat().length > 0 && (
+                <PracticalApplications items={Array.from(groups.values()).flat()} />
+              )}
 
               {Array.from(groups.values()).flat().length === 0 && (
                 <div className="text-center py-12">

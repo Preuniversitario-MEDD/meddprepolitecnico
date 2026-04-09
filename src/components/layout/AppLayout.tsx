@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AvatarUpload from '@/components/AvatarUpload';
+import GlobalSearch from '@/components/layout/GlobalSearch';
 import { supabase } from '@/integrations/supabase/client';
 import meddLogo from '@/assets/medd-logo.png';
 
@@ -111,6 +112,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
+          <div className="px-3 pb-2">
+            <GlobalSearch />
+          </div>
           <nav className="flex-1 p-3 space-y-1">
             {links.map(link => {
               const active = location.pathname === link.path;
@@ -175,6 +179,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <GlobalSearch />
               <AvatarUpload userId={profile?.user_id || ''} avatarUrl={profile?.avatar_url || null} initials={initials} size="sm" editable={false} />
               <button onClick={toggleTheme} className="p-2">{theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>
               <button onClick={signOut} className="p-2 text-destructive"><LogOut className="w-4 h-4" /></button>

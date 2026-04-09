@@ -186,26 +186,7 @@ export default function StudentDashboard() {
     return { canTake: true, reason: `Intento ${exam.intentos + 1} de 3` };
   }
 
-  // Detect newly unlocked exams and show dialog
-  useEffect(() => {
-    if (sesiones.length === 0 || examBlocks.length === 0) return;
-    const currentUnlocked = new Set<string>();
-    examBlocks.forEach(block => { if (isExamUnlocked(block)) currentUnlocked.add(block.tipo); });
-
-    if (prevUnlockedExamsRef.current !== null) {
-      for (const tipo of currentUnlocked) {
-        if (!prevUnlockedExamsRef.current.has(tipo)) {
-          const block = examBlocks.find(b => b.tipo === tipo);
-          if (block) {
-            setUnlockDialog(block);
-            confetti({ particleCount: 100, spread: 60, origin: { y: 0.7 } });
-            break; // show one at a time
-          }
-        }
-      }
-    }
-    prevUnlockedExamsRef.current = currentUnlocked;
-  }, [sesiones, progress, exams, examBlocks]);
+  // Auto-popup disabled — students navigate to exams manually via the cards below
 
   const blockExams = examBlocks.filter(b => !b.isFinal);
   const finalExam = examBlocks.find(b => b.isFinal);
