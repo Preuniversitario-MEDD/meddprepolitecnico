@@ -1,9 +1,8 @@
 // ============================================================
-// Psicometria.tsx — Motor completo con gráficas vistosas
-// Pegar en: src/pages/Psicometria.tsx
+// Psicometria.tsx — Motor completo con estética neón/pastel
 // ============================================================
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   allTests, testsByArea, Test, InterpretResult,
 } from "@/data/testData";
@@ -14,22 +13,22 @@ import { useAuth } from "@/hooks/useAuth";
 type Phase = "home" | "test" | "results";
 type SessionResult = { test: Test; results: InterpretResult[]; date: string };
 
-// ── Paleta ───────────────────────────────────────────────────
-const AREA: Record<string, { label: string; color: string; bg: string; border: string; icon: string }> = {
-  personalidad:  { label:"Personalidad",          color:"#534AB7", bg:"#EEEDFE", border:"#AFA9EC", icon:"🧠" },
-  vocacional:    { label:"Orientación vocacional", color:"#0F6E56", bg:"#E1F5EE", border:"#5DCAA5", icon:"🎯" },
-  emocional:     { label:"Inteligencia emocional", color:"#854F0B", bg:"#FAEEDA", border:"#EF9F27", icon:"💛" },
-  actitudes:     { label:"Actitudes y valores",    color:"#993C1D", bg:"#FAECE7", border:"#F0997B", icon:"💬" },
-  aptitudes:     { label:"Aptitudes cognitivas",   color:"#185FA5", bg:"#E6F1FB", border:"#85B7EB", icon:"⚙️" },
-  inteligencias: { label:"Inteligencias múltiples",color:"#3C3489", bg:"#EEEDFE", border:"#7F77DD", icon:"🌟" },
-  aprendizaje:   { label:"Estilos de aprendizaje", color:"#27500A", bg:"#EAF3DE", border:"#97C459", icon:"📚" },
-  bienestar:     { label:"Bienestar y estrés",     color:"#A32D2D", bg:"#FCEBEB", border:"#F09595", icon:"🌿" },
+// ── Paleta neón/pastel ──────────────────────────────────────
+const AREA: Record<string, { label: string; color: string; glow: string; bg: string; border: string; icon: string }> = {
+  personalidad:  { label:"Personalidad",          color:"#a78bfa", glow:"#a78bfa60", bg:"#1e1b4b",  border:"#7c3aed50", icon:"🧠" },
+  vocacional:    { label:"Orientación vocacional", color:"#34d399", glow:"#34d39960", bg:"#064e3b",  border:"#10b98150", icon:"🎯" },
+  emocional:     { label:"Inteligencia emocional", color:"#fbbf24", glow:"#fbbf2460", bg:"#451a03",  border:"#f59e0b50", icon:"💛" },
+  actitudes:     { label:"Actitudes y valores",    color:"#fb923c", glow:"#fb923c60", bg:"#431407",  border:"#f9731650", icon:"💬" },
+  aptitudes:     { label:"Aptitudes cognitivas",   color:"#38bdf8", glow:"#38bdf860", bg:"#0c4a6e",  border:"#0ea5e950", icon:"⚙️" },
+  inteligencias: { label:"Inteligencias múltiples",color:"#818cf8", glow:"#818cf860", bg:"#1e1b4b",  border:"#6366f150", icon:"🌟" },
+  aprendizaje:   { label:"Estilos de aprendizaje", color:"#4ade80", glow:"#4ade8060", bg:"#052e16",  border:"#22c55e50", icon:"📚" },
+  bienestar:     { label:"Bienestar y estrés",     color:"#f472b6", glow:"#f472b660", bg:"#500724",  border:"#ec489950", icon:"🌿" },
 };
 
-const LEVEL: Record<string, { bar: string; badge: string; text: string; label: string }> = {
-  bajo:  { bar:"#E24B4A", badge:"#FCEBEB", text:"#A32D2D", label:"Bajo" },
-  medio: { bar:"#EF9F27", badge:"#FAEEDA", text:"#854F0B", label:"Medio" },
-  alto:  { bar:"#1D9E75", badge:"#E1F5EE", text:"#085041", label:"Alto"  },
+const LEVEL: Record<string, { bar: string; glow: string; badge: string; text: string; label: string }> = {
+  bajo:  { bar:"#f87171", glow:"#f8717140", badge:"rgba(248,113,113,0.15)", text:"#fca5a5", label:"Bajo" },
+  medio: { bar:"#fbbf24", glow:"#fbbf2440", badge:"rgba(251,191,36,0.15)", text:"#fde68a", label:"Medio" },
+  alto:  { bar:"#34d399", glow:"#34d39940", badge:"rgba(52,211,153,0.15)", text:"#6ee7b7", label:"Alto"  },
 };
 
 // ── Scoring ──────────────────────────────────────────────────
@@ -43,11 +42,16 @@ function calcScores(test: Test, answers: Record<string,number>) {
   return s;
 }
 
+// ── Shared styles ───────────────────────────────────────────
+const cardBase: React.CSSProperties = {
+  borderRadius: 16, backdropFilter: "blur(12px)",
+  background: "rgba(15,15,30,0.7)", border: "1px solid rgba(255,255,255,0.08)",
+};
+
 // ══════════════════════════════════════════════════════════════
 // CHART COMPONENTS
 // ══════════════════════════════════════════════════════════════
 
-// Radar Chart (SVG)
 function RadarChart({ results, color }: { results: InterpretResult[]; color: string }) {
   const n = results.length;
   if (n < 3) return null;
@@ -65,19 +69,19 @@ function RadarChart({ results, color }: { results: InterpretResult[]; color: str
     <svg viewBox="0 0 280 280" style={{ width:"100%", maxWidth:280, display:"block", margin:"0 auto" }}>
       {gridLevels.map(g => (
         <polygon key={g} points={polyStr(pts(r * g / 100))}
-          fill="none" stroke="var(--color-border-secondary)" strokeWidth="0.5" />
+          fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="0.5" />
       ))}
       {angles.map((a, i) => (
         <line key={i} x1={cx} y1={cy}
           x2={cx + Math.cos(a) * r} y2={cy + Math.sin(a) * r}
-          stroke="var(--color-border-secondary)" strokeWidth="0.5" />
+          stroke="rgba(255,255,255,0.06)" strokeWidth="0.5" />
       ))}
       <polygon points={polyStr(pts(r))}
-        fill={color + "20"} stroke={color} strokeWidth="1.5"
-        style={{ transition:"all 0.6s ease" }} />
-      {results.map((r2, i) => {
+        fill={color + "25"} stroke={color} strokeWidth="2"
+        style={{ transition: "all 0.6s ease", filter: `drop-shadow(0 0 6px ${color}60)` }} />
+      {results.map((_, i) => {
         const [x, y] = pts(r)[i];
-        return <circle key={i} cx={x} cy={y} r={4} fill={color} />;
+        return <circle key={i} cx={x} cy={y} r={4} fill={color} style={{ filter: `drop-shadow(0 0 4px ${color})` }} />;
       })}
       {results.map((r2, i) => {
         const labelR = r + 18;
@@ -87,7 +91,7 @@ function RadarChart({ results, color }: { results: InterpretResult[]; color: str
         return (
           <text key={i} x={lx} y={ly}
             textAnchor="middle" dominantBaseline="central"
-            fontSize="9" fill="var(--color-text-secondary)" fontFamily="inherit">
+            fontSize="9" fill="rgba(255,255,255,0.6)" fontFamily="inherit">
             {r2.label.split(" ")[0]}
           </text>
         );
@@ -96,22 +100,22 @@ function RadarChart({ results, color }: { results: InterpretResult[]; color: str
   );
 }
 
-// Bar Chart horizontal
-function BarChart({ results, color }: { results: InterpretResult[]; color: string }) {
+function BarChartComp({ results }: { results: InterpretResult[] }) {
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
       {results.map(r => {
         const lv = LEVEL[r.level];
         return (
           <div key={r.category}>
-            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
-              <span style={{ fontSize:12, color:"var(--color-text-secondary)" }}>{r.label}</span>
-              <span style={{ fontSize:12, fontWeight:500, color:lv.text }}>{r.percent}%</span>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+              <span style={{ fontSize:12, color:"rgba(255,255,255,0.6)" }}>{r.label}</span>
+              <span style={{ fontSize:12, fontWeight:600, color:lv.text }}>{r.percent}%</span>
             </div>
-            <div style={{ background:"var(--color-border-tertiary)", borderRadius:99, height:8, overflow:"hidden" }}>
+            <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:99, height:8, overflow:"hidden" }}>
               <div style={{
-                width:`${r.percent}%`, background:lv.bar, height:"100%",
-                borderRadius:99, transition:"width 0.8s ease",
+                width:`${r.percent}%`, background:`linear-gradient(90deg, ${lv.bar}, ${lv.bar}cc)`,
+                height:"100%", borderRadius:99, transition:"width 0.8s ease",
+                boxShadow:`0 0 10px ${lv.glow}`,
               }} />
             </div>
           </div>
@@ -121,20 +125,19 @@ function BarChart({ results, color }: { results: InterpretResult[]; color: strin
   );
 }
 
-// Donut mini
 function DonutMini({ percent, color }: { percent: number; color: string }) {
   const r = 20, c = 2 * Math.PI * r;
   const dash = (percent / 100) * c;
   return (
     <svg width="52" height="52" viewBox="0 0 52 52">
-      <circle cx="26" cy="26" r={r} fill="none" stroke="var(--color-border-tertiary)" strokeWidth="5" />
+      <circle cx="26" cy="26" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="5" />
       <circle cx="26" cy="26" r={r} fill="none" stroke={color} strokeWidth="5"
         strokeDasharray={`${dash} ${c - dash}`}
         strokeDashoffset={c * 0.25}
         strokeLinecap="round"
-        style={{ transition:"stroke-dasharray 0.8s ease" }} />
+        style={{ transition:"stroke-dasharray 0.8s ease", filter:`drop-shadow(0 0 4px ${color}80)` }} />
       <text x="26" y="27" textAnchor="middle" dominantBaseline="central"
-        fontSize="10" fontWeight="500" fill={color} fontFamily="inherit">
+        fontSize="10" fontWeight="600" fill={color} fontFamily="inherit">
         {percent}
       </text>
     </svg>
@@ -153,64 +156,63 @@ function ResultsScreen({ test, results, onRestart, onHome }: {
   const avg = Math.round(results.reduce((a, r) => a + r.percent, 0) / results.length);
 
   return (
-    <div style={{ maxWidth:680, margin:"0 auto", padding:"0 16px 60px" }}>
-
+    <div style={{ maxWidth:680, margin:"0 auto", padding:"0 12px 60px" }}>
       {/* Hero resultado */}
       <div style={{
-        background:`linear-gradient(135deg, ${meta.bg} 0%, ${meta.border}40 100%)`,
-        border:`1px solid ${meta.border}`, borderRadius:20, padding:"28px 24px",
+        background: `linear-gradient(135deg, ${meta.bg} 0%, rgba(15,15,30,0.9) 100%)`,
+        border:`1px solid ${meta.border}`, borderRadius:20, padding:"24px 20px",
         marginBottom:20, textAlign:"center",
+        boxShadow:`0 0 40px ${meta.glow}, inset 0 1px 0 rgba(255,255,255,0.05)`,
       }}>
         <div style={{ fontSize:36, marginBottom:8 }}>{meta.icon}</div>
-        <div style={{ fontSize:12, color:meta.color, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:500 }}>
+        <div style={{ fontSize:11, color:meta.color, textTransform:"uppercase", letterSpacing:2, marginBottom:6, fontWeight:600 }}>
           {meta.label}
         </div>
-        <div style={{ fontSize:24, fontWeight:500, color:"var(--color-text-primary)", marginBottom:4 }}>
+        <div style={{ fontSize:22, fontWeight:600, color:"#fff", marginBottom:4 }}>
           {test.name}
         </div>
-        <div style={{ display:"flex", justifyContent:"center", gap:24, marginTop:16 }}>
+        <div style={{ display:"flex", justifyContent:"center", gap:20, marginTop:16, flexWrap:"wrap" }}>
           <div style={{ textAlign:"center" }}>
-            <div style={{ fontSize:28, fontWeight:500, color:meta.color }}>{avg}%</div>
-            <div style={{ fontSize:11, color:"var(--color-text-secondary)" }}>Promedio general</div>
+            <div style={{ fontSize:28, fontWeight:700, color:meta.color, textShadow:`0 0 20px ${meta.glow}` }}>{avg}%</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)" }}>Promedio general</div>
           </div>
-          <div style={{ width:1, background:meta.border }} />
+          <div style={{ width:1, background:"rgba(255,255,255,0.1)" }} />
           <div style={{ textAlign:"center" }}>
-            <div style={{ fontSize:16, fontWeight:500, color:meta.color }}>{top.label}</div>
-            <div style={{ fontSize:11, color:"var(--color-text-secondary)" }}>Área más destacada</div>
+            <div style={{ fontSize:15, fontWeight:600, color:meta.color }}>{top.label}</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)" }}>Área más destacada</div>
           </div>
         </div>
       </div>
 
-      {/* Radar + Barras */}
+      {/* Radar + Barras — stack on mobile */}
       <div style={{
-        display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:20,
+        display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(260px, 1fr))", gap:14, marginBottom:20,
       }}>
-        <div style={{ border:"0.5px solid var(--color-border-tertiary)", borderRadius:16, padding:"20px 16px", background:"var(--color-background-primary)" }}>
-          <div style={{ fontSize:13, fontWeight:500, color:"var(--color-text-secondary)", marginBottom:12 }}>Perfil radial</div>
+        <div style={{ ...cardBase, padding:"18px 14px" }}>
+          <div style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.5)", marginBottom:12 }}>Perfil radial</div>
           <RadarChart results={results} color={meta.color} />
         </div>
-        <div style={{ border:"0.5px solid var(--color-border-tertiary)", borderRadius:16, padding:"20px 16px", background:"var(--color-background-primary)" }}>
-          <div style={{ fontSize:13, fontWeight:500, color:"var(--color-text-secondary)", marginBottom:12 }}>Barras de nivel</div>
-          <BarChart results={results} color={meta.color} />
+        <div style={{ ...cardBase, padding:"18px 14px" }}>
+          <div style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.5)", marginBottom:12 }}>Barras de nivel</div>
+          <BarChartComp results={results} />
         </div>
       </div>
 
       {/* Donuts resumen */}
       <div style={{
-        display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(90px,1fr))", gap:10, marginBottom:20,
+        display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(80px,1fr))", gap:8, marginBottom:20,
       }}>
         {results.map(r => {
           const lv = LEVEL[r.level];
           return (
             <div key={r.category} style={{
-              border:"0.5px solid var(--color-border-tertiary)", borderRadius:12,
-              padding:"12px 8px", textAlign:"center", background:"var(--color-background-primary)",
+              ...cardBase, padding:"10px 6px", textAlign:"center",
             }}>
               <DonutMini percent={r.percent} color={lv.bar} />
-              <div style={{ fontSize:11, fontWeight:500, color:"var(--color-text-primary)", marginTop:4, lineHeight:1.3 }}>
+              <div style={{ fontSize:10, fontWeight:600, color:"rgba(255,255,255,0.8)", marginTop:4, lineHeight:1.2 }}>
                 {r.label}
               </div>
-              <span style={{ display:"inline-block", fontSize:10, background:lv.badge, color:lv.text, borderRadius:99, padding:"1px 7px", marginTop:4 }}>
+              <span style={{ display:"inline-block", fontSize:9, background:lv.badge, color:lv.text, borderRadius:99, padding:"2px 7px", marginTop:3, fontWeight:600 }}>
                 {lv.label}
               </span>
             </div>
@@ -220,27 +222,26 @@ function ResultsScreen({ test, results, onRestart, onHome }: {
 
       {/* Detalle por categoría */}
       <div style={{ marginBottom:20 }}>
-        <div style={{ fontSize:15, fontWeight:500, color:"var(--color-text-primary)", marginBottom:12 }}>Análisis detallado</div>
+        <div style={{ fontSize:15, fontWeight:600, color:"#fff", marginBottom:12 }}>Análisis detallado</div>
         {sorted.map(r => {
           const lv = LEVEL[r.level];
           return (
             <div key={r.category} style={{
-              border:"0.5px solid var(--color-border-tertiary)", borderRadius:12,
-              padding:"16px 18px", marginBottom:10, background:"var(--color-background-primary)",
+              ...cardBase, padding:"14px 16px", marginBottom:10,
             }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                <span style={{ fontWeight:500, fontSize:14, color:"var(--color-text-primary)" }}>{r.label}</span>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, flexWrap:"wrap", gap:6 }}>
+                <span style={{ fontWeight:600, fontSize:14, color:"#fff" }}>{r.label}</span>
                 <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                  <span style={{ fontSize:13, fontWeight:500, color:meta.color }}>{r.percent}%</span>
-                  <span style={{ background:lv.badge, color:lv.text, borderRadius:99, padding:"2px 10px", fontSize:11, fontWeight:500 }}>
+                  <span style={{ fontSize:13, fontWeight:600, color:meta.color, textShadow:`0 0 8px ${meta.glow}` }}>{r.percent}%</span>
+                  <span style={{ background:lv.badge, color:lv.text, borderRadius:99, padding:"2px 10px", fontSize:10, fontWeight:600 }}>
                     {lv.label}
                   </span>
                 </div>
               </div>
-              <div style={{ background:"var(--color-background-secondary)", borderRadius:99, height:6, marginBottom:8, overflow:"hidden" }}>
-                <div style={{ width:`${r.percent}%`, background:lv.bar, height:"100%", borderRadius:99, transition:"width 1s ease" }} />
+              <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:99, height:6, marginBottom:8, overflow:"hidden" }}>
+                <div style={{ width:`${r.percent}%`, background:`linear-gradient(90deg, ${lv.bar}, ${lv.bar}aa)`, height:"100%", borderRadius:99, transition:"width 1s ease", boxShadow:`0 0 8px ${lv.glow}` }} />
               </div>
-              <p style={{ fontSize:13, color:"var(--color-text-secondary)", margin:0, lineHeight:1.6 }}>
+              <p style={{ fontSize:13, color:"rgba(255,255,255,0.55)", margin:0, lineHeight:1.6 }}>
                 {r.description}
               </p>
             </div>
@@ -249,17 +250,18 @@ function ResultsScreen({ test, results, onRestart, onHome }: {
       </div>
 
       {/* Acciones */}
-      <div style={{ display:"flex", gap:10 }}>
+      <div style={{ display:"flex", gap:10, flexDirection:"row", flexWrap:"wrap" }}>
         <button onClick={onRestart} style={{
-          flex:1, padding:"13px", border:`1px solid ${meta.border}`, borderRadius:10,
-          background:meta.bg, color:meta.color, fontWeight:500, cursor:"pointer", fontSize:14,
+          flex:1, minWidth:140, padding:"13px", border:`1px solid ${meta.color}40`, borderRadius:12,
+          background:`${meta.color}15`, color:meta.color, fontWeight:600, cursor:"pointer", fontSize:14,
+          boxShadow:`0 0 20px ${meta.glow}`,
         }}>
           Repetir test
         </button>
         <button onClick={onHome} style={{
-          flex:1, padding:"13px", border:"0.5px solid var(--color-border-secondary)",
-          borderRadius:10, background:"var(--color-background-primary)",
-          color:"var(--color-text-primary)", fontWeight:500, cursor:"pointer", fontSize:14,
+          flex:1, minWidth:140, padding:"13px", border:"1px solid rgba(255,255,255,0.1)",
+          borderRadius:12, background:"rgba(255,255,255,0.05)",
+          color:"rgba(255,255,255,0.7)", fontWeight:600, cursor:"pointer", fontSize:14,
         }}>
           Ver todos los tests
         </button>
@@ -299,36 +301,41 @@ function TestScreen({ test, onFinish, onBack }: {
   }
 
   return (
-    <div style={{ maxWidth:600, margin:"0 auto", padding:"0 16px" }}>
+    <div style={{ maxWidth:600, margin:"0 auto", padding:"0 12px" }}>
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24 }}>
         <button onClick={onBack} style={{
-          background:"none", border:"0.5px solid var(--color-border-secondary)",
-          borderRadius:8, padding:"7px 12px", cursor:"pointer", fontSize:13,
-          color:"var(--color-text-secondary)",
+          background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)",
+          borderRadius:10, padding:"8px 14px", cursor:"pointer", fontSize:13,
+          color:"rgba(255,255,255,0.6)",
         }}>← Salir</button>
         <div style={{ flex:1 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-            <span style={{ fontSize:12, color:meta.color, fontWeight:500 }}>{test.shortName}</span>
-            <span style={{ fontSize:12, color:"var(--color-text-secondary)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
+            <span style={{ fontSize:12, color:meta.color, fontWeight:600 }}>{test.shortName}</span>
+            <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>
               {current + 1} / {test.questions.length}
             </span>
           </div>
-          <div style={{ background:"var(--color-border-tertiary)", borderRadius:99, height:5, overflow:"hidden" }}>
-            <div style={{ width:`${progress}%`, background:meta.color, height:"100%", borderRadius:99, transition:"width 0.3s" }} />
+          <div style={{ background:"rgba(255,255,255,0.08)", borderRadius:99, height:6, overflow:"hidden" }}>
+            <div style={{
+              width:`${progress}%`, background:`linear-gradient(90deg, ${meta.color}, ${meta.color}cc)`,
+              height:"100%", borderRadius:99, transition:"width 0.3s",
+              boxShadow:`0 0 12px ${meta.glow}`,
+            }} />
           </div>
         </div>
       </div>
 
       {/* Tarjeta pregunta */}
       <div style={{
-        border:"0.5px solid var(--color-border-tertiary)", borderRadius:16,
-        padding:"28px 24px", background:"var(--color-background-primary)", marginBottom:16,
+        ...cardBase, padding:"24px 20px", marginBottom:16,
+        boxShadow:`0 0 30px ${meta.glow}, inset 0 1px 0 rgba(255,255,255,0.06)`,
+        borderColor: `${meta.color}30`,
       }}>
-        <div style={{ fontSize:11, color:meta.color, textTransform:"uppercase", letterSpacing:1, marginBottom:12, fontWeight:500 }}>
+        <div style={{ fontSize:11, color:meta.color, textTransform:"uppercase", letterSpacing:1.5, marginBottom:12, fontWeight:600 }}>
           Pregunta {current + 1}
         </div>
-        <p style={{ fontSize:16, fontWeight:500, color:"var(--color-text-primary)", lineHeight:1.7, margin:"0 0 24px" }}>
+        <p style={{ fontSize:16, fontWeight:500, color:"#fff", lineHeight:1.7, margin:"0 0 20px" }}>
           {q.text}
         </p>
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -339,13 +346,14 @@ function TestScreen({ test, onFinish, onBack }: {
                 key={opt.value}
                 onClick={() => setSelected(opt.value)}
                 style={{
-                  textAlign:"left", padding:"13px 16px", borderRadius:10,
-                  border:isSelected ? `2px solid ${meta.color}` : `1px solid var(--color-border-tertiary)`,
-                  background: isSelected ? meta.bg : "var(--color-background-primary)",
+                  textAlign:"left", padding:"14px 16px", borderRadius:12,
+                  border: isSelected ? `2px solid ${meta.color}` : `1px solid rgba(255,255,255,0.08)`,
+                  background: isSelected ? `${meta.color}18` : "rgba(255,255,255,0.03)",
                   cursor:"pointer", fontSize:14,
-                  color: isSelected ? meta.color : "var(--color-text-primary)",
-                  fontWeight: isSelected ? 500 : 400,
-                  transition:"all 0.15s",
+                  color: isSelected ? meta.color : "rgba(255,255,255,0.75)",
+                  fontWeight: isSelected ? 600 : 400,
+                  transition:"all 0.2s",
+                  boxShadow: isSelected ? `0 0 16px ${meta.glow}` : "none",
                 }}
               >
                 {opt.label}
@@ -361,10 +369,15 @@ function TestScreen({ test, onFinish, onBack }: {
         disabled={selected === null}
         style={{
           width:"100%", padding:"14px", borderRadius:12, border:"none",
-          background: selected !== null ? meta.color : "var(--color-border-secondary)",
-          color: selected !== null ? "#fff" : "var(--color-text-secondary)",
-          fontWeight:500, fontSize:15, cursor: selected !== null ? "pointer" : "not-allowed",
+          background: selected !== null
+            ? `linear-gradient(135deg, ${meta.color}, ${meta.color}bb)`
+            : "rgba(255,255,255,0.08)",
+          color: selected !== null ? "#fff" : "rgba(255,255,255,0.3)",
+          fontWeight:600, fontSize:15,
+          cursor: selected !== null ? "pointer" : "not-allowed",
           transition:"all 0.2s",
+          boxShadow: selected !== null ? `0 0 20px ${meta.glow}` : "none",
+          textShadow: selected !== null ? "0 1px 2px rgba(0,0,0,0.3)" : "none",
         }}
       >
         {current + 1 === test.questions.length ? "Ver resultados →" : "Siguiente →"}
@@ -373,7 +386,7 @@ function TestScreen({ test, onFinish, onBack }: {
       {current > 0 && (
         <button onClick={() => { setCurrent(c => c - 1); }} style={{
           display:"block", margin:"12px auto 0", background:"none", border:"none",
-          fontSize:13, color:"var(--color-text-secondary)", cursor:"pointer",
+          fontSize:13, color:"rgba(255,255,255,0.4)", cursor:"pointer",
         }}>
           ← Pregunta anterior
         </button>
@@ -391,63 +404,70 @@ function TestCard({ test, onStart, completed }: { test: Test; onStart: () => voi
     <div
       onClick={onStart}
       style={{
-        border:`1px solid ${meta.border}`, borderRadius:16, padding:"20px",
-        background:meta.bg, cursor:"pointer",
-        transition:"transform 0.15s, box-shadow 0.15s",
+        ...cardBase, padding:"20px", cursor:"pointer",
+        transition:"transform 0.2s, box-shadow 0.2s",
         position:"relative", overflow:"hidden",
+        borderColor: `${meta.color}25`,
       }}
       onMouseEnter={e => {
-        (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)";
-        (e.currentTarget as HTMLElement).style.boxShadow = `0 6px 20px ${meta.border}80`;
+        (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)";
+        (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 30px ${meta.glow}`;
       }}
       onMouseLeave={e => {
         (e.currentTarget as HTMLElement).style.transform = "none";
         (e.currentTarget as HTMLElement).style.boxShadow = "none";
       }}
     >
+      {/* Glow accent */}
+      <div style={{
+        position:"absolute", top:-30, right:-30, width:80, height:80,
+        borderRadius:"50%", background:meta.glow, filter:"blur(40px)", opacity:0.4,
+      }} />
       {completed && (
         <div style={{
           position:"absolute", top:12, right:12,
-          background:meta.color, color:"#fff",
-          fontSize:10, fontWeight:500, borderRadius:99, padding:"2px 8px",
-        }}>Completado</div>
+          background:`${meta.color}30`, color:meta.color,
+          fontSize:10, fontWeight:600, borderRadius:99, padding:"3px 10px",
+          border:`1px solid ${meta.color}40`,
+          boxShadow:`0 0 10px ${meta.glow}`,
+        }}>✓ Completado</div>
       )}
       <div style={{ fontSize:28, marginBottom:10 }}>{meta.icon}</div>
-      <div style={{ fontSize:11, color:meta.color, textTransform:"uppercase", letterSpacing:1, marginBottom:4, fontWeight:500 }}>
+      <div style={{ fontSize:11, color:meta.color, textTransform:"uppercase", letterSpacing:1.5, marginBottom:4, fontWeight:600 }}>
         {meta.label}
       </div>
-      <div style={{ fontSize:16, fontWeight:500, color:"var(--color-text-primary)", marginBottom:6, lineHeight:1.3 }}>
+      <div style={{ fontSize:15, fontWeight:600, color:"#fff", marginBottom:6, lineHeight:1.3 }}>
         {test.name}
       </div>
-      <div style={{ fontSize:13, color:"var(--color-text-secondary)", lineHeight:1.5, marginBottom:14 }}>
+      <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", lineHeight:1.5, marginBottom:14 }}>
         {test.description.slice(0,90)}…
       </div>
-      <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-        <span style={{ fontSize:11, color:meta.color, background:"#fff", border:`1px solid ${meta.border}`, borderRadius:99, padding:"3px 10px" }}>
+      <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+        <span style={{ fontSize:11, color:meta.color, background:`${meta.color}15`, border:`1px solid ${meta.color}30`, borderRadius:99, padding:"3px 10px", fontWeight:500 }}>
           {test.questions.length} preguntas
         </span>
-        <span style={{ fontSize:11, color:meta.color, background:"#fff", border:`1px solid ${meta.border}`, borderRadius:99, padding:"3px 10px" }}>
+        <span style={{ fontSize:11, color:meta.color, background:`${meta.color}15`, border:`1px solid ${meta.color}30`, borderRadius:99, padding:"3px 10px", fontWeight:500 }}>
           ~{test.estimatedMinutes} min
         </span>
-        <span style={{ marginLeft:"auto", fontSize:13, color:meta.color, fontWeight:500 }}>Iniciar →</span>
+        <span style={{ marginLeft:"auto", fontSize:13, color:meta.color, fontWeight:600, textShadow:`0 0 8px ${meta.glow}` }}>Iniciar →</span>
       </div>
     </div>
   );
 }
 
 // ══════════════════════════════════════════════════════════════
-// DASHBOARD OVERVIEW (para admin/estudiante)
+// DASHBOARD OVERVIEW
 // ══════════════════════════════════════════════════════════════
 function Dashboard({ sessions, onViewResult }: {
   sessions: SessionResult[]; onViewResult: (s: SessionResult) => void;
 }) {
   if (sessions.length === 0) return null;
   return (
-    <div style={{ marginBottom:32 }}>
-      <div style={{ fontSize:15, fontWeight:500, color:"var(--color-text-primary)", marginBottom:14 }}>
-        Historial de resultados
+    <div style={{ marginBottom:28 }}>
+      <div style={{ fontSize:15, fontWeight:600, color:"#fff", marginBottom:14 }}>
+        📊 Historial de resultados
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(200px,1fr))", gap:10 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(160px,1fr))", gap:10 }}>
         {sessions.map((s, i) => {
           const meta = AREA[s.test.area] ?? AREA.aptitudes;
           const avg = Math.round(s.results.reduce((a,r) => a+r.percent,0) / s.results.length);
@@ -457,24 +477,24 @@ function Dashboard({ sessions, onViewResult }: {
               key={i}
               onClick={() => onViewResult(s)}
               style={{
-                border:`1px solid ${meta.border}`, borderRadius:12, padding:"14px 16px",
-                background:meta.bg, cursor:"pointer", transition:"transform 0.15s",
+                ...cardBase, padding:"14px 14px", cursor:"pointer",
+                transition:"transform 0.15s", borderColor:`${meta.color}25`,
               }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = "none"}
             >
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                 <div style={{ fontSize:20 }}>{meta.icon}</div>
-                <span style={{ fontSize:20, fontWeight:500, color:meta.color }}>{avg}%</span>
+                <span style={{ fontSize:20, fontWeight:700, color:meta.color, textShadow:`0 0 12px ${meta.glow}` }}>{avg}%</span>
               </div>
-              <div style={{ fontSize:13, fontWeight:500, color:"var(--color-text-primary)", margin:"8px 0 2px" }}>
+              <div style={{ fontSize:13, fontWeight:600, color:"#fff", margin:"8px 0 2px" }}>
                 {s.test.shortName}
               </div>
-              <div style={{ fontSize:11, color:"var(--color-text-secondary)" }}>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)" }}>
                 Mejor: {top.label}
               </div>
-              <div style={{ background:"var(--color-border-tertiary)", borderRadius:99, height:4, marginTop:8, overflow:"hidden" }}>
-                <div style={{ width:`${avg}%`, background:meta.color, height:"100%", borderRadius:99 }} />
+              <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:99, height:4, marginTop:8, overflow:"hidden" }}>
+                <div style={{ width:`${avg}%`, background:`linear-gradient(90deg, ${meta.color}, ${meta.color}aa)`, height:"100%", borderRadius:99, boxShadow:`0 0 6px ${meta.glow}` }} />
               </div>
             </div>
           );
@@ -497,7 +517,6 @@ export default function Psicometria() {
   const [viewingSession, setViewingSession] = useState<SessionResult | null>(null);
   const [loadingDb, setLoadingDb] = useState(true);
 
-  // Load saved sessions from DB
   useEffect(() => {
     if (!user) { setLoadingDb(false); return; }
     (async () => {
@@ -533,7 +552,6 @@ export default function Psicometria() {
         const filtered = prev.filter(s => s.test.id !== activeTest.id);
         return [session, ...filtered];
       });
-      // Save to DB
       if (user) {
         const scores: Record<string, number> = {};
         r.forEach(res => { scores[res.category] = res.score; });
@@ -551,14 +569,14 @@ export default function Psicometria() {
     setPhase("home"); setActiveTest(null); setResults([]); setViewingSession(null);
   }, []);
 
-  // Ver sesión guardada
+  // Viewing saved session
   if (viewingSession) {
     return (
-      <div style={{ minHeight:"100vh", padding:"32px 16px 60px" }}>
+      <div style={{ minHeight:"100vh", padding:"24px 8px 60px", background:"linear-gradient(180deg, #0a0a1a 0%, #0f0f2e 100%)" }}>
         <button onClick={() => setViewingSession(null)} style={{
-          display:"block", margin:"0 auto 24px", background:"none",
-          border:"0.5px solid var(--color-border-secondary)", borderRadius:8,
-          padding:"7px 14px", cursor:"pointer", fontSize:13, color:"var(--color-text-secondary)",
+          display:"block", margin:"0 auto 20px", background:"rgba(255,255,255,0.05)",
+          border:"1px solid rgba(255,255,255,0.1)", borderRadius:10,
+          padding:"8px 16px", cursor:"pointer", fontSize:13, color:"rgba(255,255,255,0.6)",
         }}>← Volver al inicio</button>
         <ResultsScreen
           test={viewingSession.test} results={viewingSession.results}
@@ -571,7 +589,7 @@ export default function Psicometria() {
 
   if (phase === "test" && activeTest) {
     return (
-      <div style={{ minHeight:"100vh", padding:"32px 16px 60px" }}>
+      <div style={{ minHeight:"100vh", padding:"24px 8px 60px", background:"linear-gradient(180deg, #0a0a1a 0%, #0f0f2e 100%)" }}>
         <TestScreen test={activeTest} onFinish={finishTest} onBack={goHome} />
       </div>
     );
@@ -579,7 +597,7 @@ export default function Psicometria() {
 
   if (phase === "results" && activeTest) {
     return (
-      <div style={{ minHeight:"100vh", padding:"32px 16px 60px" }}>
+      <div style={{ minHeight:"100vh", padding:"24px 8px 60px", background:"linear-gradient(180deg, #0a0a1a 0%, #0f0f2e 100%)" }}>
         <ResultsScreen
           test={activeTest} results={results}
           onRestart={() => startTest(activeTest)} onHome={goHome}
@@ -595,34 +613,32 @@ export default function Psicometria() {
   const totalQ = allTests.reduce((a,t) => a+t.questions.length, 0);
 
   return (
-    <div style={{ minHeight:"100vh", padding:"32px 16px 80px" }}>
+    <div style={{ minHeight:"100vh", padding:"24px 12px 80px", background:"linear-gradient(180deg, #0a0a1a 0%, #0f0f2e 100%)" }}>
       <div style={{ maxWidth:760, margin:"0 auto" }}>
 
         {/* Hero */}
         <div style={{ marginBottom:28 }}>
-          <h1 style={{ fontSize:30, fontWeight:500, margin:"0 0 8px", color:"var(--color-text-primary)" }}>
-            Psicometría
+          <h1 style={{ fontSize:28, fontWeight:700, margin:"0 0 8px", color:"#fff" }}>
+            🧪 Psicometría
           </h1>
-          <p style={{ fontSize:15, color:"var(--color-text-secondary)", margin:0, lineHeight:1.7, maxWidth:560 }}>
+          <p style={{ fontSize:14, color:"rgba(255,255,255,0.5)", margin:0, lineHeight:1.7, maxWidth:560 }}>
             Descubre tu perfil completo: personalidad, inteligencias, aptitudes, valores, estilo de aprendizaje y bienestar académico.
           </p>
         </div>
 
         {/* Stats */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:28 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:10, marginBottom:28 }}>
           {[
-            { label:"Tests", value:allTests.length },
-            { label:"Preguntas", value:totalQ },
-            { label:"Áreas", value:Object.keys(AREA).length },
-            { label:"Completados", value:sessions.length },
+            { label:"Tests", value:allTests.length, color:"#a78bfa" },
+            { label:"Preguntas", value:totalQ, color:"#38bdf8" },
+            { label:"Áreas", value:Object.keys(AREA).length, color:"#34d399" },
+            { label:"Completados", value:sessions.length, color:"#f472b6" },
           ].map(s => (
             <div key={s.label} style={{
-              background:"var(--color-background-secondary)", borderRadius:12,
-              padding:"14px 16px", border:"0.5px solid var(--color-border-tertiary)",
-              textAlign:"center",
+              ...cardBase, padding:"14px 16px", textAlign:"center",
             }}>
-              <div style={{ fontSize:24, fontWeight:500, color:"var(--color-text-primary)" }}>{s.value}</div>
-              <div style={{ fontSize:11, color:"var(--color-text-secondary)", marginTop:2 }}>{s.label}</div>
+              <div style={{ fontSize:24, fontWeight:700, color:s.color, textShadow:`0 0 16px ${s.color}50` }}>{s.value}</div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.45)", marginTop:2, fontWeight:500 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -631,17 +647,20 @@ export default function Psicometria() {
         <Dashboard sessions={sessions} onViewResult={(s) => setViewingSession(s)} />
 
         {/* Filtros */}
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:20 }}>
+        <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:20, overflowX:"auto", paddingBottom:4 }}>
           {areas.map(area => {
             const meta = area === "all" ? null : AREA[area];
             const isActive = activeArea === area;
+            const activeColor = meta?.color ?? "#a78bfa";
             return (
               <button key={area} onClick={() => setActiveArea(area)} style={{
-                padding:"7px 14px", borderRadius:99, fontSize:13, cursor:"pointer",
-                fontWeight: isActive ? 500 : 400,
-                background: isActive ? (meta?.color ?? "var(--color-text-primary)") : "var(--color-background-secondary)",
-                color: isActive ? "#fff" : "var(--color-text-secondary)",
-                border:"none", transition:"all 0.15s",
+                padding:"7px 14px", borderRadius:99, fontSize:12, cursor:"pointer",
+                fontWeight: isActive ? 600 : 400, whiteSpace:"nowrap", flexShrink:0,
+                background: isActive ? `${activeColor}25` : "rgba(255,255,255,0.05)",
+                color: isActive ? activeColor : "rgba(255,255,255,0.5)",
+                border: isActive ? `1px solid ${activeColor}40` : "1px solid rgba(255,255,255,0.08)",
+                transition:"all 0.15s",
+                boxShadow: isActive ? `0 0 12px ${activeColor}30` : "none",
               }}>
                 {area === "all" ? `Todos (${allTests.length})` : `${meta?.icon} ${meta?.label}`}
               </button>
@@ -650,7 +669,7 @@ export default function Psicometria() {
         </div>
 
         {/* Grid de tests */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(320px,1fr))", gap:14 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px,1fr))", gap:14 }}>
           {filtered.map(test => (
             <TestCard
               key={test.id} test={test}
