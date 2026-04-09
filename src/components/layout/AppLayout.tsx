@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AvatarUpload from '@/components/AvatarUpload';
+import GlobalSearch from '@/components/layout/GlobalSearch';
 import { supabase } from '@/integrations/supabase/client';
 import meddLogo from '@/assets/medd-logo.png';
 
