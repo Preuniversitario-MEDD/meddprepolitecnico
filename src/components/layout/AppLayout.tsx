@@ -38,7 +38,7 @@ const studentLinks = [
   { path: '/student/sessions', icon: BookOpen, label: 'Sesiones' },
   { path: '/student/library', icon: Library, label: 'Biblioteca' },
   { path: '/student/competencia', icon: Zap, label: 'Competencia' },
-  { path: '/student/assessment', icon: ClipboardCheck, label: 'Psicometría' },
+  { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría' },
   { path: '/student/vocacional', icon: Compass, label: 'Vocacional' },
   { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes' },
   { path: '/student/profile', icon: GraduationCap, label: 'Perfil' },
