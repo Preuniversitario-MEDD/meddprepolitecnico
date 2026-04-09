@@ -132,7 +132,7 @@ export const bigFiveTest: Test = {
       A:{ bajo:"Directo/a, competitivo/a y escéptico/a. Puede parecer frío/a ante otros.", medio:"Cooperativo/a cuando la situación lo requiere. Balance entre empatía y asertividad.", alto:"Muy empático/a, altruista y colaborador/a. Propenso/a a sacrificarse por otros." },
       N:{ bajo:"Emocionalmente muy estable. Tranquilo/a bajo presión. Resiliencia alta.", medio:"Reacciones emocionales moderadas. Ocasionalmente ansioso/a en situaciones difíciles.", alto:"Alta sensibilidad emocional. Propenso/a a ansiedad, cambios de humor y preocupación." },
     };
-    return Object.entries(this.categories).map(([k, label]) => {
+    return Object.entries(this.categories as Record<string,string>).map(([k, label]) => {
       const raw = scores[k]??0; const max=60; const p=pct(raw,max); const l=lv(p);
       return { category:k, label, score:raw, max, percent:p, level:l, description:descs[k][l] };
     });
@@ -218,7 +218,7 @@ export const mbtiTest: Test = {
     { id:"mb_jp16", text:"Disfruto el caos creativo y la espontaneidad.", category:"JP", reversed:true, options:acuerdo5 },
   ],
   interpret(scores) {
-    return Object.entries(this.categories).map(([k, label]) => {
+    return Object.entries(this.categories as Record<string,string>).map(([k, label]) => {
       const raw=scores[k]??0; const max=80; const p=pct(raw,max); const l=lv(p);
       const descs: Record<string, Record<string,string>> = {
         EI:{ bajo:"Introvertido/a (I): recarga en soledad, vínculos profundos, reflexivo/a.", medio:"Ambivierte: flexible entre soledad y grupos según el contexto.", alto:"Extravertido/a (E): sociable, expresivo/a, energizado/a por las personas." },
@@ -310,7 +310,7 @@ export const hollandTest: Test = {
       S:"Empático/a y colaborador/a. Carreras: Educación, Psicología, Trabajo Social, Enfermería.",
       C:"Ordenado/a y preciso/a. Carreras: Contabilidad, Administración, Finanzas, Sistemas, Logística.",
     };
-    return Object.entries(this.categories).map(([k,label]) => {
+    return Object.entries(this.categories as Record<string,string>).map(([k,label]) => {
       const raw=scores[k]??0; const max=45; const p=pct(raw,max);
       return { category:k, label, score:raw, max, percent:p, level:lv(p), description:descs[k] };
     });
@@ -400,7 +400,7 @@ export const emocionalTest: Test = {
       EM:{ bajo:"Empatía limitada. Dificultad para leer emociones ajenas y ponerte en el lugar del otro.", medio:"Empatía funcional. Reconoces emociones evidentes pero puedes profundizar más.", alto:"Alta empatía. Percibes y validas con facilidad el mundo emocional de los demás." },
       HS:{ bajo:"Habilidades sociales a desarrollar. Relaciones interpersonales pueden ser fuente de tensión.", medio:"Habilidades sociales adecuadas. Funcionas bien en contextos conocidos.", alto:"Excelentes habilidades sociales. Construyes relaciones sanas e influyes positivamente." },
     };
-    return Object.entries(this.categories).map(([k,label]) => {
+    return Object.entries(this.categories as Record<string,string>).map(([k,label]) => {
       const raw=scores[k]??0; const max=60; const p=pct(raw,max); const l=lv(p);
       return { category:k, label, score:raw, max, percent:p, level:l, description:descs[k][l] };
     });
@@ -486,7 +486,7 @@ export const schwartzTest: Test = {
       UN:"Valoras profundamente la justicia, la igualdad y el cuidado del planeta. Te preocupa el bien común.",
       SE:"Tu valor central es la estabilidad, el orden y la seguridad personal y social. Buscas certeza.",
     };
-    return Object.entries(this.categories).map(([k,label]) => {
+    return Object.entries(this.categories as Record<string,string>).map(([k,label]) => {
       const raw=scores[k]??0; const max=45; const p=pct(raw,max);
       return { category:k, label, score:raw, max, percent:p, level:lv(p), description:descs[k] };
     });
@@ -577,7 +577,7 @@ export const datTest: Test = {
       ES:{ bajo:"Dificultad para visualizar figuras, rotaciones y transformaciones espaciales.", medio:"Visualización espacial aceptable. Puede mejorar con práctica.", alto:"Excelente pensamiento espacial. Aptitud para Arquitectura, Diseño, Cirugía, Ingeniería Civil." },
       ME:{ bajo:"Dificultad con principios físicos y mecánicos. Revisar conceptos básicos de física.", medio:"Comprensión mecánica básica funcional.", alto:"Alto razonamiento mecánico. Aptitud para Ingeniería Mecánica, Electricidad, Robótica, Automotriz." },
     };
-    return Object.entries(this.categories).map(([k,label]) => {
+    return Object.entries(this.categories as Record<string,string>).map(([k,label]) => {
       const raw=scores[k]??0; const max=60; const p=pct(raw,max); const l=lv(p);
       return { category:k, label, score:raw, max, percent:p, level:l, description:descs[k][l] };
     });
@@ -677,7 +677,7 @@ export const inteligenciasTest: Test = {
       IA:"Inteligencia Intrapersonal alta. Gran autoconocimiento. Carreras: Filosofía, Psicología, Escritura, Investigación.",
       NA:"Inteligencia Naturalista destacada. Conexión profunda con el entorno. Carreras: Biología, Ecología, Veterinaria, Agronomía.",
     };
-    return Object.entries(this.categories).map(([k,label]) => {
+    return Object.entries(this.categories as Record<string,string>).map(([k,label]) => {
       const raw=scores[k]??0; const max=40; const p=pct(raw,max);
       return { category:k, label, score:raw, max, percent:p, level:lv(p), description:descs[k] };
     });
@@ -761,7 +761,7 @@ export const aprendizajeTest: Test = {
       LE:{ bajo:"Poco orientado/a a la lectura y escritura. Busca alternativas.", medio:"Buena capacidad para aprender mediante texto escrito.", alto:"Estilo lecto-escritor dominante. La lectura profunda y los resúmenes escritos son tu fuerte." },
       KI:{ bajo:"Bajo estilo kinestésico. Puede costar el aprendizaje puramente práctico.", medio:"Buena respuesta al aprendizaje experiencial.", alto:"Estilo kinestésico dominante. El aprendizaje basado en proyectos y la práctica directa son ideales." },
     };
-    return Object.entries(this.categories).map(([k,label]) => {
+    return Object.entries(this.categories as Record<string,string>).map(([k,label]) => {
       const raw=scores[k]??0; const max=70; const p=pct(raw,max); const l=lv(p);
       return { category:k, label, score:raw, max, percent:p, level:l, description:descs[k][l] };
     });
@@ -841,7 +841,7 @@ export const bienestrarTest: Test = {
       AE:{ bajo:"Baja autoeficacia académica. Alta duda sobre las propias capacidades.", medio:"Autoeficacia moderada. Confianza variable según la situación.", alto:"Alta autoeficacia. Confía en sus capacidades y persiste ante los retos." },
       EP:{ bajo:"Estrés percibido bajo. Buena gestión de las demandas académicas.", medio:"Estrés percibido moderado. Algunas situaciones generan tensión significativa.", alto:"Estrés percibido alto. Se recomienda intervención para manejo del estrés y posible agotamiento." },
     };
-    return Object.entries(this.categories).map(([k,label]) => {
+    return Object.entries(this.categories as Record<string,string>).map(([k,label]) => {
       const raw=scores[k]??0; const max=50;
       const rawAdj = k==="EP" ? 50-raw+10 : raw;
       const p=pct(rawAdj,max); const l=lv(p);
