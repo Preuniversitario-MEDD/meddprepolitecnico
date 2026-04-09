@@ -301,6 +301,21 @@ export default function StudentDashboard() {
         </div>
       </div>
 
+      {/* Performance Charts */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+        <PerformanceCharts sesiones={sesiones} progress={progress} />
+      </motion.div>
+
+      {/* Weak Areas */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+        <WeakAreas sesiones={sesiones} progress={progress} onReview={(id) => navigate(`/student/session/${id}`)} />
+      </motion.div>
+
+      {/* Study Timeline */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+        <StudyTimeline sesiones={sesiones} progress={progress} onNavigate={(id) => navigate(`/student/session/${id}`)} />
+      </motion.div>
+
       {/* Active exam banner */}
       {(() => {
         const activeExams = blockExams.filter(block => {
