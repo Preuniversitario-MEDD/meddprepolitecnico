@@ -28,6 +28,8 @@ import AdminProfile from "./pages/admin/AdminProfile";
 import AdminExams from "./pages/admin/AdminExams";
 import StudentCompetencia from "./pages/student/StudentCompetencia";
 import VocationalTestPage from "./pages/student/VocationalTestPage";
+import AssessmentPage from "./pages/student/AssessmentPage";
+import AdminPsychometric from "./pages/admin/AdminPsychometric";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
