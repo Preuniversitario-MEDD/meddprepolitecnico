@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Eye, EyeOff, Play, FileText, Download, ExternalLink, Globe } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -42,6 +43,7 @@ function getLinkLabel(url: string): string {
 
 function ResourceLink({ url }: { url: string }) {
   const trimmed = url.trim();
+  const [ytOpen, setYtOpen] = useState(false);
 
   // Inline images
   if (isImageUrl(trimmed)) {
@@ -58,36 +60,63 @@ function ResourceLink({ url }: { url: string }) {
     );
   }
 
-  // YouTube embed preview
+  // YouTube embed preview (in-app player via modal)
   const ytId = getYouTubeId(trimmed);
   if (ytId) {
     return (
-      <div className="relative group overflow-hidden rounded-xl border border-neon-violet/30 bg-card">
-        <div className="aspect-video relative">
-          <img
-            src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
-            alt="Video preview"
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
-          <a
-            href={trimmed}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="absolute inset-0 flex items-center justify-center"
+      <>
+        <div className="relative group overflow-hidden rounded-xl border border-neon-violet/30 bg-card">
+          <button
+            type="button"
+            onClick={() => setYtOpen(true)}
+            className="block w-full text-left"
+            aria-label="Reproducir video de YouTube"
           >
-            <div className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center shadow-lg shadow-primary/30 transition-transform group-hover:scale-110">
-              <Play className="w-6 h-6 text-primary-foreground ml-0.5" fill="currentColor" />
+            <div className="aspect-video relative">
+              <img
+                src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
+                alt="Video preview"
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center shadow-lg shadow-primary/30 transition-transform group-hover:scale-110">
+                  <Play className="w-6 h-6 text-primary-foreground ml-0.5" fill="currentColor" />
+                </div>
+              </div>
             </div>
-          </a>
+          </button>
+          <div className="px-3 py-2 flex items-center gap-2">
+            <Play className="w-3.5 h-3.5 text-neon-violet shrink-0" />
+            <span className="text-xs font-medium text-foreground truncate">Video de YouTube</span>
+            <button
+              type="button"
+              onClick={() => setYtOpen(true)}
+              className="ml-auto text-[11px] text-neon-violet hover:underline shrink-0"
+            >
+              Reproducir aquí
+            </button>
+          </div>
         </div>
-        <div className="px-3 py-2 flex items-center gap-2">
-          <Play className="w-3.5 h-3.5 text-neon-violet shrink-0" />
-          <span className="text-xs font-medium text-foreground truncate">Video de YouTube</span>
-          <ExternalLink className="w-3 h-3 text-muted-foreground ml-auto shrink-0" />
-        </div>
-      </div>
+        <Dialog open={ytOpen} onOpenChange={setYtOpen}>
+          <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden bg-background border-neon-violet/30">
+            <DialogTitle className="sr-only">Video de YouTube</DialogTitle>
+            <div className="aspect-video w-full bg-black">
+              {ytOpen && (
+                <iframe
+                  src={`https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+                  title="YouTube video player"
+                  className="w-full h-full"
+                  frameBorder={0}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
