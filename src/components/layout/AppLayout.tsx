@@ -34,14 +34,14 @@ const adminLinks = [
 ];
 
 const studentLinks = [
-  { path: '/student', icon: LayoutDashboard, label: 'Inicio' },
-  { path: '/student/sessions', icon: BookOpen, label: 'Sesiones' },
-  { path: '/student/library', icon: Library, label: 'Biblioteca' },
-  { path: '/student/competencia', icon: Zap, label: 'Competencia' },
-  { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría' },
-  { path: '/student/vocacional', icon: Compass, label: 'Vocacional' },
-  { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes' },
-  { path: '/student/profile', icon: GraduationCap, label: 'Perfil' },
+  { path: '/student', icon: LayoutDashboard, label: 'Inicio', shortLabel: 'Inicio' },
+  { path: '/student/sessions', icon: BookOpen, label: 'Sesiones', shortLabel: 'Sesion' },
+  { path: '/student/library', icon: Library, label: 'Biblioteca', shortLabel: 'Biblio' },
+  { path: '/student/competencia', icon: Zap, label: 'Competencia', shortLabel: 'Compet' },
+  { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría', shortLabel: 'Psico' },
+  { path: '/student/vocacional', icon: Compass, label: 'Vocacional', shortLabel: 'Vocac' },
+  { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes', shortLabel: 'Msj' },
+  { path: '/student/profile', icon: GraduationCap, label: 'Perfil', shortLabel: 'Perfil' },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
