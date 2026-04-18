@@ -140,45 +140,93 @@ function ResourceLink({ url }: { url: string }) {
     );
   }
 
-  // Video link (non-YouTube)
+  // Video link (Vimeo, Dailymotion, etc.)
   if (isVideoUrl(trimmed)) {
+    const embed = getVideoEmbed(trimmed);
     return (
-      <a
-        href={trimmed}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-3 p-3 rounded-xl border border-neon-violet/30 bg-card hover:bg-accent/10 transition-all group"
-      >
-        <div className="w-10 h-10 rounded-lg bg-neon-violet/15 flex items-center justify-center shrink-0">
-          <Play className="w-5 h-5 text-neon-violet" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">Ver video</p>
-          <p className="text-[11px] text-muted-foreground truncate">{trimmed}</p>
-        </div>
-        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-neon-violet transition-colors shrink-0" />
-      </a>
+      <>
+        <button
+          type="button"
+          onClick={() => embed ? setVideoOpen(true) : window.open(trimmed, '_blank', 'noopener,noreferrer')}
+          className="w-full flex items-center gap-3 p-3 rounded-xl border border-neon-violet/30 bg-card hover:bg-accent/10 transition-all group text-left"
+        >
+          <div className="w-10 h-10 rounded-lg bg-neon-violet/15 flex items-center justify-center shrink-0">
+            <Play className="w-5 h-5 text-neon-violet" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">{embed?.label || 'Ver video'}</p>
+            <p className="text-[11px] text-muted-foreground truncate">{trimmed}</p>
+          </div>
+          <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-neon-violet transition-colors shrink-0" />
+        </button>
+        {embed && (
+          <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
+            <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden bg-background border-neon-violet/30">
+              <DialogTitle className="sr-only">{embed.label}</DialogTitle>
+              <div className="aspect-video w-full bg-black">
+                {videoOpen && (
+                  <iframe
+                    src={embed.src}
+                    title={embed.label}
+                    className="w-full h-full"
+                    frameBorder={0}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                    allowFullScreen
+                  />
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </>
     );
   }
 
-  // PDF preview
+  // PDF preview (in-app embedded viewer)
   if (isPdfUrl(trimmed)) {
     return (
-      <a
-        href={trimmed}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-3 p-3 rounded-xl border border-neon-orange/30 bg-card hover:bg-accent/10 transition-all group"
-      >
-        <div className="w-10 h-10 rounded-lg bg-neon-orange/15 flex items-center justify-center shrink-0">
-          <FileText className="w-5 h-5 text-neon-orange" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">{getLinkLabel(trimmed)}</p>
-          <p className="text-[11px] text-muted-foreground">Documento PDF</p>
-        </div>
-        <Download className="w-4 h-4 text-muted-foreground group-hover:text-neon-orange transition-colors shrink-0" />
-      </a>
+      <>
+        <button
+          type="button"
+          onClick={() => setPdfOpen(true)}
+          className="w-full flex items-center gap-3 p-3 rounded-xl border border-neon-orange/30 bg-card hover:bg-accent/10 transition-all group text-left"
+        >
+          <div className="w-10 h-10 rounded-lg bg-neon-orange/15 flex items-center justify-center shrink-0">
+            <FileText className="w-5 h-5 text-neon-orange" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">{getLinkLabel(trimmed)}</p>
+            <p className="text-[11px] text-muted-foreground">Documento PDF · Toca para ver</p>
+          </div>
+          <Eye className="w-4 h-4 text-muted-foreground group-hover:text-neon-orange transition-colors shrink-0" />
+        </button>
+        <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
+          <DialogContent className="max-w-5xl w-[95vw] h-[90vh] p-0 overflow-hidden bg-background border-neon-orange/30 flex flex-col">
+            <DialogTitle className="px-4 py-3 text-sm font-medium border-b border-border/50 flex items-center gap-2 pr-12">
+              <FileText className="w-4 h-4 text-neon-orange shrink-0" />
+              <span className="truncate">{getLinkLabel(trimmed)}</span>
+              <a
+                href={trimmed}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-auto inline-flex items-center gap-1 text-[11px] text-neon-orange hover:underline shrink-0"
+              >
+                <Download className="w-3.5 h-3.5" /> Descargar
+              </a>
+            </DialogTitle>
+            <div className="flex-1 w-full bg-muted/20">
+              {pdfOpen && (
+                <iframe
+                  src={`${trimmed}#toolbar=1&view=FitH`}
+                  title={getLinkLabel(trimmed)}
+                  className="w-full h-full"
+                  frameBorder={0}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 
