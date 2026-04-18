@@ -208,7 +208,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <button key={link.path} onClick={() => navigate(link.path)}
                   className={`flex-1 flex flex-col items-center gap-0.5 px-0.5 py-1 rounded-lg transition-all relative ${active ? 'text-primary' : 'text-muted-foreground'}`}>
                   <div className="relative">
-                    <link.icon className={`w-[18px] h-[18px] ${active ? 'text-primary' : ''}`} />
+                    <link.icon className={`w-[18px] h-[18px] transition-all ${active ? 'text-primary drop-shadow-[0_0_6px_hsl(var(--primary))]' : ''}`} />
                     {showBadge && (
                       <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 rounded-full bg-destructive text-destructive-foreground text-[8px] flex items-center justify-center font-bold">
                         {unreadCount > 9 ? '9+' : unreadCount}
