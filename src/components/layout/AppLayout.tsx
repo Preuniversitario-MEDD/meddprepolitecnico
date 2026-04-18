@@ -34,14 +34,14 @@ const adminLinks = [
 ];
 
 const studentLinks = [
-  { path: '/student', icon: LayoutDashboard, label: 'Inicio' },
-  { path: '/student/sessions', icon: BookOpen, label: 'Sesiones' },
-  { path: '/student/library', icon: Library, label: 'Biblioteca' },
-  { path: '/student/competencia', icon: Zap, label: 'Competencia' },
-  { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría' },
-  { path: '/student/vocacional', icon: Compass, label: 'Vocacional' },
-  { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes' },
-  { path: '/student/profile', icon: GraduationCap, label: 'Perfil' },
+  { path: '/student', icon: LayoutDashboard, label: 'Inicio', shortLabel: 'Inicio' },
+  { path: '/student/sessions', icon: BookOpen, label: 'Sesiones', shortLabel: 'Sesion' },
+  { path: '/student/library', icon: Library, label: 'Biblioteca', shortLabel: 'Biblio' },
+  { path: '/student/competencia', icon: Zap, label: 'Competencia', shortLabel: 'Compet' },
+  { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría', shortLabel: 'Psico' },
+  { path: '/student/vocacional', icon: Compass, label: 'Vocacional', shortLabel: 'Vocac' },
+  { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes', shortLabel: 'Msj' },
+  { path: '/student/profile', icon: GraduationCap, label: 'Perfil', shortLabel: 'Perfil' },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -199,26 +199,24 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {isMobile && (
         <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border">
-          <div
-            className="flex gap-1 py-2 px-2 overflow-x-auto scrollbar-hide"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
+          <div className="flex w-full justify-between py-1.5 px-1">
             {links.map(link => {
               const active = location.pathname === link.path;
               const showBadge = link.path === getMensajesPath && unreadCount > 0;
+              const label = (link as any).shortLabel || link.label;
               return (
                 <button key={link.path} onClick={() => navigate(link.path)}
-                  className={`flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all relative shrink-0 min-w-[58px] ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+                  className={`flex-1 flex flex-col items-center gap-0.5 px-0.5 py-1 rounded-lg transition-all relative ${active ? 'text-primary' : 'text-muted-foreground'}`}>
                   <div className="relative">
-                    <link.icon className={`w-5 h-5 ${active ? 'text-primary' : ''}`} />
+                    <link.icon className={`w-[18px] h-[18px] ${active ? 'text-primary' : ''}`} />
                     {showBadge && (
-                      <span className="absolute -top-1 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[8px] flex items-center justify-center font-bold">
+                      <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 rounded-full bg-destructive text-destructive-foreground text-[8px] flex items-center justify-center font-bold">
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] font-medium whitespace-nowrap">{link.label}</span>
-                  {active && <motion.div layoutId="bottomnav" className="absolute -top-0.5 w-8 h-1 rounded-full gradient-primary" />}
+                  <span className="text-[9px] font-medium leading-none whitespace-nowrap">{label}</span>
+                  {active && <motion.div layoutId="bottomnav" className="absolute -top-0.5 w-6 h-0.5 rounded-full gradient-primary" />}
                 </button>
               );
             })}
