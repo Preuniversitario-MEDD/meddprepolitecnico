@@ -25,6 +25,24 @@ function getYouTubeId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+function getVimeoId(url: string): string | null {
+  const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  return match ? match[1] : null;
+}
+
+function getDailymotionId(url: string): string | null {
+  const match = url.match(/dailymotion\.com\/(?:video\/|embed\/video\/)([a-zA-Z0-9]+)/) || url.match(/dai\.ly\/([a-zA-Z0-9]+)/);
+  return match ? match[1] : null;
+}
+
+function getVideoEmbed(url: string): { src: string; label: string } | null {
+  const vimeoId = getVimeoId(url);
+  if (vimeoId) return { src: `https://player.vimeo.com/video/${vimeoId}?autoplay=1`, label: 'Video de Vimeo' };
+  const dmId = getDailymotionId(url);
+  if (dmId) return { src: `https://www.dailymotion.com/embed/video/${dmId}?autoplay=1`, label: 'Video de Dailymotion' };
+  return null;
+}
+
 function getLinkLabel(url: string): string {
   if (isVideoUrl(url)) return 'Ver video';
   if (isPdfUrl(url)) {
