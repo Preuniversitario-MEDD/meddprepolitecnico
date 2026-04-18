@@ -199,13 +199,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       {isMobile && (
         <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-border">
-          <div className="flex justify-around py-2">
-            {links.slice(0, 5).map(link => {
+          <div
+            className="flex gap-1 py-2 px-2 overflow-x-auto scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {links.map(link => {
               const active = location.pathname === link.path;
               const showBadge = link.path === getMensajesPath && unreadCount > 0;
               return (
                 <button key={link.path} onClick={() => navigate(link.path)}
-                  className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg transition-all relative ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+                  className={`flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all relative shrink-0 min-w-[58px] ${active ? 'text-primary' : 'text-muted-foreground'}`}>
                   <div className="relative">
                     <link.icon className={`w-5 h-5 ${active ? 'text-primary' : ''}`} />
                     {showBadge && (
@@ -214,7 +217,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] font-medium">{link.label}</span>
+                  <span className="text-[10px] font-medium whitespace-nowrap">{link.label}</span>
                   {active && <motion.div layoutId="bottomnav" className="absolute -top-0.5 w-8 h-1 rounded-full gradient-primary" />}
                 </button>
               );
