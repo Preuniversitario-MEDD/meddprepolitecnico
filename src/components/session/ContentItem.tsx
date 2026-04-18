@@ -62,6 +62,8 @@ function getLinkLabel(url: string): string {
 function ResourceLink({ url }: { url: string }) {
   const trimmed = url.trim();
   const [ytOpen, setYtOpen] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [pdfOpen, setPdfOpen] = useState(false);
 
   // Inline images
   if (isImageUrl(trimmed)) {
