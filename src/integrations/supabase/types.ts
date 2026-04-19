@@ -863,6 +863,39 @@ export type Database = {
           },
         ]
       }
+      schulte_resultados: {
+        Row: {
+          calificacion: string
+          completado: boolean
+          errores: number
+          fecha: string
+          id: string
+          nivel: number
+          tiempo_segundos: number
+          user_id: string
+        }
+        Insert: {
+          calificacion: string
+          completado?: boolean
+          errores?: number
+          fecha?: string
+          id?: string
+          nivel: number
+          tiempo_segundos: number
+          user_id: string
+        }
+        Update: {
+          calificacion?: string
+          completado?: boolean
+          errores?: number
+          fecha?: string
+          id?: string
+          nivel?: number
+          tiempo_segundos?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       sesion_estudiante: {
         Row: {
           created_at: string

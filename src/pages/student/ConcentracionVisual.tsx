@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, Search, Brain, Timer, Clock, BookOpen, Flame, CheckCircle2, Lock, Trophy, Award, Star } from 'lucide-react';
+import { Eye, Search, Brain, Timer, Clock, BookOpen, Flame, CheckCircle2, Lock, Trophy, Award, Star, Grid3x3, ChevronRight } from 'lucide-react';
+import { useSchulteNotifications } from '@/hooks/useSchulteNotifications';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,8 +32,28 @@ const EXERCISES = [
 
 export default function ConcentracionVisual() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  useSchulteNotifications();
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [schulteBest, setSchulteBest] = useState<Record<number, number>>({});
+
+  const loadSchulte = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('schulte_resultados')
+      .select('nivel, tiempo_segundos')
+      .eq('user_id', user.id)
+      .eq('completado', true);
+    if (!data) return;
+    const best: Record<number, number> = {};
+    data.forEach((r: any) => {
+      const t = Number(r.tiempo_segundos);
+      if (!best[r.nivel] || t < best[r.nivel]) best[r.nivel] = t;
+    });
+    setSchulteBest(best);
+  };
+  useEffect(() => { loadSchulte(); }, [user]);
 
   const load = async () => {
     if (!user) return;
@@ -128,6 +150,42 @@ export default function ConcentracionVisual() {
           </motion.div>
         ))}
       </div>
+
+      {/* Tabla de Schulte */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <Card className="overflow-hidden hover:border-primary/50 transition-colors">
+          <div className="h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-rose-500" />
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shrink-0">
+                <Grid3x3 className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-bold">Tabla de Schulte</h3>
+                  <Badge variant="secondary" className="text-[10px] h-5">Nivel {Math.max(1, ...Object.keys(schulteBest).map(Number))}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">Encuentra los números en orden. Entrena tu visión periférica.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              {[1, 2, 3, 4].map(n => (
+                <div key={n} className="p-2 rounded-md bg-muted">
+                  <p className="text-[10px] text-muted-foreground">{n === 1 ? '3×3' : n === 2 ? '4×4' : n === 3 ? '5×5' : '7×7'}</p>
+                  <p className="text-xs font-mono font-bold">{schulteBest[n] ? `${schulteBest[n].toFixed(1)}s` : '—'}</p>
+                </div>
+              ))}
+            </div>
+            <Progress value={(Object.keys(schulteBest).length / 4) * 100} className="h-1.5" />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">{Object.keys(schulteBest).length} de 4 niveles</span>
+              <Button size="sm" onClick={() => navigate('/student/schulte')}>
+                Jugar <ChevronRight className="w-4 h-4 ml-0.5" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Ejercicios */}
       <div>
