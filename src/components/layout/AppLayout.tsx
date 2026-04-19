@@ -29,6 +29,7 @@ const adminLinks = [
   { path: '/admin/exams', icon: FileText, label: 'Exámenes' },
   { path: '/admin/competencias', icon: Zap, label: 'Competencias' },
   { path: '/admin/psychometric', icon: ClipboardCheck, label: 'Psicometría' },
+  { path: '/admin/concentracion', icon: Eye, label: 'Concentración' },
   { path: '/admin/settings', icon: Settings, label: 'Roles' },
   { path: '/admin/profile', icon: GraduationCap, label: 'Mi Perfil' },
 ];
@@ -36,6 +37,7 @@ const adminLinks = [
 const studentLinks = [
   { path: '/student', icon: LayoutDashboard, label: 'Inicio', shortLabel: 'Inicio' },
   { path: '/student/sessions', icon: BookOpen, label: 'Sesiones', shortLabel: 'Sesion' },
+  { path: '/student/concentracion', icon: Eye, label: 'Concentración Visual', shortLabel: 'Foco' },
   { path: '/student/library', icon: Library, label: 'Biblioteca', shortLabel: 'Biblio' },
   { path: '/student/competencia', icon: Zap, label: 'Competencia', shortLabel: 'Compet' },
   { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría', shortLabel: 'Psico' },
