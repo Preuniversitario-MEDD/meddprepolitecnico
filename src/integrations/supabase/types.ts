@@ -222,6 +222,36 @@ export type Database = {
         }
         Relationships: []
       }
+      concentracion_sesiones: {
+        Row: {
+          completado: boolean | null
+          duracion_segundos: number | null
+          ejercicio: string
+          fecha: string | null
+          id: string
+          precision_porcentaje: number | null
+          user_id: string
+        }
+        Insert: {
+          completado?: boolean | null
+          duracion_segundos?: number | null
+          ejercicio: string
+          fecha?: string | null
+          id?: string
+          precision_porcentaje?: number | null
+          user_id: string
+        }
+        Update: {
+          completado?: boolean | null
+          duracion_segundos?: number | null
+          ejercicio?: string
+          fecha?: string | null
+          id?: string
+          precision_porcentaje?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       connection_logs: {
         Row: {
           created_at: string

@@ -31,6 +31,8 @@ import VocationalTestPage from "./pages/student/VocationalTestPage";
 import AssessmentPage from "./pages/student/AssessmentPage";
 import AdminPsychometric from "./pages/admin/AdminPsychometric";
 import Psicometria from "./pages/Psicometria";
+import ConcentracionVisual from "./pages/student/ConcentracionVisual";
+import AdminConcentracion from "./pages/admin/AdminConcentracion";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -67,6 +69,7 @@ function AppRoutes() {
       <Route path="/admin/exams" element={<ProtectedRoute requiredRole="admin"><AdminExams /></ProtectedRoute>} />
       <Route path="/admin/exam-preview/:tipo" element={<ProtectedRoute requiredRole="admin"><SectionExam /></ProtectedRoute>} />
       <Route path="/admin/psychometric" element={<ProtectedRoute requiredRole="admin"><AdminPsychometric /></ProtectedRoute>} />
+      <Route path="/admin/concentracion" element={<ProtectedRoute requiredRole="admin"><AdminConcentracion /></ProtectedRoute>} />
 
       {/* Student Routes */}
       <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
@@ -80,6 +83,7 @@ function AppRoutes() {
       <Route path="/student/vocacional" element={<ProtectedRoute><VocationalTestPage /></ProtectedRoute>} />
       <Route path="/student/assessment" element={<ProtectedRoute><AssessmentPage /></ProtectedRoute>} />
       <Route path="/student/psicometria" element={<ProtectedRoute><Psicometria /></ProtectedRoute>} />
+      <Route path="/student/concentracion" element={<ProtectedRoute><ConcentracionVisual /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
