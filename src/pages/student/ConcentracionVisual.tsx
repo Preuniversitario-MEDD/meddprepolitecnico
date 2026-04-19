@@ -32,8 +32,28 @@ const EXERCISES = [
 
 export default function ConcentracionVisual() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  useSchulteNotifications();
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [schulteBest, setSchulteBest] = useState<Record<number, number>>({});
+
+  const loadSchulte = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('schulte_resultados')
+      .select('nivel, tiempo_segundos')
+      .eq('user_id', user.id)
+      .eq('completado', true);
+    if (!data) return;
+    const best: Record<number, number> = {};
+    data.forEach((r: any) => {
+      const t = Number(r.tiempo_segundos);
+      if (!best[r.nivel] || t < best[r.nivel]) best[r.nivel] = t;
+    });
+    setSchulteBest(best);
+  };
+  useEffect(() => { loadSchulte(); }, [user]);
 
   const load = async () => {
     if (!user) return;
