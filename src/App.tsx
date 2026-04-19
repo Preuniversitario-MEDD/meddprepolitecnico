@@ -32,6 +32,8 @@ import AssessmentPage from "./pages/student/AssessmentPage";
 import AdminPsychometric from "./pages/admin/AdminPsychometric";
 import Psicometria from "./pages/Psicometria";
 import ConcentracionVisual from "./pages/student/ConcentracionVisual";
+import SchulteTest from "./pages/student/SchulteTest";
+import SchulteRecords from "./pages/student/SchulteRecords";
 import AdminConcentracion from "./pages/admin/AdminConcentracion";
 import NotFound from "./pages/NotFound";
 
@@ -84,6 +86,8 @@ function AppRoutes() {
       <Route path="/student/assessment" element={<ProtectedRoute><AssessmentPage /></ProtectedRoute>} />
       <Route path="/student/psicometria" element={<ProtectedRoute><Psicometria /></ProtectedRoute>} />
       <Route path="/student/concentracion" element={<ProtectedRoute><ConcentracionVisual /></ProtectedRoute>} />
+      <Route path="/student/schulte" element={<ProtectedRoute><SchulteTest /></ProtectedRoute>} />
+      <Route path="/student/schulte-records" element={<ProtectedRoute><SchulteRecords /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>

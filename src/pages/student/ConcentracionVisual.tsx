@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, Search, Brain, Timer, Clock, BookOpen, Flame, CheckCircle2, Lock, Trophy, Award, Star } from 'lucide-react';
+import { Eye, Search, Brain, Timer, Clock, BookOpen, Flame, CheckCircle2, Lock, Trophy, Award, Star, Grid3x3, ChevronRight } from 'lucide-react';
+import { useSchulteNotifications } from '@/hooks/useSchulteNotifications';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
