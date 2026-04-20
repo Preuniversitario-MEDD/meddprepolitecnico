@@ -35,6 +35,7 @@ import ConcentracionVisual from "./pages/student/ConcentracionVisual";
 import SchulteTest from "./pages/student/SchulteTest";
 import SchulteRecords from "./pages/student/SchulteRecords";
 import AdminConcentracion from "./pages/admin/AdminConcentracion";
+import OrientacionVocacional from "./pages/student/OrientacionVocacional";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -88,6 +89,7 @@ function AppRoutes() {
       <Route path="/student/concentracion" element={<ProtectedRoute><ConcentracionVisual /></ProtectedRoute>} />
       <Route path="/student/schulte" element={<ProtectedRoute><SchulteTest /></ProtectedRoute>} />
       <Route path="/student/schulte-records" element={<ProtectedRoute><SchulteRecords /></ProtectedRoute>} />
+      <Route path="/student/orientacion-vocacional" element={<ProtectedRoute><OrientacionVocacional /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>

@@ -641,6 +641,39 @@ export type Database = {
           },
         ]
       }
+      orientacion_vocacional: {
+        Row: {
+          carrera_elegida: string | null
+          fecha_calculo: string
+          fecha_revision: string | null
+          id: string
+          perfil_normalizado: Json
+          tests_usados: number
+          top_carreras: Json
+          user_id: string
+        }
+        Insert: {
+          carrera_elegida?: string | null
+          fecha_calculo?: string
+          fecha_revision?: string | null
+          id?: string
+          perfil_normalizado?: Json
+          tests_usados?: number
+          top_carreras?: Json
+          user_id: string
+        }
+        Update: {
+          carrera_elegida?: string | null
+          fecha_calculo?: string
+          fecha_revision?: string | null
+          id?: string
+          perfil_normalizado?: Json
+          tests_usados?: number
+          top_carreras?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       pestanas_sesion: {
         Row: {
           clave: string
