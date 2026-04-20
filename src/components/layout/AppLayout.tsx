@@ -41,7 +41,7 @@ const studentLinks = [
   { path: '/student/library', icon: Library, label: 'Biblioteca', shortLabel: 'Biblio' },
   { path: '/student/competencia', icon: Zap, label: 'Competencia', shortLabel: 'Compet' },
   { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría', shortLabel: 'Psico' },
-  { path: '/student/vocacional', icon: Compass, label: 'Vocacional', shortLabel: 'Vocac' },
+  { path: '/student/orientacion-vocacional', icon: Compass, label: 'Orientación Vocacional', shortLabel: 'Vocac' },
   { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes', shortLabel: 'Msj' },
   { path: '/student/profile', icon: GraduationCap, label: 'Perfil', shortLabel: 'Perfil' },
 ];

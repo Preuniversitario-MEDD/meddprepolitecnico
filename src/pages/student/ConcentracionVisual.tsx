@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, Search, Brain, Timer, Clock, BookOpen, Flame, CheckCircle2, Lock, Trophy, Award, Star, Grid3x3, ChevronRight } from 'lucide-react';
+import { Eye, Search, Brain, Timer, Clock, BookOpen, Flame, CheckCircle2, Lock, Trophy, Award, Star, Grid3x3, ChevronRight, Palette, MousePointer2 } from 'lucide-react';
+import ExerciseStroop from '@/components/concentracion/ExerciseStroop';
+import ExerciseMOT from '@/components/concentracion/ExerciseMOT';
+import SchulteEvolucion from '@/components/concentracion/SchulteEvolucion';
 import { useSchulteNotifications } from '@/hooks/useSchulteNotifications';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +31,8 @@ const EXERCISES = [
   { key: 'pomodoro', titulo: 'Pomodoro Guiado', desc: 'Bloques de estudio con descanso visual', icon: Timer, color: 'from-amber-500 to-yellow-500', tiempo: '30 min' },
   { key: 'regla_20', titulo: 'Regla 20-20-20', desc: 'Descansa los ojos cada 20 minutos de pantalla', icon: Clock, color: 'from-orange-500 to-rose-500', tiempo: '20 seg' },
   { key: 'lectura_rapida', titulo: 'Lectura Rápida', desc: 'Mejora tu velocidad lectora con textos de ciencias', icon: BookOpen, color: 'from-teal-500 to-cyan-500', tiempo: '5 min' },
+  { key: 'stroop', titulo: 'Tabla Stroop', desc: 'Toca el color del texto, no la palabra. Entrena tu control inhibitorio.', icon: Palette, color: 'from-pink-500 to-rose-500', tiempo: '2 min' },
+  { key: 'mot', titulo: 'Rastreo de objetos', desc: 'Sigue varias bolas en movimiento simultáneamente.', icon: MousePointer2, color: 'from-indigo-500 to-violet-500', tiempo: '3 min' },
 ] as const;
 
 export default function ConcentracionVisual() {
@@ -256,8 +261,8 @@ export default function ConcentracionVisual() {
         </CardContent>
       </Card>
 
-      {/* Dialog ejercicio */}
-      <Dialog open={!!activeKey} onOpenChange={(o) => !o && setActiveKey(null)}>
+      {/* Dialog ejercicio (clásicos) */}
+      <Dialog open={!!activeKey && activeKey !== 'stroop' && activeKey !== 'mot'} onOpenChange={(o) => !o && setActiveKey(null)}>
         <DialogContent className="max-w-2xl w-[95vw] max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -268,6 +273,9 @@ export default function ConcentracionVisual() {
           {renderExercise()}
         </DialogContent>
       </Dialog>
+
+      <ExerciseStroop open={activeKey === 'stroop'} onClose={() => setActiveKey(null)} onComplete={() => { setActiveKey(null); load(); }} />
+      <ExerciseMOT open={activeKey === 'mot'} onClose={() => setActiveKey(null)} onComplete={() => { setActiveKey(null); load(); }} />
     </div>
   );
 }

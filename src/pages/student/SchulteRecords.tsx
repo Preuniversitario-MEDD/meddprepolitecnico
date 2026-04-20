@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import SchulteEvolucion from '@/components/concentracion/SchulteEvolucion';
 
 type Row = { user_id: string; nombre: string; tiempo: number; errores: number; fecha: string; calificacion: string };
 const NIVELES = [
@@ -169,6 +170,8 @@ export default function SchulteRecords() {
           </Tabs>
         </CardContent>
       </Card>
+
+      <SchulteEvolucion />
 
       <Card>
         <CardHeader><CardTitle className="text-base">Tu progreso personal</CardTitle></CardHeader>
