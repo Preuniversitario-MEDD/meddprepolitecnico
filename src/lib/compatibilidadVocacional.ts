@@ -1,4 +1,4 @@
-import { CarreraEspol } from '@/data/carrerasEspol';
+import { CarreraUniversidad } from '@/data/carrerasEcuador';
 
 export interface PerfilEstudiante {
   empatia: number;
@@ -9,7 +9,7 @@ export interface PerfilEstudiante {
 }
 
 export interface ResultadoCompatibilidad {
-  carrera: CarreraEspol;
+  carrera: CarreraUniversidad;
   porcentaje: number;
   factoresPositivos: string[];
   factoresNeutros: string[];
@@ -26,7 +26,7 @@ const PESOS = {
 
 export function calcularCompatibilidad(
   perfil: PerfilEstudiante,
-  carreras: CarreraEspol[]
+  carreras: CarreraUniversidad[]
 ): ResultadoCompatibilidad[] {
   return carreras
     .map(carrera => {
@@ -68,17 +68,6 @@ export function calcularCompatibilidad(
     .sort((a, b) => b.porcentaje - a.porcentaje);
 }
 
-/**
- * Convierte los resultados de psychometric_results en un perfil 0-100.
- * Acepta cualquier estructura de scores que use claves comunes.
- *
- * Convenciones reconocidas (cualquier match cuenta):
- *  - empatia / empathy
- *  - inteligencia_emocional / emocional / iemocional
- *  - prosocial / prosocialidad
- *  - habilidades_sociales / social
- *  - aprendizaje / vark / estilos  -> dimensiones V, A, R, K (o visual/auditivo/lectura/kinestesico)
- */
 export function normalizarPerfil(
   resultadosPorTest: Record<string, { scores?: Record<string, any>; answers?: any }>
 ): PerfilEstudiante {
@@ -92,16 +81,11 @@ export function normalizarPerfil(
 
   const promedioScore = (scores?: Record<string, any>): number | null => {
     if (!scores) return null;
-    const vals = Object.values(scores)
-      .map(v => Number(v))
-      .filter(v => !Number.isNaN(v));
+    const vals = Object.values(scores).map(v => Number(v)).filter(v => !Number.isNaN(v));
     if (!vals.length) return null;
     const max = Math.max(...vals);
-    // Si los valores parecen estar ya en 0-100, promediamos directamente.
-    // Si no (ej. likert 1-5), normalizamos.
     if (max <= 5) return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length / 5) * 100);
     if (max <= 100) return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-    // Fallback: reescalar al máximo observado
     return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length / max) * 100);
   };
 
@@ -144,7 +128,6 @@ export function contarTestsRelevantes(
     const k = key.toLowerCase();
     claves.forEach(c => { if (k.includes(c)) matched.add(c); });
   });
-  // empatia, emocional, prosocial, social, aprendizaje cuentan como 5 distintos
   let n = 0;
   if (matched.has('empatia')) n++;
   if (matched.has('emocional')) n++;
