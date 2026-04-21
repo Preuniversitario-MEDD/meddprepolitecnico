@@ -14,6 +14,7 @@ import confetti from 'canvas-confetti';
 import StudyTimeline from '@/components/dashboard/StudyTimeline';
 import PerformanceCharts from '@/components/dashboard/PerformanceCharts';
 import WeakAreas from '@/components/dashboard/WeakAreas';
+import TestReminderBanner from '@/components/dashboard/TestReminderBanner';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
@@ -228,6 +229,8 @@ export default function StudentDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {!viewAsStudentId && <TestReminderBanner />}
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
         <h1 className="text-2xl md:text-3xl font-display font-bold text-neon-mint">¡Hola, <span className="text-gradient-primary text-neon-mint">{firstName}</span>! 👋</h1>
