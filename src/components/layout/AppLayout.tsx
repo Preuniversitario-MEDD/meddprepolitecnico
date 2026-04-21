@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AvatarUpload from '@/components/AvatarUpload';
 import GlobalSearch from '@/components/layout/GlobalSearch';
+import NotificationBell from '@/components/layout/NotificationBell';
 import { supabase } from '@/integrations/supabase/client';
 import meddLogo from '@/assets/medd-logo.png';
 
@@ -117,8 +118,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <div className="px-3 pb-2">
-            <GlobalSearch />
+          <div className="px-3 pb-2 flex items-center gap-2">
+            <div className="flex-1"><GlobalSearch /></div>
+            {role !== 'admin' && <NotificationBell />}
           </div>
           <nav className="flex-1 p-3 space-y-1">
             {links.map(link => {
@@ -183,8 +185,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <p className="text-[8px] text-muted-foreground leading-tight">Preparación de Química para la ESPOL</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <GlobalSearch />
+              {role !== 'admin' && <NotificationBell />}
               <AvatarUpload userId={profile?.user_id || ''} avatarUrl={profile?.avatar_url || null} initials={initials} size="sm" editable={false} />
               <button onClick={toggleTheme} className="p-2">{theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>
               <button onClick={signOut} className="p-2 text-destructive"><LogOut className="w-4 h-4" /></button>

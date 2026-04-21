@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useViewAsStudent } from '@/hooks/useViewAsStudent';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -14,6 +15,7 @@ import confetti from 'canvas-confetti';
 import StudyTimeline from '@/components/dashboard/StudyTimeline';
 import PerformanceCharts from '@/components/dashboard/PerformanceCharts';
 import WeakAreas from '@/components/dashboard/WeakAreas';
+import TestReminderBanner from '@/components/dashboard/TestReminderBanner';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Sesion = Tables<'sesiones'>;
@@ -31,6 +33,7 @@ interface ExamBlockConfig {
 export default function StudentDashboard() {
   const { profile, user } = useAuth();
   const { viewAsStudentId } = useViewAsStudent();
+  const { checkAndNotify } = usePushNotifications();
   const effectiveUserId = viewAsStudentId || user?.id;
   const navigate = useNavigate();
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
@@ -45,6 +48,12 @@ export default function StudentDashboard() {
   const [unlockDialog, setUnlockDialog] = useState<ExamBlockConfig | null>(null);
 
   useEffect(() => { loadData(); loadLiveComps(); }, [effectiveUserId]);
+
+  // Trigger push notification check on dashboard load (real student only)
+  useEffect(() => {
+    if (!user?.id || viewAsStudentId) return;
+    checkAndNotify(user.id).catch(() => {});
+  }, [user?.id, viewAsStudentId, checkAndNotify]);
 
   // Real-time sync for admin changes to exam config and sessions
   useEffect(() => {
@@ -228,6 +237,8 @@ export default function StudentDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {!viewAsStudentId && <TestReminderBanner />}
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
         <h1 className="text-2xl md:text-3xl font-display font-bold text-neon-mint">¡Hola, <span className="text-gradient-primary text-neon-mint">{firstName}</span>! 👋</h1>

@@ -9,9 +9,12 @@ import { useTheme } from '@/hooks/useTheme';
 import { Moon, Sun, FlaskConical, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import PasswordValidator, { validatePassword } from '@/components/PasswordValidator';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Login() {
   const { signIn, changePassword } = useAuth();
+  const { requestPermission, checkAndNotify } = usePushNotifications();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [cedula, setCedula] = useState('');
@@ -37,6 +40,13 @@ export default function Login() {
     } else if (result.firstTime) {
       setStep('change-password');
       toast({ title: 'Primera vez', description: 'Debes cambiar tu contraseña' });
+    } else {
+      // Pedir permiso de notificaciones y verificar tests
+      try {
+        const granted = await requestPermission();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (granted && authUser?.id) await checkAndNotify(authUser.id);
+      } catch { /* silent */ }
     }
   };
 
