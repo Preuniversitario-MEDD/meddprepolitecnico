@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useViewAsStudent } from '@/hooks/useViewAsStudent';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -32,6 +33,7 @@ interface ExamBlockConfig {
 export default function StudentDashboard() {
   const { profile, user } = useAuth();
   const { viewAsStudentId } = useViewAsStudent();
+  const { checkAndNotify } = usePushNotifications();
   const effectiveUserId = viewAsStudentId || user?.id;
   const navigate = useNavigate();
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
@@ -46,6 +48,12 @@ export default function StudentDashboard() {
   const [unlockDialog, setUnlockDialog] = useState<ExamBlockConfig | null>(null);
 
   useEffect(() => { loadData(); loadLiveComps(); }, [effectiveUserId]);
+
+  // Trigger push notification check on dashboard load (real student only)
+  useEffect(() => {
+    if (!user?.id || viewAsStudentId) return;
+    checkAndNotify(user.id).catch(() => {});
+  }, [user?.id, viewAsStudentId, checkAndNotify]);
 
   // Real-time sync for admin changes to exam config and sessions
   useEffect(() => {
