@@ -1,0 +1,202 @@
+/**
+ * Catálogo de carreras universitarias del Ecuador (ESPOL, ECOTEC, UEES, UNEMI).
+ */
+export interface CarreraUniversidad {
+  id: string;
+  nombre: string;
+  universidad: string;
+  siglaUniversidad: string;
+  urlUniversidad: string;
+  modalidad: ('presencial' | 'online' | 'semipresencial' | 'hibrida')[];
+  ciudad: string[];
+  facultad: string;
+  descripcion: string;
+  campoLaboral: string[];
+  perfilIdeal: {
+    empatia: number;
+    inteligenciaEmocional: number;
+    prosocial: number;
+    habilidadesSociales: number;
+    estilos: ('V' | 'A' | 'R' | 'K')[];
+  };
+  materiasClaveExamen: string[];
+  color: string;
+  icono: string;
+}
+
+export type CarreraEspol = CarreraUniversidad;
+
+const ESPOL_BASE = {
+  universidad: 'Escuela Superior Politécnica del Litoral',
+  siglaUniversidad: 'ESPOL',
+  urlUniversidad: 'https://www.espol.edu.ec/es/admision/oferta-academica',
+  modalidad: ['presencial'] as ('presencial' | 'online' | 'semipresencial' | 'hibrida')[],
+  ciudad: ['Guayaquil'],
+};
+
+export const CARRERAS_ECUADOR: CarreraUniversidad[] = [
+  { id: 'medicina', nombre: 'Medicina', ...ESPOL_BASE, facultad: 'Facultad de Ciencias Médicas',
+    descripcion: 'Formación integral en ciencias de la salud humana, diagnóstico y tratamiento de enfermedades.',
+    campoLaboral: ['Hospitales públicos y privados', 'Investigación médica', 'Salud pública', 'Docencia universitaria'],
+    perfilIdeal: { empatia: 95, inteligenciaEmocional: 90, prosocial: 88, habilidadesSociales: 85, estilos: ['V', 'K'] },
+    materiasClaveExamen: ['Biología', 'Química Orgánica', 'Matemáticas'], color: '#EAF3DE', icono: '🩺' },
+  { id: 'psicologia', nombre: 'Psicología', ...ESPOL_BASE, facultad: 'Facultad de Ciencias Sociales y Humanísticas',
+    descripcion: 'Estudio del comportamiento humano, salud mental y procesos cognitivos y emocionales.',
+    campoLaboral: ['Clínicas y hospitales', 'Empresas (RRHH)', 'Educación', 'Investigación'],
+    perfilIdeal: { empatia: 92, inteligenciaEmocional: 95, prosocial: 85, habilidadesSociales: 88, estilos: ['R', 'A'] },
+    materiasClaveExamen: ['Biología', 'Estadística', 'Comunicación'], color: '#EEEDFE', icono: '🧠' },
+  { id: 'arquitectura', nombre: 'Arquitectura', ...ESPOL_BASE, facultad: 'Facultad de Ingeniería en Ciencias de la Tierra',
+    descripcion: 'Diseño de espacios, edificaciones y ciudades combinando creatividad técnica y estética.',
+    campoLaboral: ['Estudios de arquitectura', 'Constructoras', 'Gobierno', 'Docencia'],
+    perfilIdeal: { empatia: 65, inteligenciaEmocional: 70, prosocial: 60, habilidadesSociales: 72, estilos: ['V', 'K'] },
+    materiasClaveExamen: ['Matemáticas', 'Física', 'Dibujo técnico'], color: '#FAEEDA', icono: '🏛️' },
+  { id: 'biotecnologia', nombre: 'Ingeniería en Biotecnología', ...ESPOL_BASE, facultad: 'Facultad de Ingeniería en Mecánica y Ciencias de la Producción',
+    descripcion: 'Aplicación de organismos vivos y tecnología para desarrollar productos y procesos.',
+    campoLaboral: ['Industria farmacéutica', 'Agroindustria', 'Investigación', 'Medio ambiente'],
+    perfilIdeal: { empatia: 60, inteligenciaEmocional: 65, prosocial: 75, habilidadesSociales: 58, estilos: ['R', 'K'] },
+    materiasClaveExamen: ['Química', 'Biología', 'Matemáticas'], color: '#E1F5EE', icono: '🔬' },
+  { id: 'educacion', nombre: 'Licenciatura en Educación', ...ESPOL_BASE, facultad: 'Facultad de Ciencias Sociales y Humanísticas',
+    descripcion: 'Formación de docentes con sólida base pedagógica para educación básica y bachillerato.',
+    campoLaboral: ['Instituciones educativas', 'Ministerio de Educación', 'ONGs', 'Docencia universitaria'],
+    perfilIdeal: { empatia: 88, inteligenciaEmocional: 85, prosocial: 90, habilidadesSociales: 92, estilos: ['A', 'V'] },
+    materiasClaveExamen: ['Matemáticas', 'Lengua', 'Ciencias'], color: '#FAECE7', icono: '📚' },
+  { id: 'industrial', nombre: 'Ingeniería Industrial', ...ESPOL_BASE, facultad: 'Facultad de Ingeniería en Mecánica y Ciencias de la Producción',
+    descripcion: 'Optimización de sistemas productivos, logística y gestión de operaciones.',
+    campoLaboral: ['Manufactura', 'Logística', 'Consultoría', 'Banca'],
+    perfilIdeal: { empatia: 55, inteligenciaEmocional: 65, prosocial: 58, habilidadesSociales: 70, estilos: ['R', 'K'] },
+    materiasClaveExamen: ['Matemáticas', 'Física', 'Química'], color: '#E6F1FB', icono: '⚙️' },
+  { id: 'sistemas', nombre: 'Ingeniería en Sistemas de Información', ...ESPOL_BASE, facultad: 'Facultad de Ingeniería en Electricidad y Computación',
+    descripcion: 'Desarrollo de software, bases de datos y soluciones tecnológicas para organizaciones.',
+    campoLaboral: ['Empresas tech', 'Banca', 'Gobierno', 'Startups', 'Freelance'],
+    perfilIdeal: { empatia: 45, inteligenciaEmocional: 60, prosocial: 50, habilidadesSociales: 55, estilos: ['R', 'V'] },
+    materiasClaveExamen: ['Matemáticas', 'Física', 'Lógica'], color: '#E6F1FB', icono: '💻' },
+  { id: 'civil', nombre: 'Ingeniería Civil', ...ESPOL_BASE, facultad: 'Facultad de Ingeniería en Ciencias de la Tierra',
+    descripcion: 'Diseño y construcción de infraestructura: puentes, edificios, carreteras y sistemas hidráulicos.',
+    campoLaboral: ['Constructoras', 'Gobierno', 'Consultoras', 'Organismos internacionales'],
+    perfilIdeal: { empatia: 50, inteligenciaEmocional: 60, prosocial: 55, habilidadesSociales: 65, estilos: ['V', 'K'] },
+    materiasClaveExamen: ['Matemáticas', 'Física', 'Química'], color: '#F1EFE8', icono: '🏗️' },
+  { id: 'ambiental', nombre: 'Ingeniería Ambiental', ...ESPOL_BASE, facultad: 'Facultad de Ingeniería en Ciencias de la Tierra',
+    descripcion: 'Protección y gestión del medio ambiente, manejo de residuos y evaluación de impacto ambiental.',
+    campoLaboral: ['Empresas petroleras', 'Gobierno', 'ONGs', 'Consultoría ambiental'],
+    perfilIdeal: { empatia: 70, inteligenciaEmocional: 65, prosocial: 82, habilidadesSociales: 68, estilos: ['K', 'R'] },
+    materiasClaveExamen: ['Química', 'Biología', 'Matemáticas'], color: '#E1F5EE', icono: '🌿' },
+  { id: 'administracion', nombre: 'Administración de Empresas', ...ESPOL_BASE, facultad: 'Facultad de Ciencias Sociales y Humanísticas',
+    descripcion: 'Gestión organizacional, liderazgo empresarial, finanzas y estrategia de negocios.',
+    campoLaboral: ['Empresas privadas', 'Emprendimiento', 'Banca', 'Organismos internacionales'],
+    perfilIdeal: { empatia: 62, inteligenciaEmocional: 78, prosocial: 60, habilidadesSociales: 85, estilos: ['A', 'R'] },
+    materiasClaveExamen: ['Matemáticas', 'Estadística', 'Economía'], color: '#FAEEDA', icono: '📊' },
+  { id: 'electronica', nombre: 'Ingeniería en Electrónica y Telecomunicaciones', ...ESPOL_BASE, facultad: 'Facultad de Ingeniería en Electricidad y Computación',
+    descripcion: 'Diseño y desarrollo de sistemas electrónicos, redes y comunicaciones.',
+    campoLaboral: ['Telecomunicaciones', 'Industria', 'Investigación', 'Defensa'],
+    perfilIdeal: { empatia: 40, inteligenciaEmocional: 55, prosocial: 45, habilidadesSociales: 50, estilos: ['R', 'V'] },
+    materiasClaveExamen: ['Matemáticas', 'Física', 'Química'], color: '#E6F1FB', icono: '📡' },
+  { id: 'nutricion', nombre: 'Nutrición y Dietética', ...ESPOL_BASE, facultad: 'Facultad de Ciencias Médicas',
+    descripcion: 'Ciencia de la alimentación aplicada a la salud individual y colectiva.',
+    campoLaboral: ['Hospitales', 'Clínicas', 'Industria alimentaria', 'Deporte', 'Docencia'],
+    perfilIdeal: { empatia: 82, inteligenciaEmocional: 78, prosocial: 85, habilidadesSociales: 80, estilos: ['K', 'V'] },
+    materiasClaveExamen: ['Biología', 'Química', 'Matemáticas'], color: '#EAF3DE', icono: '🥗' },
+
+  // ECOTEC
+  { id: 'ecotec-psicologia', nombre: 'Psicología', universidad: 'Universidad Tecnológica ECOTEC', siglaUniversidad: 'ECOTEC', urlUniversidad: 'https://ecotec.edu.ec/carreras-de-grado/', modalidad: ['presencial'], ciudad: ['Samborondón', 'Guayaquil'], facultad: 'Facultad de Ciencias de la Salud y Desarrollo Humano',
+    descripcion: 'Formación en salud mental, comportamiento humano y bienestar psicosocial con enfoque clínico y organizacional.',
+    campoLaboral: ['Clínicas', 'Empresas (RRHH)', 'Educación', 'ONGs', 'Investigación'],
+    perfilIdeal: { empatia: 92, inteligenciaEmocional: 95, prosocial: 85, habilidadesSociales: 88, estilos: ['R', 'A'] },
+    materiasClaveExamen: ['Biología', 'Lengua', 'Razonamiento'], color: '#EEEDFE', icono: '🧠' },
+  { id: 'ecotec-derecho', nombre: 'Derecho', universidad: 'Universidad Tecnológica ECOTEC', siglaUniversidad: 'ECOTEC', urlUniversidad: 'https://ecotec.edu.ec/carreras-de-grado/', modalidad: ['presencial'], ciudad: ['Samborondón', 'Guayaquil'], facultad: 'Facultad de Derecho y Gobernabilidad',
+    descripcion: 'Formación jurídica integral con énfasis en derecho civil, penal, constitucional y gobernabilidad pública.',
+    campoLaboral: ['Estudios jurídicos', 'Sector público', 'Empresas', 'Judicatura', 'ONGs'],
+    perfilIdeal: { empatia: 68, inteligenciaEmocional: 75, prosocial: 72, habilidadesSociales: 88, estilos: ['R', 'A'] },
+    materiasClaveExamen: ['Lengua', 'Razonamiento', 'Ciencias Sociales'], color: '#FAEEDA', icono: '⚖️' },
+  { id: 'ecotec-marketing', nombre: 'Marketing y Comunicación', universidad: 'Universidad Tecnológica ECOTEC', siglaUniversidad: 'ECOTEC', urlUniversidad: 'https://ecotec.edu.ec/carreras-de-grado/', modalidad: ['presencial'], ciudad: ['Samborondón', 'Guayaquil'], facultad: 'Facultad de Ciencias Empresariales',
+    descripcion: 'Estrategia de marca, marketing digital, comunicación corporativa y gestión de medios en la era digital.',
+    campoLaboral: ['Agencias de publicidad', 'Empresas', 'Medios digitales', 'Emprendimiento'],
+    perfilIdeal: { empatia: 65, inteligenciaEmocional: 72, prosocial: 60, habilidadesSociales: 85, estilos: ['V', 'A'] },
+    materiasClaveExamen: ['Lengua', 'Razonamiento', 'Matemáticas Básica'], color: '#FAECE7', icono: '📣' },
+  { id: 'ecotec-administracion', nombre: 'Administración de Empresas', universidad: 'Universidad Tecnológica ECOTEC', siglaUniversidad: 'ECOTEC', urlUniversidad: 'https://ecotec.edu.ec/carreras-de-grado/', modalidad: ['presencial'], ciudad: ['Samborondón', 'Guayaquil', 'La Costa'], facultad: 'Facultad de Ciencias Empresariales',
+    descripcion: 'Gestión organizacional, liderazgo, finanzas, emprendimiento y estrategia de negocios internacionales.',
+    campoLaboral: ['Empresas privadas', 'Emprendimiento', 'Banca', 'Organismos internacionales'],
+    perfilIdeal: { empatia: 60, inteligenciaEmocional: 75, prosocial: 58, habilidadesSociales: 85, estilos: ['A', 'R'] },
+    materiasClaveExamen: ['Matemáticas', 'Lengua', 'Razonamiento'], color: '#E6F1FB', icono: '📊' },
+  { id: 'ecotec-sistemas', nombre: 'Ingeniería en Sistemas Computacionales', universidad: 'Universidad Tecnológica ECOTEC', siglaUniversidad: 'ECOTEC', urlUniversidad: 'https://ecotec.edu.ec/carreras-de-grado/', modalidad: ['presencial'], ciudad: ['Samborondón', 'Guayaquil'], facultad: 'Facultad de Ingeniería',
+    descripcion: 'Desarrollo de software, inteligencia artificial, redes y soluciones tecnológicas para la transformación digital.',
+    campoLaboral: ['Empresas tech', 'Banca', 'Gobierno', 'Startups', 'Freelance internacional'],
+    perfilIdeal: { empatia: 45, inteligenciaEmocional: 60, prosocial: 50, habilidadesSociales: 55, estilos: ['R', 'V'] },
+    materiasClaveExamen: ['Matemáticas', 'Física', 'Razonamiento Lógico'], color: '#E1F5EE', icono: '💻' },
+
+  // UEES
+  { id: 'uees-medicina', nombre: 'Medicina', universidad: 'Universidad Espíritu Santo', siglaUniversidad: 'UEES', urlUniversidad: 'https://uees.edu.ec/grado/', modalidad: ['presencial'], ciudad: ['Guayaquil'], facultad: 'Facultad de Ciencias de la Salud',
+    descripcion: 'Una de las mejores facultades de medicina del Ecuador con estándares internacionales y convenios en el exterior.',
+    campoLaboral: ['Hospitales', 'Clínicas', 'Investigación médica', 'Salud pública', 'Exterior'],
+    perfilIdeal: { empatia: 95, inteligenciaEmocional: 90, prosocial: 88, habilidadesSociales: 85, estilos: ['V', 'K'] },
+    materiasClaveExamen: ['Biología', 'Química', 'Matemáticas'], color: '#EAF3DE', icono: '🩺' },
+  { id: 'uees-odontologia', nombre: 'Odontología', universidad: 'Universidad Espíritu Santo', siglaUniversidad: 'UEES', urlUniversidad: 'https://uees.edu.ec/grado/', modalidad: ['presencial'], ciudad: ['Guayaquil'], facultad: 'Facultad de Ciencias de la Salud',
+    descripcion: 'Formación odontológica integral con laboratorios de alta tecnología y prácticas clínicas desde el primer año.',
+    campoLaboral: ['Consultorios propios', 'Clínicas', 'Hospitales', 'Investigación'],
+    perfilIdeal: { empatia: 82, inteligenciaEmocional: 78, prosocial: 80, habilidadesSociales: 82, estilos: ['V', 'K'] },
+    materiasClaveExamen: ['Biología', 'Química', 'Matemáticas'], color: '#E1F5EE', icono: '🦷' },
+  { id: 'uees-derecho', nombre: 'Derecho', universidad: 'Universidad Espíritu Santo', siglaUniversidad: 'UEES', urlUniversidad: 'https://uees.edu.ec/grado/', modalidad: ['presencial'], ciudad: ['Guayaquil'], facultad: 'Facultad de Derecho, Política y Desarrollo',
+    descripcion: 'Derecho con visión internacional, énfasis en arbitraje, mediación y carrera diplomática.',
+    campoLaboral: ['Estudios jurídicos', 'Sector público', 'Organismos internacionales', 'Diplomacia'],
+    perfilIdeal: { empatia: 68, inteligenciaEmocional: 76, prosocial: 72, habilidadesSociales: 90, estilos: ['R', 'A'] },
+    materiasClaveExamen: ['Lengua', 'Razonamiento', 'Ciencias Sociales'], color: '#FAEEDA', icono: '⚖️' },
+  { id: 'uees-comunicacion', nombre: 'Ciencias de la Comunicación', universidad: 'Universidad Espíritu Santo', siglaUniversidad: 'UEES', urlUniversidad: 'https://uees.edu.ec/grado/', modalidad: ['presencial'], ciudad: ['Guayaquil'], facultad: 'Facultad de Ciencias de la Comunicación',
+    descripcion: 'Periodismo, producción audiovisual, comunicación digital y relaciones públicas con enfoque multimedia.',
+    campoLaboral: ['Medios de comunicación', 'Agencias PR', 'Empresas', 'Producción audiovisual'],
+    perfilIdeal: { empatia: 72, inteligenciaEmocional: 70, prosocial: 65, habilidadesSociales: 88, estilos: ['A', 'V'] },
+    materiasClaveExamen: ['Lengua', 'Razonamiento', 'Arte'], color: '#FAECE7', icono: '🎙️' },
+  { id: 'uees-negocios', nombre: 'Emprendimiento y Negocios Internacionales', universidad: 'Universidad Espíritu Santo', siglaUniversidad: 'UEES', urlUniversidad: 'https://uees.edu.ec/grado/', modalidad: ['presencial'], ciudad: ['Guayaquil'], facultad: 'Facultad de Emprendimiento, Negocios y Economía',
+    descripcion: 'Negocios globales, comercio exterior, emprendimiento con mentalidad internacional y red de contactos UEES.',
+    campoLaboral: ['Comercio exterior', 'Startups', 'Multinacionales', 'Consultoría internacional'],
+    perfilIdeal: { empatia: 60, inteligenciaEmocional: 72, prosocial: 58, habilidadesSociales: 88, estilos: ['A', 'R'] },
+    materiasClaveExamen: ['Matemáticas', 'Lengua', 'Inglés'], color: '#E6F1FB', icono: '🌎' },
+  { id: 'uees-ingenieria-civil', nombre: 'Ingeniería Civil', universidad: 'Universidad Espíritu Santo', siglaUniversidad: 'UEES', urlUniversidad: 'https://uees.edu.ec/grado/', modalidad: ['presencial'], ciudad: ['Guayaquil'], facultad: 'Facultad de Ingeniería',
+    descripcion: 'Diseño y construcción de infraestructura con estándares internacionales y laboratorios propios.',
+    campoLaboral: ['Constructoras', 'Gobierno', 'Consultoras', 'Organismos internacionales'],
+    perfilIdeal: { empatia: 50, inteligenciaEmocional: 60, prosocial: 55, habilidadesSociales: 65, estilos: ['V', 'K'] },
+    materiasClaveExamen: ['Matemáticas', 'Física', 'Química'], color: '#F1EFE8', icono: '🏗️' },
+  { id: 'uees-arquitectura', nombre: 'Arquitectura y Diseño', universidad: 'Universidad Espíritu Santo', siglaUniversidad: 'UEES', urlUniversidad: 'https://uees.edu.ec/grado/', modalidad: ['presencial'], ciudad: ['Guayaquil'], facultad: 'Facultad de Arquitectura y Diseño',
+    descripcion: 'Diseño arquitectónico con enfoque sostenible, innovación tecnológica y proyección internacional.',
+    campoLaboral: ['Estudios de arquitectura', 'Constructoras', 'Diseño urbano', 'Docencia'],
+    perfilIdeal: { empatia: 62, inteligenciaEmocional: 68, prosocial: 58, habilidadesSociales: 70, estilos: ['V', 'K'] },
+    materiasClaveExamen: ['Matemáticas', 'Física', 'Arte'], color: '#FAEEDA', icono: '🏛️' },
+
+  // UNEMI
+  { id: 'unemi-enfermeria', nombre: 'Enfermería', universidad: 'Universidad Estatal de Milagro', siglaUniversidad: 'UNEMI', urlUniversidad: 'https://www.unemi.edu.ec/index.php/carreras-presencial/', modalidad: ['presencial'], ciudad: ['Milagro', 'Guayaquil'], facultad: 'Facultad de Ciencias de la Salud',
+    descripcion: 'Formación en cuidado integral de pacientes, salud comunitaria y atención primaria de salud.',
+    campoLaboral: ['Hospitales públicos', 'Centros de salud', 'Clínicas privadas', 'Salud comunitaria'],
+    perfilIdeal: { empatia: 92, inteligenciaEmocional: 88, prosocial: 90, habilidadesSociales: 85, estilos: ['K', 'V'] },
+    materiasClaveExamen: ['Biología', 'Química', 'Matemáticas'], color: '#EAF3DE', icono: '💉' },
+  { id: 'unemi-sistemas', nombre: 'Ingeniería en Sistemas de Información', universidad: 'Universidad Estatal de Milagro', siglaUniversidad: 'UNEMI', urlUniversidad: 'https://www.unemi.edu.ec/index.php/carreras-presencial/', modalidad: ['presencial', 'semipresencial'], ciudad: ['Milagro'], facultad: 'Facultad de Ciencias de la Ingeniería',
+    descripcion: 'Desarrollo de software, bases de datos, redes y seguridad informática para organizaciones.',
+    campoLaboral: ['Empresas tecnológicas', 'Gobierno', 'Banca', 'Freelance'],
+    perfilIdeal: { empatia: 45, inteligenciaEmocional: 58, prosocial: 48, habilidadesSociales: 52, estilos: ['R', 'V'] },
+    materiasClaveExamen: ['Matemáticas', 'Física', 'Lógica'], color: '#E6F1FB', icono: '🖥️' },
+  { id: 'unemi-contabilidad', nombre: 'Contabilidad y Auditoría', universidad: 'Universidad Estatal de Milagro', siglaUniversidad: 'UNEMI', urlUniversidad: 'https://www.unemi.edu.ec/index.php/carreras-presencial/', modalidad: ['presencial', 'semipresencial', 'online'], ciudad: ['Milagro'], facultad: 'Facultad de Ciencias Administrativas',
+    descripcion: 'Control financiero, auditoría de empresas, tributación y gestión contable con herramientas digitales.',
+    campoLaboral: ['Empresas privadas', 'SRI', 'Auditorías', 'Banca', 'Emprendimiento propio'],
+    perfilIdeal: { empatia: 50, inteligenciaEmocional: 62, prosocial: 55, habilidadesSociales: 65, estilos: ['R', 'K'] },
+    materiasClaveExamen: ['Matemáticas', 'Lengua', 'Razonamiento'], color: '#FAEEDA', icono: '📋' },
+  { id: 'unemi-educacion', nombre: 'Educación Básica', universidad: 'Universidad Estatal de Milagro', siglaUniversidad: 'UNEMI', urlUniversidad: 'https://www.unemi.edu.ec/index.php/carreras-presencial/', modalidad: ['presencial', 'semipresencial'], ciudad: ['Milagro'], facultad: 'Facultad de Educación y Comunicación',
+    descripcion: 'Formación de docentes para educación básica con enfoque en pedagogía innovadora e inclusión educativa.',
+    campoLaboral: ['Escuelas públicas y privadas', 'Ministerio de Educación', 'ONGs', 'Docencia universitaria'],
+    perfilIdeal: { empatia: 88, inteligenciaEmocional: 85, prosocial: 90, habilidadesSociales: 92, estilos: ['A', 'V'] },
+    materiasClaveExamen: ['Lengua', 'Matemáticas', 'Razonamiento'], color: '#FAECE7', icono: '📚' },
+  { id: 'unemi-agroindustrias', nombre: 'Ingeniería en Agroindustrias', universidad: 'Universidad Estatal de Milagro', siglaUniversidad: 'UNEMI', urlUniversidad: 'https://www.unemi.edu.ec/index.php/carreras-presencial/', modalidad: ['presencial'], ciudad: ['Milagro'], facultad: 'Facultad de Ciencias Agropecuarias',
+    descripcion: 'Producción, procesamiento y comercialización de alimentos agroindustriales con enfoque en sostenibilidad.',
+    campoLaboral: ['Industria alimentaria', 'Exportación', 'Gobierno', 'Investigación agrícola'],
+    perfilIdeal: { empatia: 58, inteligenciaEmocional: 60, prosocial: 72, habilidadesSociales: 60, estilos: ['K', 'R'] },
+    materiasClaveExamen: ['Química', 'Biología', 'Matemáticas'], color: '#E1F5EE', icono: '🌾' },
+];
+
+export const CARRERAS_ESPOL = CARRERAS_ECUADOR;
+export const UNIVERSIDADES = ['ESPOL', 'ECOTEC', 'UEES', 'UNEMI'] as const;
+export const MODALIDADES = ['presencial', 'semipresencial', 'online'] as const;
+
+export function getCarreraById(id: string): CarreraUniversidad | undefined {
+  return CARRERAS_ECUADOR.find(c => c.id === id);
+}
+export function getCiudadesUnicas(): string[] {
+  const set = new Set<string>();
+  CARRERAS_ECUADOR.forEach(c => c.ciudad.forEach(ci => set.add(ci)));
+  return Array.from(set).sort();
+}
