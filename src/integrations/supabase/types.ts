@@ -641,6 +641,33 @@ export type Database = {
           },
         ]
       }
+      notificaciones_push: {
+        Row: {
+          fecha: string
+          id: string
+          leida: boolean
+          mensaje: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          fecha?: string
+          id?: string
+          leida?: boolean
+          mensaje: string
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          fecha?: string
+          id?: string
+          leida?: boolean
+          mensaje?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orientacion_vocacional: {
         Row: {
           carrera_elegida: string | null
@@ -723,6 +750,7 @@ export type Database = {
           ip_address: string | null
           last_seen_at: string | null
           nombre: string
+          notif_preferencias: Json
           primera_vez: boolean
           updated_at: string
           user_id: string
@@ -741,6 +769,7 @@ export type Database = {
           ip_address?: string | null
           last_seen_at?: string | null
           nombre?: string
+          notif_preferencias?: Json
           primera_vez?: boolean
           updated_at?: string
           user_id: string
@@ -759,6 +788,7 @@ export type Database = {
           ip_address?: string | null
           last_seen_at?: string | null
           nombre?: string
+          notif_preferencias?: Json
           primera_vez?: boolean
           updated_at?: string
           user_id?: string
