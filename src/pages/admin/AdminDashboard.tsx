@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   });
   const [sessionData, setSessionData] = useState<{ name: string; completados: number }[]>([]);
   const [ranking, setRanking] = useState<StudentRanking[]>([]);
+  const [topCarreras, setTopCarreras] = useState<{ nombre: string; universidad: string; count: number; promedio: number }[]>([]);
 
   useEffect(() => {
     loadStats();
