@@ -297,6 +297,15 @@ export default function OrientacionVocacional() {
         </CardContent>
       </Card>
 
+      <div className="flex items-start gap-2 px-1 text-xs text-muted-foreground">
+        <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" />
+        <p>
+          <span className="font-medium text-foreground">Universidad de Guayaquil</span> y{' '}
+          <span className="font-medium text-foreground">Universidad Central del Ecuador</span> son universidades públicas gratuitas.
+          El ingreso se realiza a través del SNNA (Sistema Nacional de Nivelación y Admisión) con el puntaje del examen Ser Bachiller.
+        </p>
+      </div>
+
       <Tabs defaultValue="carreras" className="space-y-4">
         <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="carreras" className="text-xs"><Sparkles className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Carreras</TabsTrigger>
