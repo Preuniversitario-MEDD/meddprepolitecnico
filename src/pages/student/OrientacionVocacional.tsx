@@ -222,7 +222,7 @@ export default function OrientacionVocacional() {
         </div>
         <div className="flex-1">
           <h1 className="text-xl md:text-2xl font-bold">Orientación Vocacional Ecuador</h1>
-          <p className="text-sm text-muted-foreground">Cruzamos tus tests con carreras de ESPOL, ECOTEC, UEES y UNEMI</p>
+          <p className="text-sm text-muted-foreground">Cruzamos tus tests con carreras de ESPOL, ECOTEC, UEES, UNEMI, UG y UCE</p>
         </div>
         <Badge variant="secondary" className="hidden sm:inline-flex">{testsCount} / 5 tests</Badge>
       </motion.div>
