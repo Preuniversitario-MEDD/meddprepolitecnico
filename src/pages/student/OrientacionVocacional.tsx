@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Compass, Sparkles, Building2, ListChecks, Download, Save, ChevronDown, AlertTriangle, ArrowRight, ExternalLink, Search, X, Heart, GitCompare } from 'lucide-react';
+import { Compass, Sparkles, Building2, ListChecks, Download, Save, ChevronDown, AlertTriangle, ArrowRight, ExternalLink, Search, X, Heart, GitCompare, Info } from 'lucide-react';
 import { useCarrerasFavoritas } from '@/hooks/useCarrerasFavoritas';
 import ComparacionCarreras from '@/components/vocational/ComparacionCarreras';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +24,7 @@ import {
   type ResultadoCompatibilidad,
 } from '@/lib/compatibilidadVocacional';
 
-const UNIVERSIDADES = ['ESPOL', 'ECOTEC', 'UEES', 'UNEMI'] as const;
+const UNIVERSIDADES = ['ESPOL', 'ECOTEC', 'UEES', 'UNEMI', 'UG', 'UCE'] as const;
 const MODALIDADES = ['presencial', 'semipresencial', 'online', 'hibrida'] as const;
 
 function RingProgress({ percent, size = 96, color = 'hsl(var(--primary))' }: { percent: number; size?: number; color?: string }) {
@@ -222,7 +222,7 @@ export default function OrientacionVocacional() {
         </div>
         <div className="flex-1">
           <h1 className="text-xl md:text-2xl font-bold">Orientación Vocacional Ecuador</h1>
-          <p className="text-sm text-muted-foreground">Cruzamos tus tests con carreras de ESPOL, ECOTEC, UEES y UNEMI</p>
+          <p className="text-sm text-muted-foreground">Cruzamos tus tests con carreras de ESPOL, ECOTEC, UEES, UNEMI, UG y UCE</p>
         </div>
         <Badge variant="secondary" className="hidden sm:inline-flex">{testsCount} / 5 tests</Badge>
       </motion.div>
@@ -296,6 +296,15 @@ export default function OrientacionVocacional() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex items-start gap-2 px-1 text-xs text-muted-foreground">
+        <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" />
+        <p>
+          <span className="font-medium text-foreground">Universidad de Guayaquil</span> y{' '}
+          <span className="font-medium text-foreground">Universidad Central del Ecuador</span> son universidades públicas gratuitas.
+          El ingreso se realiza a través del SNNA (Sistema Nacional de Nivelación y Admisión) con el puntaje del examen Ser Bachiller.
+        </p>
+      </div>
 
       <Tabs defaultValue="carreras" className="space-y-4">
         <TabsList className="w-full grid grid-cols-5">
