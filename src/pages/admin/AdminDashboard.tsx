@@ -94,6 +94,35 @@ export default function AdminDashboard() {
 
       setRanking(rankingData);
     }
+
+    // Carreras más elegidas (cruzando orientacion_vocacional + carreras_favoritas)
+    const [{ data: orientaciones }, { data: favs }] = await Promise.all([
+      supabase.from('orientacion_vocacional').select('top_carreras'),
+      supabase.from('carreras_favoritas').select('carrera_nombre, universidad_sigla, porcentaje'),
+    ]);
+
+    const agg: Record<string, { nombre: string; universidad: string; count: number; sum: number }> = {};
+    (orientaciones as any[] || []).forEach(o => {
+      const top = Array.isArray(o.top_carreras) ? o.top_carreras[0] : null;
+      if (top?.nombre) {
+        const key = top.nombre + '|' + (top.universidad || '');
+        if (!agg[key]) agg[key] = { nombre: top.nombre, universidad: top.universidad || '', count: 0, sum: 0 };
+        agg[key].count += 1;
+        agg[key].sum += top.porcentaje || 0;
+      }
+    });
+    (favs as any[] || []).forEach(f => {
+      const key = f.carrera_nombre + '|' + f.universidad_sigla;
+      if (!agg[key]) agg[key] = { nombre: f.carrera_nombre, universidad: f.universidad_sigla, count: 0, sum: 0 };
+      agg[key].count += 1;
+      agg[key].sum += f.porcentaje || 0;
+    });
+
+    const carrerasArr = Object.values(agg)
+      .map(a => ({ nombre: a.nombre, universidad: a.universidad, count: a.count, promedio: Math.round(a.sum / a.count) }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+    setTopCarreras(carrerasArr);
   }
 
   function exportCSV() {
