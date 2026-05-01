@@ -298,10 +298,14 @@ export default function OrientacionVocacional() {
       </Card>
 
       <Tabs defaultValue="carreras" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="carreras" className="text-xs"><Sparkles className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Carreras</TabsTrigger>
+          <TabsTrigger value="favoritas" className="text-xs gap-1">
+            <GitCompare className="w-3.5 h-3.5 hidden sm:inline" />Comparar
+            {favoritas.length > 0 && <Badge variant="secondary" className="h-4 px-1 text-[9px]">{favoritas.length}</Badge>}
+          </TabsTrigger>
           <TabsTrigger value="perfil" className="text-xs">Factores</TabsTrigger>
-          <TabsTrigger value="mapa" className="text-xs"><Building2 className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Universidades</TabsTrigger>
+          <TabsTrigger value="mapa" className="text-xs"><Building2 className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Univ.</TabsTrigger>
           <TabsTrigger value="plan" className="text-xs"><ListChecks className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Plan</TabsTrigger>
         </TabsList>
 
