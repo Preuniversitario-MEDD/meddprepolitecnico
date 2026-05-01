@@ -24,7 +24,7 @@ import {
   type ResultadoCompatibilidad,
 } from '@/lib/compatibilidadVocacional';
 
-const UNIVERSIDADES = ['ESPOL', 'ECOTEC', 'UEES', 'UNEMI'] as const;
+const UNIVERSIDADES = ['ESPOL', 'ECOTEC', 'UEES', 'UNEMI', 'UG', 'UCE'] as const;
 const MODALIDADES = ['presencial', 'semipresencial', 'online', 'hibrida'] as const;
 
 function RingProgress({ percent, size = 96, color = 'hsl(var(--primary))' }: { percent: number; size?: number; color?: string }) {
