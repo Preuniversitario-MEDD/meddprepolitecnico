@@ -281,7 +281,17 @@ export default function AdminStudents() {
                             {student.activo ? '● Activo' : '● Bloqueado'}
                           </span>
                         </div>
-                        {/* Course badges */}
+                        {/* Carrera de interés */}
+                        {studentCarreras[student.user_id] && (
+                          <div className="flex items-center gap-1.5 mt-1.5 text-xs">
+                            <span className="text-muted-foreground">🎯 Carrera de interés:</span>
+                            <Badge variant="outline" className="text-[10px] gap-1 border-pink-500/40 text-pink-600 dark:text-pink-400">
+                              {studentCarreras[student.user_id].nombre}
+                              <span className="opacity-70">· {studentCarreras[student.user_id].universidad}</span>
+                              <span className="font-mono">{studentCarreras[student.user_id].porcentaje}%</span>
+                            </Badge>
+                          </div>
+                        )}
                         {studentCursos[student.user_id]?.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {studentCursos[student.user_id].map(c => (
