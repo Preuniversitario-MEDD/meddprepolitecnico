@@ -145,6 +145,10 @@ export default function OrientacionVocacional() {
   }, [compatTotal, universidadesSel, modalidadSel, ciudadSel, busqueda]);
 
   const top1 = compat[0];
+  const carrerasFavoritas = useMemo(
+    () => compatTotal.filter(c => favoritas.includes(c.carrera.id)),
+    [compatTotal, favoritas]
+  );
 
   useEffect(() => {
     if (loading || !top1 || !savedTopId) return;
