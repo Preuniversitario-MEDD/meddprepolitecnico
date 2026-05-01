@@ -93,6 +93,7 @@ export default function OrientacionVocacional() {
   const [savedTopId, setSavedTopId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const { favoritas, toggle: toggleFavorita, isFavorita } = useCarrerasFavoritas();
 
   // Filtros
   const [universidadesSel, setUniversidadesSel] = useState<string[]>([...UNIVERSIDADES]);
