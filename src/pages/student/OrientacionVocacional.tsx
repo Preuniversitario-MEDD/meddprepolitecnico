@@ -317,11 +317,26 @@ export default function OrientacionVocacional() {
             <div className="grid gap-3 sm:grid-cols-2">
               {(showAll ? compat : compat.slice(0, 6)).map((c, i) => (
                 <motion.div key={c.carrera.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Card className={`overflow-hidden transition-all ${expanded === c.carrera.id ? 'ring-2 ring-primary' : ''}`}>
+                  <Card className={`overflow-hidden transition-all relative ${expanded === c.carrera.id ? 'ring-2 ring-primary' : ''} ${isFavorita(c.carrera.id) ? 'ring-1 ring-pink-500/50' : ''}`}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorita({
+                          carrera_id: c.carrera.id,
+                          carrera_nombre: c.carrera.nombre,
+                          universidad_sigla: c.carrera.siglaUniversidad,
+                          porcentaje: c.porcentaje,
+                        });
+                      }}
+                      className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-background/80 backdrop-blur hover:bg-background flex items-center justify-center transition-colors"
+                      aria-label={isFavorita(c.carrera.id) ? 'Quitar de favoritas' : 'Marcar como favorita'}
+                    >
+                      <Heart className={`w-4 h-4 transition-all ${isFavorita(c.carrera.id) ? 'fill-pink-500 text-pink-500' : 'text-muted-foreground'}`} />
+                    </button>
                     <CardContent className="p-4 space-y-3 cursor-pointer" onClick={() => setExpanded(expanded === c.carrera.id ? null : c.carrera.id)}>
                       <div className="flex items-start gap-3">
                         <RingProgress percent={c.porcentaje} size={86} />
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pr-8">
                           <div className="flex items-center gap-1 flex-wrap">
                             <span className="text-2xl">{c.carrera.icono}</span>
                             {i === 0 && <Badge className="bg-primary text-primary-foreground text-[10px]">Top</Badge>}
