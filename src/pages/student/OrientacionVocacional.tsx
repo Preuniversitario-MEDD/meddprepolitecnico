@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Compass, Sparkles, Building2, ListChecks, Download, Save, ChevronDown, AlertTriangle, ArrowRight, ExternalLink, Search, X } from 'lucide-react';
+import { Compass, Sparkles, Building2, ListChecks, Download, Save, ChevronDown, AlertTriangle, ArrowRight, ExternalLink, Search, X, Heart, GitCompare } from 'lucide-react';
+import { useCarrerasFavoritas } from '@/hooks/useCarrerasFavoritas';
+import ComparacionCarreras from '@/components/vocational/ComparacionCarreras';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -91,6 +93,7 @@ export default function OrientacionVocacional() {
   const [savedTopId, setSavedTopId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const { favoritas, toggle: toggleFavorita, isFavorita } = useCarrerasFavoritas();
 
   // Filtros
   const [universidadesSel, setUniversidadesSel] = useState<string[]>([...UNIVERSIDADES]);
@@ -142,6 +145,10 @@ export default function OrientacionVocacional() {
   }, [compatTotal, universidadesSel, modalidadSel, ciudadSel, busqueda]);
 
   const top1 = compat[0];
+  const carrerasFavoritas = useMemo(
+    () => compatTotal.filter(c => favoritas.includes(c.carrera.id)),
+    [compatTotal, favoritas]
+  );
 
   useEffect(() => {
     if (loading || !top1 || !savedTopId) return;
@@ -291,10 +298,14 @@ export default function OrientacionVocacional() {
       </Card>
 
       <Tabs defaultValue="carreras" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="carreras" className="text-xs"><Sparkles className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Carreras</TabsTrigger>
+          <TabsTrigger value="favoritas" className="text-xs gap-1">
+            <GitCompare className="w-3.5 h-3.5 hidden sm:inline" />Comparar
+            {favoritas.length > 0 && <Badge variant="secondary" className="h-4 px-1 text-[9px]">{favoritas.length}</Badge>}
+          </TabsTrigger>
           <TabsTrigger value="perfil" className="text-xs">Factores</TabsTrigger>
-          <TabsTrigger value="mapa" className="text-xs"><Building2 className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Universidades</TabsTrigger>
+          <TabsTrigger value="mapa" className="text-xs"><Building2 className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Univ.</TabsTrigger>
           <TabsTrigger value="plan" className="text-xs"><ListChecks className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Plan</TabsTrigger>
         </TabsList>
 
@@ -306,11 +317,26 @@ export default function OrientacionVocacional() {
             <div className="grid gap-3 sm:grid-cols-2">
               {(showAll ? compat : compat.slice(0, 6)).map((c, i) => (
                 <motion.div key={c.carrera.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Card className={`overflow-hidden transition-all ${expanded === c.carrera.id ? 'ring-2 ring-primary' : ''}`}>
+                  <Card className={`overflow-hidden transition-all relative ${expanded === c.carrera.id ? 'ring-2 ring-primary' : ''} ${isFavorita(c.carrera.id) ? 'ring-1 ring-pink-500/50' : ''}`}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorita({
+                          carrera_id: c.carrera.id,
+                          carrera_nombre: c.carrera.nombre,
+                          universidad_sigla: c.carrera.siglaUniversidad,
+                          porcentaje: c.porcentaje,
+                        });
+                      }}
+                      className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-background/80 backdrop-blur hover:bg-background flex items-center justify-center transition-colors"
+                      aria-label={isFavorita(c.carrera.id) ? 'Quitar de favoritas' : 'Marcar como favorita'}
+                    >
+                      <Heart className={`w-4 h-4 transition-all ${isFavorita(c.carrera.id) ? 'fill-pink-500 text-pink-500' : 'text-muted-foreground'}`} />
+                    </button>
                     <CardContent className="p-4 space-y-3 cursor-pointer" onClick={() => setExpanded(expanded === c.carrera.id ? null : c.carrera.id)}>
                       <div className="flex items-start gap-3">
                         <RingProgress percent={c.porcentaje} size={86} />
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pr-8">
                           <div className="flex items-center gap-1 flex-wrap">
                             <span className="text-2xl">{c.carrera.icono}</span>
                             {i === 0 && <Badge className="bg-primary text-primary-foreground text-[10px]">Top</Badge>}
@@ -382,7 +408,22 @@ export default function OrientacionVocacional() {
           )}
         </TabsContent>
 
-        {/* TAB 2 — FACTORES */}
+        {/* TAB COMPARAR — FAVORITAS */}
+        <TabsContent value="favoritas" className="space-y-3">
+          <ComparacionCarreras
+            carreras={carrerasFavoritas}
+            onRemove={(id) => {
+              const c = carrerasFavoritas.find(x => x.carrera.id === id);
+              if (!c) return;
+              toggleFavorita({
+                carrera_id: c.carrera.id,
+                carrera_nombre: c.carrera.nombre,
+                universidad_sigla: c.carrera.siglaUniversidad,
+                porcentaje: c.porcentaje,
+              });
+            }}
+          />
+        </TabsContent>
         <TabsContent value="perfil" className="space-y-3">
           <Card>
             <CardHeader><CardTitle className="text-base">Tus 5 dimensiones</CardTitle></CardHeader>

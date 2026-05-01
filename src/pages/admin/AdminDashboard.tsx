@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, BookOpen, TrendingUp, CheckCircle, Activity, Award, Download } from 'lucide-react';
+import { Users, BookOpen, TrendingUp, CheckCircle, Activity, Award, Download, Compass } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import { useToast } from '@/hooks/use-toast';
 
@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   });
   const [sessionData, setSessionData] = useState<{ name: string; completados: number }[]>([]);
   const [ranking, setRanking] = useState<StudentRanking[]>([]);
+  const [topCarreras, setTopCarreras] = useState<{ nombre: string; universidad: string; count: number; promedio: number }[]>([]);
 
   useEffect(() => {
     loadStats();
@@ -93,6 +94,35 @@ export default function AdminDashboard() {
 
       setRanking(rankingData);
     }
+
+    // Carreras más elegidas (cruzando orientacion_vocacional + carreras_favoritas)
+    const [{ data: orientaciones }, { data: favs }] = await Promise.all([
+      supabase.from('orientacion_vocacional').select('top_carreras'),
+      supabase.from('carreras_favoritas').select('carrera_nombre, universidad_sigla, porcentaje'),
+    ]);
+
+    const agg: Record<string, { nombre: string; universidad: string; count: number; sum: number }> = {};
+    (orientaciones as any[] || []).forEach(o => {
+      const top = Array.isArray(o.top_carreras) ? o.top_carreras[0] : null;
+      if (top?.nombre) {
+        const key = top.nombre + '|' + (top.universidad || '');
+        if (!agg[key]) agg[key] = { nombre: top.nombre, universidad: top.universidad || '', count: 0, sum: 0 };
+        agg[key].count += 1;
+        agg[key].sum += top.porcentaje || 0;
+      }
+    });
+    (favs as any[] || []).forEach(f => {
+      const key = f.carrera_nombre + '|' + f.universidad_sigla;
+      if (!agg[key]) agg[key] = { nombre: f.carrera_nombre, universidad: f.universidad_sigla, count: 0, sum: 0 };
+      agg[key].count += 1;
+      agg[key].sum += f.porcentaje || 0;
+    });
+
+    const carrerasArr = Object.values(agg)
+      .map(a => ({ nombre: a.nombre, universidad: a.universidad, count: a.count, promedio: Math.round(a.sum / a.count) }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+    setTopCarreras(carrerasArr);
   }
 
   function exportCSV() {
@@ -211,6 +241,43 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Carreras más elegidas */}
+      {topCarreras.length > 0 && (
+        <Card className="card-elevated">
+          <CardHeader>
+            <CardTitle className="text-base font-display flex items-center gap-2">
+              <Compass className="w-5 h-5 text-[hsl(var(--neon-violet))]" /> Carreras más elegidas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {topCarreras.map((c, i) => (
+                <motion.div
+                  key={c.nombre + c.universidad}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="p-3 rounded-lg border bg-card/50 hover:bg-card transition-colors space-y-1"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-muted-foreground">#{i + 1}</span>
+                    <span className="text-2xl font-bold text-[hsl(var(--neon-violet))]">{c.count}</span>
+                  </div>
+                  <p className="font-semibold text-sm leading-tight line-clamp-2">{c.nombre}</p>
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t">
+                    <span>{c.universidad}</span>
+                    <span className="font-mono">{c.promedio}% afín</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-3 text-center">
+              Cuenta basada en la carrera #1 guardada por cada estudiante + carreras marcadas como favoritas.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Ranking Table */}
       {ranking.length > 0 && (

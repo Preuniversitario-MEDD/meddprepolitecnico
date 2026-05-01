@@ -41,6 +41,36 @@ export type Database = {
         }
         Relationships: []
       }
+      carreras_favoritas: {
+        Row: {
+          carrera_id: string
+          carrera_nombre: string
+          created_at: string
+          id: string
+          porcentaje: number
+          universidad_sigla: string
+          user_id: string
+        }
+        Insert: {
+          carrera_id: string
+          carrera_nombre: string
+          created_at?: string
+          id?: string
+          porcentaje?: number
+          universidad_sigla: string
+          user_id: string
+        }
+        Update: {
+          carrera_id?: string
+          carrera_nombre?: string
+          created_at?: string
+          id?: string
+          porcentaje?: number
+          universidad_sigla?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       competencia_participantes: {
         Row: {
           avatar_url: string | null

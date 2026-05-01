@@ -46,6 +46,7 @@ function formatDate(dateStr: string) {
 export default function AdminStudents() {
   const [students, setStudents] = useState<Profile[]>([]);
   const [studentCursos, setStudentCursos] = useState<Record<string, { id: string; titulo: string }[]>>({});
+  const [studentCarreras, setStudentCarreras] = useState<Record<string, { nombre: string; universidad: string; porcentaje: number }>>({});
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [editStudent, setEditStudent] = useState<Profile | null>(null);
@@ -75,8 +76,27 @@ export default function AdminStudents() {
         }
         setStudentCursos(map);
       }
+      // Load top vocational career per student
+      const { data: orientaciones } = await supabase
+        .from('orientacion_vocacional')
+        .select('user_id, top_carreras');
+      if (orientaciones) {
+        const carrMap: Record<string, { nombre: string; universidad: string; porcentaje: number }> = {};
+        for (const o of orientaciones as any[]) {
+          const top = Array.isArray(o.top_carreras) ? o.top_carreras[0] : null;
+          if (top?.nombre) {
+            carrMap[o.user_id] = {
+              nombre: top.nombre,
+              universidad: top.universidad || '',
+              porcentaje: top.porcentaje || 0,
+            };
+          }
+        }
+        setStudentCarreras(carrMap);
+      }
     }
   }
+
 
   async function addStudent() {
     if (!form.cedula || form.cedula.length !== 10) {
@@ -261,7 +281,17 @@ export default function AdminStudents() {
                             {student.activo ? '● Activo' : '● Bloqueado'}
                           </span>
                         </div>
-                        {/* Course badges */}
+                        {/* Carrera de interés */}
+                        {studentCarreras[student.user_id] && (
+                          <div className="flex items-center gap-1.5 mt-1.5 text-xs">
+                            <span className="text-muted-foreground">🎯 Carrera de interés:</span>
+                            <Badge variant="outline" className="text-[10px] gap-1 border-pink-500/40 text-pink-600 dark:text-pink-400">
+                              {studentCarreras[student.user_id].nombre}
+                              <span className="opacity-70">· {studentCarreras[student.user_id].universidad}</span>
+                              <span className="font-mono">{studentCarreras[student.user_id].porcentaje}%</span>
+                            </Badge>
+                          </div>
+                        )}
                         {studentCursos[student.user_id]?.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {studentCursos[student.user_id].map(c => (
