@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Compass, Sparkles, Building2, ListChecks, Download, Save, ChevronDown, AlertTriangle, ArrowRight, ExternalLink, Search, X } from 'lucide-react';
+import { Compass, Sparkles, Building2, ListChecks, Download, Save, ChevronDown, AlertTriangle, ArrowRight, ExternalLink, Search, X, Heart, GitCompare } from 'lucide-react';
+import { useCarrerasFavoritas } from '@/hooks/useCarrerasFavoritas';
+import ComparacionCarreras from '@/components/vocational/ComparacionCarreras';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
