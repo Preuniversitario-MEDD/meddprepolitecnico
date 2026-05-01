@@ -408,7 +408,22 @@ export default function OrientacionVocacional() {
           )}
         </TabsContent>
 
-        {/* TAB 2 — FACTORES */}
+        {/* TAB COMPARAR — FAVORITAS */}
+        <TabsContent value="favoritas" className="space-y-3">
+          <ComparacionCarreras
+            carreras={carrerasFavoritas}
+            onRemove={(id) => {
+              const c = carrerasFavoritas.find(x => x.carrera.id === id);
+              if (!c) return;
+              toggleFavorita({
+                carrera_id: c.carrera.id,
+                carrera_nombre: c.carrera.nombre,
+                universidad_sigla: c.carrera.siglaUniversidad,
+                porcentaje: c.porcentaje,
+              });
+            }}
+          />
+        </TabsContent>
         <TabsContent value="perfil" className="space-y-3">
           <Card>
             <CardHeader><CardTitle className="text-base">Tus 5 dimensiones</CardTitle></CardHeader>
