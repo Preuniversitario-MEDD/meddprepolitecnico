@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_logs: {
+        Row: {
+          accion: string
+          detalle: string | null
+          exitoso: boolean
+          fecha: string
+          id: string
+          ip_address: string | null
+          ruta: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          accion?: string
+          detalle?: string | null
+          exitoso?: boolean
+          fecha?: string
+          id?: string
+          ip_address?: string | null
+          ruta: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          accion?: string
+          detalle?: string | null
+          exitoso?: boolean
+          fecha?: string
+          id?: string
+          ip_address?: string | null
+          ruta?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       biblioteca: {
         Row: {
           categoria: string | null
