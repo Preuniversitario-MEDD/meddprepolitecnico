@@ -200,6 +200,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             {children}
           </motion.div>
         </ViewAsStudentContext.Provider>
+
+        <footer className="px-4 py-3 mt-6 border-t border-border text-[10px] text-muted-foreground text-center leading-relaxed">
+          © 2019-2026 PreUniversitario MEDD · Víctor Cañizares González
+          <span className="hidden sm:inline"> · </span>
+          <br className="sm:hidden" />
+          Fundado el 9 de enero de 2019 · Todos los derechos reservados
+        </footer>
       </main>
 
       {isMobile && (
