@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import type { Tables } from '@/integrations/supabase/types';
+import { encodeStorage, decodeStorage } from '@/lib/security';
+import { toast } from 'sonner';
 
 type Profile = Tables<'profiles'>;
 type AppRole = 'admin' | 'estudiante';
@@ -19,11 +21,40 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// === Rate limiting (client-side, ad-hoc) ===
+const MAX_INTENTOS = 10;
+const BLOQUEO_MINUTOS = 5;
+// === Inactividad ===
+const INACTIVIDAD_MS = 120 * 60 * 1000; // 120 min
+
+function intentosKey(c: string) { return `medd_intentos_${c}`; }
+function bloqueoKey(c: string) { return `medd_bloqueado_${c}`; }
+
+function getIntentos(cedula: string): number {
+  try { return parseInt(decodeStorage(localStorage.getItem(intentosKey(cedula)) || '') || '0', 10) || 0; }
+  catch { return 0; }
+}
+function setIntentos(cedula: string, n: number) {
+  localStorage.setItem(intentosKey(cedula), encodeStorage(String(n)));
+}
+function getBloqueoTs(cedula: string): number {
+  try { return parseInt(decodeStorage(localStorage.getItem(bloqueoKey(cedula)) || '') || '0', 10) || 0; }
+  catch { return 0; }
+}
+function setBloqueoTs(cedula: string, ts: number) {
+  localStorage.setItem(bloqueoKey(cedula), encodeStorage(String(ts)));
+}
+function limpiarRateLimit(cedula: string) {
+  localStorage.removeItem(intentosKey(cedula));
+  localStorage.removeItem(bloqueoKey(cedula));
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data: profileData } = await supabase
@@ -46,11 +77,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const signOut = useCallback(async () => {
+    if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    await supabase.auth.signOut();
+  }, []);
+
+  // === Auto-logout por inactividad ===
+  const resetearInactividad = useCallback(() => {
+    if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    inactivityTimer.current = setTimeout(async () => {
+      await signOut();
+      toast.info('Sesión cerrada por inactividad', {
+        description: 'Vuelve a iniciar sesión para continuar.',
+      });
+    }, INACTIVIDAD_MS);
+  }, [signOut]);
+
+  useEffect(() => {
+    if (!user) {
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      return;
+    }
+    resetearInactividad();
+    const handler = () => resetearInactividad();
+    const events: (keyof DocumentEventMap)[] = ['mousemove', 'keypress', 'click', 'scroll'];
+    events.forEach(ev => document.addEventListener(ev, handler, { passive: true }));
+    return () => {
+      events.forEach(ev => document.removeEventListener(ev, handler));
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    };
+  }, [user, resetearInactividad]);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
-        // Use setTimeout to avoid race conditions with trigger
         setTimeout(() => fetchProfile(session.user.id), 100);
       } else {
         setUser(null);
@@ -72,18 +133,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   const signIn = async (cedula: string, password: string) => {
+    // ── Rate limit
+    const ahora = Date.now();
+    const bloqueoTs = getBloqueoTs(cedula);
+    if (bloqueoTs > 0) {
+      const expira = bloqueoTs + BLOQUEO_MINUTOS * 60 * 1000;
+      if (ahora < expira) {
+        const min = Math.ceil((expira - ahora) / 60000);
+        return { error: `Cuenta bloqueada por demasiados intentos. Espera ${min} minuto(s).` };
+      }
+      limpiarRateLimit(cedula);
+    }
+
     const email = `${cedula}@espolmedd.app`;
-    
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    
+
     if (error) {
+      const intentos = getIntentos(cedula) + 1;
+      setIntentos(cedula, intentos);
+      if (intentos >= MAX_INTENTOS) {
+        setBloqueoTs(cedula, Date.now());
+        return { error: `Cuenta bloqueada por ${BLOQUEO_MINUTOS} minutos tras ${MAX_INTENTOS} intentos fallidos.` };
+      }
       if (error.message.includes('Invalid login credentials')) {
-        return { error: 'Cédula o contraseña incorrecta' };
+        const restantes = MAX_INTENTOS - intentos;
+        return { error: `Cédula o contraseña incorrecta (${restantes} intento(s) restantes)` };
       }
       return { error: error.message };
     }
 
-    // Check if first time
     const { data: prof } = await supabase
       .from('profiles')
       .select('primera_vez, activo')
@@ -95,11 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: 'Tu cuenta está desactivada. Contacta al administrador.' };
     }
 
+    limpiarRateLimit(cedula);
     return { firstTime: prof?.primera_vez ?? false };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
   };
 
   const changePassword = async (newPassword: string) => {
