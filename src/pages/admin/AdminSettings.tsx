@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import { APP_INFO } from '@/App';
+import { Info } from 'lucide-react';
 
 interface RoleRow {
   id: string;
@@ -54,8 +56,6 @@ export default function AdminSettings() {
       <h1 className="text-2xl font-display font-bold">Roles de Usuario</h1>
       <p className="text-sm text-muted-foreground">
         Haz doble clic en un rol para editarlo. Solo se permiten <strong>admin</strong> o <strong>estudiante</strong>.
-        Los campos ID y User ID no son editables para evitar errores.
-      </p>
 
       <Card className="card-elevated overflow-hidden">
         <CardContent className="p-0">
