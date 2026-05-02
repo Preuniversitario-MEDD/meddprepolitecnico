@@ -37,13 +37,49 @@ import SchulteRecords from "./pages/student/SchulteRecords";
 import AdminConcentracion from "./pages/admin/AdminConcentracion";
 import OrientacionVocacional from "./pages/student/OrientacionVocacional";
 import NotFound from "./pages/NotFound";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { logAccess } from "@/lib/security";
+import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * Información global de la aplicación.
+ * © 2019-2026 Víctor Cañizares González — PreUniversitario MEDD.
+ */
+export const APP_INFO = {
+  nombre: 'PreUniversitario MEDD',
+  version: '2.0.0',
+  autor: 'Víctor Cañizares González',
+  fundacion: '2019-01-09',
+  copyright: '© 2019-2026 Víctor Cañizares González',
+  descripcion: 'Plataforma educativa digital para preparación universitaria',
+  contacto: 'admin@meddprepolitecnico.com',
+} as const;
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode; requiredRole?: 'admin' | 'estudiante' }) {
   const { user, role, loading } = useAuth();
+  const location = useLocation();
+
+  // Verificar expiración de sesión y registrar acceso
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (!data.session) {
+        // Sesión expirada
+        return;
+      }
+      logAccess(supabase, user.id, location.pathname, true);
+    })();
+    return () => { cancelled = true; };
+  }, [user, location.pathname]);
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace state={{ msg: 'Sesión expirada. Por favor inicia sesión nuevamente.' }} />;
   if (requiredRole && role !== requiredRole) return <Navigate to={role === 'admin' ? '/admin' : '/student'} replace />;
   return <AppLayout>{children}</AppLayout>;
 }

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import { APP_INFO } from '@/App';
+import { Info } from 'lucide-react';
 
 interface RoleRow {
   id: string;
@@ -56,7 +58,6 @@ export default function AdminSettings() {
         Haz doble clic en un rol para editarlo. Solo se permiten <strong>admin</strong> o <strong>estudiante</strong>.
         Los campos ID y User ID no son editables para evitar errores.
       </p>
-
       <Card className="card-elevated overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -127,6 +128,41 @@ export default function AdminSettings() {
               </tbody>
             </table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Información del sistema */}
+      <Card className="card-elevated">
+        <CardContent className="p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <Info className="w-4 h-4 text-primary" />
+            <h2 className="font-display font-semibold text-base">Información del sistema</h2>
+          </div>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <div className="flex justify-between sm:block">
+              <dt className="text-muted-foreground">Nombre</dt>
+              <dd className="font-medium">{APP_INFO.nombre}</dd>
+            </div>
+            <div className="flex justify-between sm:block">
+              <dt className="text-muted-foreground">Versión</dt>
+              <dd className="font-mono">{APP_INFO.version}</dd>
+            </div>
+            <div className="flex justify-between sm:block">
+              <dt className="text-muted-foreground">Autor</dt>
+              <dd className="font-medium">{APP_INFO.autor}</dd>
+            </div>
+            <div className="flex justify-between sm:block">
+              <dt className="text-muted-foreground">Fecha de fundación</dt>
+              <dd>9 de enero de 2019</dd>
+            </div>
+            <div className="flex justify-between sm:block sm:col-span-2">
+              <dt className="text-muted-foreground">Copyright</dt>
+              <dd className="text-xs">{APP_INFO.copyright}</dd>
+            </div>
+          </dl>
+          <p className="text-[11px] text-muted-foreground italic pt-2 border-t border-border">
+            Todos los derechos reservados. Software propietario — Prohibida su reproducción.
+          </p>
         </CardContent>
       </Card>
     </div>

@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import CourseManager from '@/components/admin/CourseManager';
 import StudentStatsTab from '@/components/admin/StudentStatsTab';
+import { validarCedulaEcuatoriana, sanitizeInput } from '@/lib/security';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Profile = Tables<'profiles'> & { colegio?: string };
@@ -159,15 +160,18 @@ export default function AdminStudents() {
 
   async function saveEdit() {
     if (!editStudent) return;
-    const usuario = generateUsuario(form.nombre, form.apellidos);
+    const nombreSan = sanitizeInput(form.nombre);
+    const apellidosSan = sanitizeInput(form.apellidos);
+    const colegioSan = sanitizeInput(form.colegio);
+    const usuario = generateUsuario(nombreSan, apellidosSan);
     await supabase.from('profiles').update({
-      nombre: form.nombre,
-      apellidos: form.apellidos,
+      nombre: nombreSan,
+      apellidos: apellidosSan,
       fecha_nacimiento: form.fechaNacimiento || null,
       usuario,
-      colegio: form.colegio,
+      colegio: colegioSan,
     } as any).eq('id', editStudent.id);
-    toast({ title: 'Actualizado', description: `Datos de ${form.nombre} actualizados` });
+    toast({ title: 'Actualizado', description: `Datos de ${nombreSan} actualizados` });
     setEditStudent(null);
     loadStudents();
   }
