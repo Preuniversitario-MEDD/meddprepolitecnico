@@ -2,8 +2,8 @@
  * Catálogo de carreras universitarias del Ecuador.
  * © 2019-2026 Víctor Cañizares González — PreUniversitario MEDD.
  *
- * Universidades incluidas: ESPOL (35), ECOTEC (5), UEES (7), UNEMI (5), UG (12), UCE (13).
- * Total: 77 carreras.
+ * Universidades incluidas: ESPOL (40), ECOTEC (13), UEES (15), UNEMI (13), UG (22), UCE (19).
+ * Total: 122 carreras.
  */
 export type Modalidad = 'presencial' | 'online' | 'semipresencial' | 'hibrida';
 export type TipoCosto = 'publica' | 'privada' | 'cofinanciada';
