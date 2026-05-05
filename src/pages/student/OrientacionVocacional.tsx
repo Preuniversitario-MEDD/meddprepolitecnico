@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Compass, Sparkles, Building2, ListChecks, Download, Save, ChevronDown, AlertTriangle, ArrowRight, ExternalLink, Search, X, Heart, GitCompare, Info } from 'lucide-react';
+import { Compass, Sparkles, Building2, ListChecks, Download, Save, ChevronDown, AlertTriangle, ArrowRight, ExternalLink, Search, X, Heart, GitCompare, Info, Brain } from 'lucide-react';
 import { useCarrerasFavoritas } from '@/hooks/useCarrerasFavoritas';
 import ComparacionCarreras from '@/components/vocational/ComparacionCarreras';
+import Perfil360 from '@/components/vocational/Perfil360';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -306,8 +307,9 @@ export default function OrientacionVocacional() {
         </p>
       </div>
 
-      <Tabs defaultValue="carreras" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-5">
+      <Tabs defaultValue="perfil360" className="space-y-4">
+        <TabsList className="w-full grid grid-cols-6">
+          <TabsTrigger value="perfil360" className="text-xs gap-1"><Brain className="w-3.5 h-3.5 hidden sm:inline" />Perfil 360</TabsTrigger>
           <TabsTrigger value="carreras" className="text-xs"><Sparkles className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Carreras</TabsTrigger>
           <TabsTrigger value="favoritas" className="text-xs gap-1">
             <GitCompare className="w-3.5 h-3.5 hidden sm:inline" />Comparar
@@ -317,6 +319,11 @@ export default function OrientacionVocacional() {
           <TabsTrigger value="mapa" className="text-xs"><Building2 className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Univ.</TabsTrigger>
           <TabsTrigger value="plan" className="text-xs"><ListChecks className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Plan</TabsTrigger>
         </TabsList>
+
+        {/* TAB 0 — PERFIL 360 (motor IA) */}
+        <TabsContent value="perfil360" className="space-y-3">
+          <Perfil360 perfil={perfil} top={compatTotal} testsCount={testsCount} onIrATests={() => navigate('/student/psicometria')} />
+        </TabsContent>
 
         {/* TAB 1 — CARRERAS */}
         <TabsContent value="carreras" className="space-y-3">

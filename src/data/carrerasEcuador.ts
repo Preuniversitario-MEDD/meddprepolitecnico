@@ -38,6 +38,20 @@ export interface CarreraUniversidad {
   salarioPromedioEcuador: number;
   demandaLaboral: DemandaLaboral;
   tags: string[];
+  /** Competencias clave que el estudiante desarrollará (set completo opcional) */
+  competenciasClave?: string[];
+  /** Desafíos típicos del programa académico */
+  desafiosTipicos?: string[];
+  /** Fortalezas requeridas para destacar en la carrera */
+  fortalezasRequeridas?: string[];
+  /** Razones específicas para elegir esta carrera */
+  razonesElegir?: string[];
+  /** Razones para reconsiderar esta carrera */
+  razonesNoElegir?: string[];
+  /** Carga académica esperada */
+  cargaAcademica?: 'alta' | 'media' | 'baja';
+  /** Nivel de competencia interna del programa */
+  nivelCompetencia?: 'alta' | 'media' | 'baja';
 }
 
 export type CarreraEspol = CarreraUniversidad;

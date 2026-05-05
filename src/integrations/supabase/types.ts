@@ -767,6 +767,36 @@ export type Database = {
         }
         Relationships: []
       }
+      perfil_360_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          id: string
+          payload: Json
+          perfil_hash: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          perfil_hash: string
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          perfil_hash?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pestanas_sesion: {
         Row: {
           clave: string
