@@ -948,6 +948,33 @@ export type Database = {
           },
         ]
       }
+      psychometric_attempts: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          id: string
+          scores: Json
+          test_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          scores?: Json
+          test_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          scores?: Json
+          test_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       psychometric_results: {
         Row: {
           answers: Json
