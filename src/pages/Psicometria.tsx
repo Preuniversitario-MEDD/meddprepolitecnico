@@ -274,29 +274,27 @@ function ResultsScreen({ test, results, onRestart, onHome }: {
 // TEST SCREEN
 // ══════════════════════════════════════════════════════════════
 function TestScreen({ test, onFinish, onBack }: {
-  test: Test; onFinish: (r: InterpretResult[]) => void; onBack: () => void;
+  test: Test; onFinish: (r: InterpretResult[], startedAt: number) => void; onBack: () => void;
 }) {
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<string,number>>({});
-  const [selected, setSelected] = useState<number | null>(null);
+  const startedAtRef = (useState(() => Date.now())[0]);
   const q = test.questions[current];
+  const selected = answers[q.id] ?? null;
   const progress = Math.round(((current) / test.questions.length) * 100);
   const meta = AREA[test.area] ?? AREA.aptitudes;
 
-  useEffect(() => {
-    setSelected(answers[q.id] ?? null);
-  }, [current]);
+  function pick(v: number) {
+    setAnswers(prev => ({ ...prev, [q.id]: v }));
+  }
 
   function next() {
     if (selected === null) return;
-    const newAnswers = { ...answers, [q.id]: selected };
-    setAnswers(newAnswers);
     if (current + 1 < test.questions.length) {
       setCurrent(c => c + 1);
-      setSelected(null);
     } else {
-      const scores = calcScores(test, newAnswers);
-      onFinish(test.interpret(scores));
+      const scores = calcScores(test, answers);
+      onFinish(test.interpret(scores), startedAtRef);
     }
   }
 
