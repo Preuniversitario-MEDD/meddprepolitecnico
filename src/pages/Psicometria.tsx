@@ -542,7 +542,7 @@ export default function Psicometria() {
     setActiveTest(test); setPhase("test"); setViewingSession(null);
   }, []);
 
-  const finishTest = useCallback((r: InterpretResult[]) => {
+  const finishTest = useCallback((r: InterpretResult[], startedAt: number) => {
     setResults(r); setPhase("results");
     if (activeTest) {
       const session: SessionResult = { test: activeTest, results: r, date: new Date().toLocaleDateString("es") };
@@ -553,12 +553,19 @@ export default function Psicometria() {
       if (user) {
         const scores: Record<string, number> = {};
         r.forEach(res => { scores[res.category] = res.score; });
+        const duration_seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
         supabase.from("psychometric_results").upsert({
           user_id: user.id,
           test_key: activeTest.id,
           scores,
           answers: {},
         }, { onConflict: "user_id,test_key" }).then(() => {});
+        supabase.from("psychometric_attempts").insert({
+          user_id: user.id,
+          test_key: activeTest.id,
+          scores,
+          duration_seconds,
+        }).then(() => {});
       }
     }
   }, [activeTest, user]);
