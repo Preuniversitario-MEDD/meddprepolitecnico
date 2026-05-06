@@ -342,7 +342,7 @@ function TestScreen({ test, onFinish, onBack }: {
             return (
               <button
                 key={opt.value}
-                onClick={() => setSelected(opt.value)}
+                onClick={() => pick(opt.value)}
                 style={{
                   textAlign:"left", padding:"14px 16px", borderRadius:12,
                   border: isSelected ? `2px solid ${meta.color}` : `1px solid rgba(255,255,255,0.08)`,
