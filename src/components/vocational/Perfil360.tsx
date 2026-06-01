@@ -229,6 +229,11 @@ export default function Perfil360({ perfil, top, testsCount, onIrATests }: Props
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <Badge variant="secondary" className="text-[10px] h-5">#{i + 1}</Badge>
                           <Badge variant="outline" className="text-[10px] h-5 border-primary/40">{c.carrera.siglaUniversidad}</Badge>
+                          {c.porcentaje >= 85 && (
+                            <Badge className="text-[10px] h-5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/15">
+                              ★ Perfil idóneo
+                            </Badge>
+                          )}
                         </div>
                         <p className="font-semibold text-sm mt-1 leading-tight">{c.carrera.nombre}</p>
                         <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{c.carrera.facultad}</p>
