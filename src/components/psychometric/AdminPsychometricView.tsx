@@ -161,6 +161,7 @@ export default function AdminPsychometricView() {
                   <TableHead>Estudiante</TableHead>
                   <TableHead className="hidden md:table-cell">Cédula</TableHead>
                   <TableHead className="text-center">Tests</TableHead>
+                  <TableHead className="text-center hidden md:table-cell">Intentos</TableHead>
                   <TableHead className="text-center hidden sm:table-cell">Estado</TableHead>
                   <TableHead className="text-center">Ver</TableHead>
                 </TableRow>
@@ -168,11 +169,11 @@ export default function AdminPsychometricView() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Cargando...</TableCell>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Cargando...</TableCell>
                   </TableRow>
                 ) : filteredStudents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Sin resultados</TableCell>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Sin resultados</TableCell>
                   </TableRow>
                 ) : (
                   filteredStudents.map((s) => (
@@ -182,6 +183,11 @@ export default function AdminPsychometricView() {
                       <TableCell className="text-center">
                         <span className="font-bold">{s.completedCount}</span>
                         <span className="text-muted-foreground">/{allTests.length}</span>
+                      </TableCell>
+                      <TableCell className="text-center hidden md:table-cell">
+                        <Badge variant="outline" className="text-[10px]">
+                          <History className="w-3 h-3 mr-1" /> {s.totalAttempts}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-center hidden sm:table-cell">
                         <Badge variant={s.completedCount === allTests.length ? "default" : "secondary"} className="text-[10px]">
