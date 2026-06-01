@@ -442,34 +442,102 @@ export default function OrientacionVocacional() {
         </TabsContent>
         <TabsContent value="perfil" className="space-y-3">
           <Card>
-            <CardHeader><CardTitle className="text-base">Tus 5 dimensiones</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Tus 5 dimensiones — análisis específico</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-6 items-center">
+              <div className="grid md:grid-cols-2 gap-6 items-start">
                 <div className="space-y-3">
-                  {[
-                    { label: 'Empatía', val: perfil.empatia, info: 'Capacidad de comprender emociones ajenas. Clave en salud y educación.' },
-                    { label: 'Inteligencia emocional', val: perfil.inteligenciaEmocional, info: 'Manejo de tus propias emociones bajo presión.' },
-                    { label: 'Conducta prosocial', val: perfil.prosocial, info: 'Disposición a ayudar a otros. Determinante en carreras sociales.' },
-                    { label: 'Habilidades sociales', val: perfil.habilidadesSociales, info: 'Comunicación efectiva en equipos.' },
-                  ].map(d => (
-                    <div key={d.label}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="font-medium">{d.label}</span>
-                        <span className="text-muted-foreground">{d.val}%</span>
-                      </div>
-                      <Progress value={d.val} className="h-2" />
-                      <p className="text-[10px] text-muted-foreground mt-1">{d.info}</p>
-                    </div>
-                  ))}
-                  <div className="pt-2">
-                    <p className="text-xs font-medium mb-1">Estilo(s) de aprendizaje dominante(s)</p>
-                    <div className="flex gap-1">
+                  {(() => {
+                    const recomendar = (val: number, dim: string) => {
+                      const t1 = top1?.carrera.nombre || 'tu carrera ideal';
+                      const reglas: Record<string, { alto: string; medio: string; bajo: string }> = {
+                        Empatía: {
+                          alto: `Con ${val}/100 superas el umbral de carreras humanísticas. Aprovéchalo en voluntariados o tutorías; será diferenciador en ${t1}.`,
+                          medio: `Tu ${val}/100 es funcional pero mejorable. Practica escucha activa 10 min/día con un compañero — sube tu desempeño en entrevistas y trabajo en equipo.`,
+                          bajo: `Tu ${val}/100 te limita en carreras de alto contacto humano. Considera talleres de comunicación o evalúa carreras técnicas donde sea menos crítico.`,
+                        },
+                        'Inteligencia emocional': {
+                          alto: `Con ${val}/100 manejas presión muy bien — clave para examen y carreras exigentes como medicina, derecho o ingeniería.`,
+                          medio: `Tu ${val}/100 es estable pero bajo estrés puede flaquear. Implementa rutinas Pomodoro y respiración 4-7-8 antes de simulacros.`,
+                          bajo: `Con ${val}/100 corres riesgo de bloquearte en el examen. URGENTE: empieza un diario emocional diario y técnicas de mindfulness antes de continuar.`,
+                        },
+                        'Conducta prosocial': {
+                          alto: `${val}/100 es excelente para ${t1}. Tu disposición a ayudar te dará puntos en grupos de estudio y proyectos colaborativos.`,
+                          medio: `Tu ${val}/100 es típico. Participar en 1 proyecto comunitario al semestre te elevará a perfil idóneo en carreras sociales.`,
+                          bajo: `Con ${val}/100 quizá prefieras carreras individualistas (programación, diseño, investigación) antes que servicio.`,
+                        },
+                        'Habilidades sociales': {
+                          alto: `${val}/100 — perfil de líder. Considera roles de representación estudiantil; te abrirán puertas en ${t1}.`,
+                          medio: `${val}/100 te funciona en grupo, pero exposiciones te cuestan. Practica 1 presentación corta semanal frente al espejo.`,
+                          bajo: `Con ${val}/100 las exposiciones serán tu reto. Carreras como ingeniería, contaduría o programación reducen la exposición pública.`,
+                        },
+                      };
+                      const nivel = val >= 75 ? 'alto' : val >= 55 ? 'medio' : 'bajo';
+                      return reglas[dim]?.[nivel] || '';
+                    };
+                    const dims = [
+                      { label: 'Empatía', val: perfil.empatia, info: 'Capacidad de comprender emociones ajenas.' },
+                      { label: 'Inteligencia emocional', val: perfil.inteligenciaEmocional, info: 'Manejo de emociones bajo presión.' },
+                      { label: 'Conducta prosocial', val: perfil.prosocial, info: 'Disposición a ayudar a otros.' },
+                      { label: 'Habilidades sociales', val: perfil.habilidadesSociales, info: 'Comunicación efectiva en equipos.' },
+                    ];
+                    return dims.map(d => {
+                      const nivelColor = d.val >= 75 ? 'text-emerald-600 dark:text-emerald-400' : d.val >= 55 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400';
+                      const nivelLabel = d.val >= 75 ? 'Alto' : d.val >= 55 ? 'Medio' : 'A desarrollar';
+                      return (
+                        <div key={d.label} className="rounded-lg border p-3 bg-card/50">
+                          <div className="flex justify-between items-center text-xs mb-1.5">
+                            <span className="font-medium">{d.label}</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className={`text-[10px] h-5 ${nivelColor}`}>{nivelLabel}</Badge>
+                              <span className="text-muted-foreground font-mono">{d.val}/100</span>
+                            </div>
+                          </div>
+                          <Progress value={d.val} className="h-2 mb-2" />
+                          <p className="text-[10px] text-muted-foreground mb-1.5 italic">{d.info}</p>
+                          <p className="text-xs leading-relaxed">{recomendar(d.val, d.label)}</p>
+                        </div>
+                      );
+                    });
+                  })()}
+                  <div className="pt-1 rounded-lg border p-3 bg-card/50">
+                    <p className="text-xs font-medium mb-1.5">Estilo(s) de aprendizaje dominante(s)</p>
+                    <div className="flex gap-1 mb-2">
                       {perfil.estilosDominantes.map(e => <Badge key={e} variant="secondary">{e}</Badge>)}
                     </div>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {perfil.estilosDominantes[0] === 'V' && 'Visual: usa mapas mentales, diagramas, colores y subrayados. Evita audios largos sin soporte visual.'}
+                      {perfil.estilosDominantes[0] === 'A' && 'Auditivo: escucha podcasts y explica en voz alta lo que estudias. Graba resúmenes y reescúchalos.'}
+                      {perfil.estilosDominantes[0] === 'R' && 'Lecto-escritor: resume por escrito, haz fichas y reescribe apuntes. Prefiere libros antes que videos.'}
+                      {perfil.estilosDominantes[0] === 'K' && 'Kinestésico: aprende haciendo. Laboratorios, prácticas y ejercicios manuales son tu vía óptima.'}
+                    </p>
                   </div>
                 </div>
                 <div><RadarPerfil perfil={perfil} /></div>
               </div>
+
+              {/* Conclusión global */}
+              <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3">
+                <p className="text-xs uppercase tracking-wider text-primary font-semibold mb-1">Conclusión global</p>
+                <p className="text-sm leading-relaxed">
+                  {(() => {
+                    const prom = Math.round((perfil.empatia + perfil.inteligenciaEmocional + perfil.prosocial + perfil.habilidadesSociales) / 4);
+                    const debil = [
+                      { l: 'empatía', v: perfil.empatia },
+                      { l: 'inteligencia emocional', v: perfil.inteligenciaEmocional },
+                      { l: 'conducta prosocial', v: perfil.prosocial },
+                      { l: 'habilidades sociales', v: perfil.habilidadesSociales },
+                    ].sort((a, b) => a.v - b.v)[0];
+                    const fuerte = [
+                      { l: 'empatía', v: perfil.empatia },
+                      { l: 'inteligencia emocional', v: perfil.inteligenciaEmocional },
+                      { l: 'conducta prosocial', v: perfil.prosocial },
+                      { l: 'habilidades sociales', v: perfil.habilidadesSociales },
+                    ].sort((a, b) => b.v - a.v)[0];
+                    return `Tu promedio socioemocional es ${prom}/100. Tu mayor fortaleza es ${fuerte.l} (${fuerte.v}) y tu mayor oportunidad es ${debil.l} (${debil.v}). ${top1 ? `Esto te alinea con ${top1.carrera.nombre} (${top1.porcentaje}% match).` : ''} Enfoca los próximos 30 días en elevar ${debil.l} con prácticas diarias de 10-15 min.`;
+                  })()}
+                </p>
+              </div>
+
               {fechaUltima && (
                 <p className="text-[10px] text-muted-foreground">Basado en tus resultados del {new Date(fechaUltima).toLocaleDateString()}.</p>
               )}
