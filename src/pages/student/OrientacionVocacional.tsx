@@ -596,58 +596,111 @@ export default function OrientacionVocacional() {
             ))}
         </TabsContent>
 
-        {/* TAB 4 — PLAN */}
-        <TabsContent value="plan" className="space-y-3">
-          {!top1 ? <p className="text-sm text-muted-foreground">Completa más tests o ajusta los filtros para generar tu plan.</p> : (
+        {/* TAB 4 — PLAN: ROADMAP VISUAL TOP 3 */}
+        <TabsContent value="plan" className="space-y-4">
+          {compat.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Completa más tests o ajusta los filtros para generar tu plan.</p>
+          ) : (
             <>
-              <Card className="border-primary/40">
-                <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
-                  <div>
-                    <Badge className="mb-2">Carrera #1</Badge>
-                    <p className="text-lg font-bold">{top1.carrera.icono} {top1.carrera.nombre}</p>
-                    <p className="text-xs text-muted-foreground">{top1.carrera.siglaUniversidad} · {top1.carrera.facultad}</p>
-                  </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <a href={top1.carrera.urlUniversidad} target="_blank" rel="noopener noreferrer">
-                      Ver carrera <ExternalLink className="w-3 h-3 ml-1" />
-                    </a>
-                  </Button>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4 space-y-3">
-                  <div>
-                    <p className="font-semibold text-sm">Mes 1 — Confirmación vocacional</p>
-                    <p className="text-xs text-muted-foreground">Habla con un profesional de {top1.carrera.nombre}. Busca alumnos de {top1.carrera.siglaUniversidad} en LinkedIn y pregúntales sobre su día a día.</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Mes 2 — Refuerzo académico</p>
-                    <ul className="text-xs text-muted-foreground space-y-1 mt-1">
-                      {top1.carrera.materiasClaveExamen.map(m => {
-                        const consejo = perfil.estilosDominantes[0] === 'V' ? `crea diagramas y mapas mentales de ${m}.`
-                          : perfil.estilosDominantes[0] === 'A' ? `escucha podcasts y explica ${m} en voz alta.`
-                          : perfil.estilosDominantes[0] === 'R' ? `resuelve y redacta ejercicios escritos de ${m}.`
-                          : `practica con ejercicios manuales y experimentos de ${m}.`;
-                        return <li key={m}>• <span className="font-medium">{m}:</span> {consejo}</li>;
-                      })}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Mes 3 — Simulacros</p>
-                    <p className="text-xs text-muted-foreground">Realiza mínimo 3 simulacros completos en la sección Exámenes.</p>
-                  </div>
-                  {top1.factoresADesarrollar.length > 0 && (
-                    <div>
-                      <p className="font-semibold text-sm">Bonus — Desarrollo personal</p>
-                      <ul className="text-xs text-muted-foreground space-y-1 mt-1">
-                        {top1.factoresADesarrollar.map(f => (
-                          <li key={f}>• Trabaja en tu <span className="font-medium">{f.toLowerCase()}</span> — clave para destacar en {top1.carrera.nombre}.</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <div className="flex items-center gap-2">
+                <ListChecks className="w-4 h-4 text-primary" />
+                <h3 className="font-display font-semibold text-sm">Roadmap visual — tus 3 mejores carreras</h3>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-2">Cada hito está personalizado según tu perfil. Marca tu avance mes a mes.</p>
+
+              {compat.slice(0, 3).map((c, idx) => {
+                const accent = idx === 0 ? 'hsl(var(--primary))' : idx === 1 ? 'hsl(280 80% 60%)' : 'hsl(200 80% 55%)';
+                const estilo = perfil.estilosDominantes[0] || 'V';
+                const consejoEstilo =
+                  estilo === 'V' ? 'mapas mentales y diagramas con colores'
+                  : estilo === 'A' ? 'audios, podcasts y explicación en voz alta'
+                  : estilo === 'R' ? 'resúmenes escritos y fichas de estudio'
+                  : 'prácticas manuales y ejercicios aplicados';
+
+                const hitos = [
+                  {
+                    n: 1,
+                    titulo: 'Confirmación vocacional',
+                    detalle: `Entrevista a 2 profesionales y 1 estudiante avanzado de ${c.carrera.nombre} en ${c.carrera.siglaUniversidad}. Visita ${c.carrera.ciudad?.[0] || 'la sede'} o usa LinkedIn.`,
+                    duracion: 'Semana 1-4',
+                  },
+                  {
+                    n: 2,
+                    titulo: `Refuerzo en ${c.carrera.materiasClaveExamen.slice(0, 2).join(' y ')}`,
+                    detalle: `Tu estilo dominante (${estilo}) responde mejor a ${consejoEstilo}. Dedica 1 h diaria a ${c.carrera.materiasClaveExamen.join(', ')}.`,
+                    duracion: 'Semana 5-8',
+                  },
+                  {
+                    n: 3,
+                    titulo: 'Simulacros y métricas',
+                    detalle: `Realiza al menos 3 simulacros completos en la sección Exámenes. Meta mínima: ${c.carrera.tipoCosto === 'publica' ? '800/1000 (alta competencia pública)' : '70/100 (privada)'}.`,
+                    duracion: 'Semana 9-12',
+                  },
+                  ...(c.factoresADesarrollar.length > 0 ? [{
+                    n: 4,
+                    titulo: 'Desarrollo personal',
+                    detalle: `Trabaja activamente en: ${c.factoresADesarrollar.join(', ').toLowerCase()}. Son las dimensiones donde más distancia tienes respecto al perfil ideal de esta carrera.`,
+                    duracion: 'Continuo',
+                  }] : []),
+                ];
+
+                return (
+                  <motion.div key={c.carrera.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}>
+                    <Card className="overflow-hidden" style={{ borderLeftWidth: 4, borderLeftColor: accent }}>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="text-3xl shrink-0">{c.carrera.icono}</div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <Badge style={{ backgroundColor: accent, color: 'white' }} className="text-[10px] h-5">#{idx + 1}</Badge>
+                                <Badge variant="outline" className="text-[10px] h-5">{c.carrera.siglaUniversidad}</Badge>
+                                {c.porcentaje >= 85 && (
+                                  <Badge className="text-[10px] h-5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/15">★ Idóneo</Badge>
+                                )}
+                              </div>
+                              <p className="font-bold text-sm mt-0.5 leading-tight truncate">{c.carrera.nombre}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{c.carrera.facultad}</p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-2xl font-bold" style={{ color: accent }}>{c.porcentaje}%</div>
+                            <p className="text-[9px] uppercase text-muted-foreground">match</p>
+                          </div>
+                        </div>
+
+                        {/* Timeline */}
+                        <div className="relative pl-6 pt-1">
+                          <div className="absolute left-[10px] top-2 bottom-2 w-0.5" style={{ backgroundColor: `${accent}40` }} />
+                          {hitos.map((h, hi) => (
+                            <div key={hi} className="relative pb-4 last:pb-0">
+                              <div className="absolute -left-[18px] top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md" style={{ backgroundColor: accent }}>
+                                {h.n}
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                <p className="font-semibold text-xs">{h.titulo}</p>
+                                <Badge variant="outline" className="text-[9px] h-4 px-1.5">{h.duracion}</Badge>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-snug">{h.detalle}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        <Button size="sm" variant="outline" className="w-full text-xs gap-1" asChild>
+                          <a href={c.carrera.urlUniversidad} target="_blank" rel="noopener noreferrer">
+                            Ver malla curricular de {c.carrera.siglaUniversidad} <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+
+              <div className="flex gap-2 justify-end pt-2">
+                <Button variant="outline" size="sm" onClick={descargar}><Download className="w-4 h-4 mr-1" />Descargar</Button>
+                <Button size="sm" onClick={guardarResultados}><Save className="w-4 h-4 mr-1" />Guardar plan</Button>
+              </div>
             </>
           )}
         </TabsContent>
