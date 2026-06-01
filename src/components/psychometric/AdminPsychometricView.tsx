@@ -309,6 +309,121 @@ export default function AdminPsychometricView() {
                         );
                       })}
                     </div>
+
+                    {/* Historial de intentos + Evolución temporal */}
+                    {(() => {
+                      const attempts = selected.attempts[selectedTest.id] || [];
+                      if (attempts.length === 0) {
+                        return (
+                          <div className="rounded-lg border border-dashed p-3 text-center text-xs text-muted-foreground">
+                            <History className="w-4 h-4 mx-auto mb-1 opacity-50" />
+                            Sin intentos registrados (resultado previo a la activación del historial).
+                          </div>
+                        );
+                      }
+                      const avgDur = Math.round(attempts.reduce((a, x) => a + (x.duration_seconds || 0), 0) / attempts.length);
+                      const categories = Object.keys(attempts[0].scores || {});
+
+                      // Build line chart data
+                      const lineData = attempts.map((a, i) => {
+                        const row: any = { n: `#${i + 1}`, fecha: new Date(a.created_at).toLocaleDateString("es", { day: "2-digit", month: "2-digit" }) };
+                        categories.forEach(c => { row[c] = a.scores[c] ?? 0; });
+                        return row;
+                      });
+
+                      // Variation between first and last attempt
+                      const firstA = attempts[0]; const lastA = attempts[attempts.length - 1];
+                      const variations = categories.map(c => {
+                        const f = firstA.scores[c] ?? 0; const l = lastA.scores[c] ?? 0;
+                        const diff = l - f;
+                        return { cat: c, first: f, last: l, diff };
+                      });
+
+                      const palette = ["#534AB7", "#0F6E56", "#854F0B", "#993C1D", "#185FA5", "#3C3489", "#27500A", "#A32D2D"];
+
+                      return (
+                        <div className="space-y-3 pt-2 border-t">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <History className="w-4 h-4 text-primary" />
+                              <p className="font-semibold text-sm">Historial de intentos</p>
+                            </div>
+                            <div className="flex gap-2 flex-wrap">
+                              <Badge variant="secondary" className="text-[10px]">{attempts.length} intento{attempts.length !== 1 ? "s" : ""}</Badge>
+                              <Badge variant="outline" className="text-[10px]"><Clock className="w-3 h-3 mr-1" />Prom. {fmtDuration(avgDur)}</Badge>
+                            </div>
+                          </div>
+
+                          {/* Tabla de intentos */}
+                          <div className="overflow-x-auto rounded-lg border">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-[10px] h-8">#</TableHead>
+                                  <TableHead className="text-[10px] h-8">Fecha</TableHead>
+                                  <TableHead className="text-[10px] h-8 text-center">Duración</TableHead>
+                                  {categories.map(c => (
+                                    <TableHead key={c} className="text-[10px] h-8 text-center">{c}</TableHead>
+                                  ))}
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {attempts.map((a, i) => (
+                                  <TableRow key={a.id}>
+                                    <TableCell className="text-[10px] py-1.5 font-mono">#{i + 1}</TableCell>
+                                    <TableCell className="text-[10px] py-1.5">{new Date(a.created_at).toLocaleString("es", { dateStyle: "short", timeStyle: "short" })}</TableCell>
+                                    <TableCell className="text-[10px] py-1.5 text-center">{fmtDuration(a.duration_seconds)}</TableCell>
+                                    {categories.map(c => (
+                                      <TableCell key={c} className="text-[10px] py-1.5 text-center font-mono">{a.scores[c] ?? "—"}</TableCell>
+                                    ))}
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+
+                          {/* Gráfico de evolución (solo si hay ≥2 intentos) */}
+                          {attempts.length >= 2 && (
+                            <>
+                              <div className="h-[220px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart data={lineData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                    <XAxis dataKey="n" tick={{ fontSize: 10 }} />
+                                    <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                                    <Tooltip contentStyle={{ fontSize: 11 }} />
+                                    <Legend wrapperStyle={{ fontSize: 10 }} />
+                                    {categories.map((c, i) => (
+                                      <Line key={c} type="monotone" dataKey={c} stroke={palette[i % palette.length]} strokeWidth={2} dot={{ r: 3 }} />
+                                    ))}
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+
+                              {/* Variaciones primer vs último */}
+                              <div className="rounded-lg border p-3 space-y-1.5 bg-muted/20">
+                                <p className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Variación entre primer y último intento</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+                                  {variations.map(v => {
+                                    const Icon = v.diff > 0 ? TrendingUp : v.diff < 0 ? TrendingDown : Minus;
+                                    const color = v.diff > 2 ? "text-emerald-600 dark:text-emerald-400" : v.diff < -2 ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground";
+                                    return (
+                                      <div key={v.cat} className="flex items-center justify-between gap-1 text-[11px] px-2 py-1 rounded bg-card border">
+                                        <span className="truncate">{v.cat}</span>
+                                        <span className={`flex items-center gap-0.5 font-mono font-semibold ${color}`}>
+                                          <Icon className="w-3 h-3" />
+                                          {v.diff > 0 ? "+" : ""}{v.diff}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })()}
