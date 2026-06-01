@@ -11,12 +11,23 @@ import { motion } from "framer-motion";
 import { Users, Eye, CheckCircle, Clock, Brain, Search, History, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
+interface AttemptRow {
+  id: string;
+  user_id: string;
+  test_key: string;
+  scores: Record<string, number>;
+  duration_seconds: number;
+  created_at: string;
+}
+
 interface StudentRow {
   user_id: string;
   nombre: string;
   apellidos: string;
   cedula: string;
   results: Record<string, { scores: Record<string, number> }>;
+  attempts: Record<string, AttemptRow[]>; // test_key -> attempts ordered ASC
+  totalAttempts: number;
   completedCount: number;
 }
 
@@ -25,6 +36,13 @@ const AREA_COLORS: Record<string, string> = {
   actitudes: "#993C1D", aptitudes: "#185FA5", inteligencias: "#3C3489",
   aprendizaje: "#27500A", bienestar: "#A32D2D",
 };
+
+function fmtDuration(s: number) {
+  if (!s || s < 1) return "—";
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60); const r = s % 60;
+  return `${m}m ${r}s`;
+}
 
 export default function AdminPsychometricView() {
   const [students, setStudents] = useState<StudentRow[]>([]);
@@ -36,9 +54,11 @@ export default function AdminPsychometricView() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const [{ data: profiles }, { data: results }] = await Promise.all([
+    setLoading(true);
+    const [{ data: profiles }, { data: results }, { data: attempts }] = await Promise.all([
       supabase.from("profiles").select("user_id, nombre, apellidos, cedula"),
       supabase.from("psychometric_results").select("user_id, test_key, scores"),
+      supabase.from("psychometric_attempts").select("id, user_id, test_key, scores, duration_seconds, created_at").order("created_at", { ascending: true }),
     ]);
 
     const resultMap: Record<string, Record<string, { scores: Record<string, number> }>> = {};
@@ -47,14 +67,27 @@ export default function AdminPsychometricView() {
       resultMap[r.user_id][r.test_key] = { scores: r.scores };
     });
 
-    const rows: StudentRow[] = (profiles || []).map((p) => ({
-      user_id: p.user_id,
-      nombre: p.nombre,
-      apellidos: p.apellidos,
-      cedula: p.cedula,
-      results: resultMap[p.user_id] || {},
-      completedCount: Object.keys(resultMap[p.user_id] || {}).length,
-    }));
+    const attemptMap: Record<string, Record<string, AttemptRow[]>> = {};
+    (attempts as AttemptRow[] | null)?.forEach((a) => {
+      if (!attemptMap[a.user_id]) attemptMap[a.user_id] = {};
+      if (!attemptMap[a.user_id][a.test_key]) attemptMap[a.user_id][a.test_key] = [];
+      attemptMap[a.user_id][a.test_key].push(a);
+    });
+
+    const rows: StudentRow[] = (profiles || []).map((p) => {
+      const studentAttempts = attemptMap[p.user_id] || {};
+      const totalAttempts = Object.values(studentAttempts).reduce((s, arr) => s + arr.length, 0);
+      return {
+        user_id: p.user_id,
+        nombre: p.nombre,
+        apellidos: p.apellidos,
+        cedula: p.cedula,
+        results: resultMap[p.user_id] || {},
+        attempts: studentAttempts,
+        totalAttempts,
+        completedCount: Object.keys(resultMap[p.user_id] || {}).length,
+      };
+    });
 
     setStudents(rows.sort((a, b) => b.completedCount - a.completedCount));
     setLoading(false);
