@@ -442,34 +442,102 @@ export default function OrientacionVocacional() {
         </TabsContent>
         <TabsContent value="perfil" className="space-y-3">
           <Card>
-            <CardHeader><CardTitle className="text-base">Tus 5 dimensiones</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Tus 5 dimensiones — análisis específico</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-6 items-center">
+              <div className="grid md:grid-cols-2 gap-6 items-start">
                 <div className="space-y-3">
-                  {[
-                    { label: 'Empatía', val: perfil.empatia, info: 'Capacidad de comprender emociones ajenas. Clave en salud y educación.' },
-                    { label: 'Inteligencia emocional', val: perfil.inteligenciaEmocional, info: 'Manejo de tus propias emociones bajo presión.' },
-                    { label: 'Conducta prosocial', val: perfil.prosocial, info: 'Disposición a ayudar a otros. Determinante en carreras sociales.' },
-                    { label: 'Habilidades sociales', val: perfil.habilidadesSociales, info: 'Comunicación efectiva en equipos.' },
-                  ].map(d => (
-                    <div key={d.label}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="font-medium">{d.label}</span>
-                        <span className="text-muted-foreground">{d.val}%</span>
-                      </div>
-                      <Progress value={d.val} className="h-2" />
-                      <p className="text-[10px] text-muted-foreground mt-1">{d.info}</p>
-                    </div>
-                  ))}
-                  <div className="pt-2">
-                    <p className="text-xs font-medium mb-1">Estilo(s) de aprendizaje dominante(s)</p>
-                    <div className="flex gap-1">
+                  {(() => {
+                    const recomendar = (val: number, dim: string) => {
+                      const t1 = top1?.carrera.nombre || 'tu carrera ideal';
+                      const reglas: Record<string, { alto: string; medio: string; bajo: string }> = {
+                        Empatía: {
+                          alto: `Con ${val}/100 superas el umbral de carreras humanísticas. Aprovéchalo en voluntariados o tutorías; será diferenciador en ${t1}.`,
+                          medio: `Tu ${val}/100 es funcional pero mejorable. Practica escucha activa 10 min/día con un compañero — sube tu desempeño en entrevistas y trabajo en equipo.`,
+                          bajo: `Tu ${val}/100 te limita en carreras de alto contacto humano. Considera talleres de comunicación o evalúa carreras técnicas donde sea menos crítico.`,
+                        },
+                        'Inteligencia emocional': {
+                          alto: `Con ${val}/100 manejas presión muy bien — clave para examen y carreras exigentes como medicina, derecho o ingeniería.`,
+                          medio: `Tu ${val}/100 es estable pero bajo estrés puede flaquear. Implementa rutinas Pomodoro y respiración 4-7-8 antes de simulacros.`,
+                          bajo: `Con ${val}/100 corres riesgo de bloquearte en el examen. URGENTE: empieza un diario emocional diario y técnicas de mindfulness antes de continuar.`,
+                        },
+                        'Conducta prosocial': {
+                          alto: `${val}/100 es excelente para ${t1}. Tu disposición a ayudar te dará puntos en grupos de estudio y proyectos colaborativos.`,
+                          medio: `Tu ${val}/100 es típico. Participar en 1 proyecto comunitario al semestre te elevará a perfil idóneo en carreras sociales.`,
+                          bajo: `Con ${val}/100 quizá prefieras carreras individualistas (programación, diseño, investigación) antes que servicio.`,
+                        },
+                        'Habilidades sociales': {
+                          alto: `${val}/100 — perfil de líder. Considera roles de representación estudiantil; te abrirán puertas en ${t1}.`,
+                          medio: `${val}/100 te funciona en grupo, pero exposiciones te cuestan. Practica 1 presentación corta semanal frente al espejo.`,
+                          bajo: `Con ${val}/100 las exposiciones serán tu reto. Carreras como ingeniería, contaduría o programación reducen la exposición pública.`,
+                        },
+                      };
+                      const nivel = val >= 75 ? 'alto' : val >= 55 ? 'medio' : 'bajo';
+                      return reglas[dim]?.[nivel] || '';
+                    };
+                    const dims = [
+                      { label: 'Empatía', val: perfil.empatia, info: 'Capacidad de comprender emociones ajenas.' },
+                      { label: 'Inteligencia emocional', val: perfil.inteligenciaEmocional, info: 'Manejo de emociones bajo presión.' },
+                      { label: 'Conducta prosocial', val: perfil.prosocial, info: 'Disposición a ayudar a otros.' },
+                      { label: 'Habilidades sociales', val: perfil.habilidadesSociales, info: 'Comunicación efectiva en equipos.' },
+                    ];
+                    return dims.map(d => {
+                      const nivelColor = d.val >= 75 ? 'text-emerald-600 dark:text-emerald-400' : d.val >= 55 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400';
+                      const nivelLabel = d.val >= 75 ? 'Alto' : d.val >= 55 ? 'Medio' : 'A desarrollar';
+                      return (
+                        <div key={d.label} className="rounded-lg border p-3 bg-card/50">
+                          <div className="flex justify-between items-center text-xs mb-1.5">
+                            <span className="font-medium">{d.label}</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className={`text-[10px] h-5 ${nivelColor}`}>{nivelLabel}</Badge>
+                              <span className="text-muted-foreground font-mono">{d.val}/100</span>
+                            </div>
+                          </div>
+                          <Progress value={d.val} className="h-2 mb-2" />
+                          <p className="text-[10px] text-muted-foreground mb-1.5 italic">{d.info}</p>
+                          <p className="text-xs leading-relaxed">{recomendar(d.val, d.label)}</p>
+                        </div>
+                      );
+                    });
+                  })()}
+                  <div className="pt-1 rounded-lg border p-3 bg-card/50">
+                    <p className="text-xs font-medium mb-1.5">Estilo(s) de aprendizaje dominante(s)</p>
+                    <div className="flex gap-1 mb-2">
                       {perfil.estilosDominantes.map(e => <Badge key={e} variant="secondary">{e}</Badge>)}
                     </div>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {perfil.estilosDominantes[0] === 'V' && 'Visual: usa mapas mentales, diagramas, colores y subrayados. Evita audios largos sin soporte visual.'}
+                      {perfil.estilosDominantes[0] === 'A' && 'Auditivo: escucha podcasts y explica en voz alta lo que estudias. Graba resúmenes y reescúchalos.'}
+                      {perfil.estilosDominantes[0] === 'R' && 'Lecto-escritor: resume por escrito, haz fichas y reescribe apuntes. Prefiere libros antes que videos.'}
+                      {perfil.estilosDominantes[0] === 'K' && 'Kinestésico: aprende haciendo. Laboratorios, prácticas y ejercicios manuales son tu vía óptima.'}
+                    </p>
                   </div>
                 </div>
                 <div><RadarPerfil perfil={perfil} /></div>
               </div>
+
+              {/* Conclusión global */}
+              <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3">
+                <p className="text-xs uppercase tracking-wider text-primary font-semibold mb-1">Conclusión global</p>
+                <p className="text-sm leading-relaxed">
+                  {(() => {
+                    const prom = Math.round((perfil.empatia + perfil.inteligenciaEmocional + perfil.prosocial + perfil.habilidadesSociales) / 4);
+                    const debil = [
+                      { l: 'empatía', v: perfil.empatia },
+                      { l: 'inteligencia emocional', v: perfil.inteligenciaEmocional },
+                      { l: 'conducta prosocial', v: perfil.prosocial },
+                      { l: 'habilidades sociales', v: perfil.habilidadesSociales },
+                    ].sort((a, b) => a.v - b.v)[0];
+                    const fuerte = [
+                      { l: 'empatía', v: perfil.empatia },
+                      { l: 'inteligencia emocional', v: perfil.inteligenciaEmocional },
+                      { l: 'conducta prosocial', v: perfil.prosocial },
+                      { l: 'habilidades sociales', v: perfil.habilidadesSociales },
+                    ].sort((a, b) => b.v - a.v)[0];
+                    return `Tu promedio socioemocional es ${prom}/100. Tu mayor fortaleza es ${fuerte.l} (${fuerte.v}) y tu mayor oportunidad es ${debil.l} (${debil.v}). ${top1 ? `Esto te alinea con ${top1.carrera.nombre} (${top1.porcentaje}% match).` : ''} Enfoca los próximos 30 días en elevar ${debil.l} con prácticas diarias de 10-15 min.`;
+                  })()}
+                </p>
+              </div>
+
               {fechaUltima && (
                 <p className="text-[10px] text-muted-foreground">Basado en tus resultados del {new Date(fechaUltima).toLocaleDateString()}.</p>
               )}
@@ -528,58 +596,111 @@ export default function OrientacionVocacional() {
             ))}
         </TabsContent>
 
-        {/* TAB 4 — PLAN */}
-        <TabsContent value="plan" className="space-y-3">
-          {!top1 ? <p className="text-sm text-muted-foreground">Completa más tests o ajusta los filtros para generar tu plan.</p> : (
+        {/* TAB 4 — PLAN: ROADMAP VISUAL TOP 3 */}
+        <TabsContent value="plan" className="space-y-4">
+          {compat.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Completa más tests o ajusta los filtros para generar tu plan.</p>
+          ) : (
             <>
-              <Card className="border-primary/40">
-                <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
-                  <div>
-                    <Badge className="mb-2">Carrera #1</Badge>
-                    <p className="text-lg font-bold">{top1.carrera.icono} {top1.carrera.nombre}</p>
-                    <p className="text-xs text-muted-foreground">{top1.carrera.siglaUniversidad} · {top1.carrera.facultad}</p>
-                  </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <a href={top1.carrera.urlUniversidad} target="_blank" rel="noopener noreferrer">
-                      Ver carrera <ExternalLink className="w-3 h-3 ml-1" />
-                    </a>
-                  </Button>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4 space-y-3">
-                  <div>
-                    <p className="font-semibold text-sm">Mes 1 — Confirmación vocacional</p>
-                    <p className="text-xs text-muted-foreground">Habla con un profesional de {top1.carrera.nombre}. Busca alumnos de {top1.carrera.siglaUniversidad} en LinkedIn y pregúntales sobre su día a día.</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Mes 2 — Refuerzo académico</p>
-                    <ul className="text-xs text-muted-foreground space-y-1 mt-1">
-                      {top1.carrera.materiasClaveExamen.map(m => {
-                        const consejo = perfil.estilosDominantes[0] === 'V' ? `crea diagramas y mapas mentales de ${m}.`
-                          : perfil.estilosDominantes[0] === 'A' ? `escucha podcasts y explica ${m} en voz alta.`
-                          : perfil.estilosDominantes[0] === 'R' ? `resuelve y redacta ejercicios escritos de ${m}.`
-                          : `practica con ejercicios manuales y experimentos de ${m}.`;
-                        return <li key={m}>• <span className="font-medium">{m}:</span> {consejo}</li>;
-                      })}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Mes 3 — Simulacros</p>
-                    <p className="text-xs text-muted-foreground">Realiza mínimo 3 simulacros completos en la sección Exámenes.</p>
-                  </div>
-                  {top1.factoresADesarrollar.length > 0 && (
-                    <div>
-                      <p className="font-semibold text-sm">Bonus — Desarrollo personal</p>
-                      <ul className="text-xs text-muted-foreground space-y-1 mt-1">
-                        {top1.factoresADesarrollar.map(f => (
-                          <li key={f}>• Trabaja en tu <span className="font-medium">{f.toLowerCase()}</span> — clave para destacar en {top1.carrera.nombre}.</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <div className="flex items-center gap-2">
+                <ListChecks className="w-4 h-4 text-primary" />
+                <h3 className="font-display font-semibold text-sm">Roadmap visual — tus 3 mejores carreras</h3>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-2">Cada hito está personalizado según tu perfil. Marca tu avance mes a mes.</p>
+
+              {compat.slice(0, 3).map((c, idx) => {
+                const accent = idx === 0 ? 'hsl(var(--primary))' : idx === 1 ? 'hsl(280 80% 60%)' : 'hsl(200 80% 55%)';
+                const estilo = perfil.estilosDominantes[0] || 'V';
+                const consejoEstilo =
+                  estilo === 'V' ? 'mapas mentales y diagramas con colores'
+                  : estilo === 'A' ? 'audios, podcasts y explicación en voz alta'
+                  : estilo === 'R' ? 'resúmenes escritos y fichas de estudio'
+                  : 'prácticas manuales y ejercicios aplicados';
+
+                const hitos = [
+                  {
+                    n: 1,
+                    titulo: 'Confirmación vocacional',
+                    detalle: `Entrevista a 2 profesionales y 1 estudiante avanzado de ${c.carrera.nombre} en ${c.carrera.siglaUniversidad}. Visita ${c.carrera.ciudad?.[0] || 'la sede'} o usa LinkedIn.`,
+                    duracion: 'Semana 1-4',
+                  },
+                  {
+                    n: 2,
+                    titulo: `Refuerzo en ${c.carrera.materiasClaveExamen.slice(0, 2).join(' y ')}`,
+                    detalle: `Tu estilo dominante (${estilo}) responde mejor a ${consejoEstilo}. Dedica 1 h diaria a ${c.carrera.materiasClaveExamen.join(', ')}.`,
+                    duracion: 'Semana 5-8',
+                  },
+                  {
+                    n: 3,
+                    titulo: 'Simulacros y métricas',
+                    detalle: `Realiza al menos 3 simulacros completos en la sección Exámenes. Meta mínima: ${c.carrera.tipoCosto === 'publica' ? '800/1000 (alta competencia pública)' : '70/100 (privada)'}.`,
+                    duracion: 'Semana 9-12',
+                  },
+                  ...(c.factoresADesarrollar.length > 0 ? [{
+                    n: 4,
+                    titulo: 'Desarrollo personal',
+                    detalle: `Trabaja activamente en: ${c.factoresADesarrollar.join(', ').toLowerCase()}. Son las dimensiones donde más distancia tienes respecto al perfil ideal de esta carrera.`,
+                    duracion: 'Continuo',
+                  }] : []),
+                ];
+
+                return (
+                  <motion.div key={c.carrera.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}>
+                    <Card className="overflow-hidden" style={{ borderLeftWidth: 4, borderLeftColor: accent }}>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="text-3xl shrink-0">{c.carrera.icono}</div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <Badge style={{ backgroundColor: accent, color: 'white' }} className="text-[10px] h-5">#{idx + 1}</Badge>
+                                <Badge variant="outline" className="text-[10px] h-5">{c.carrera.siglaUniversidad}</Badge>
+                                {c.porcentaje >= 85 && (
+                                  <Badge className="text-[10px] h-5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/15">★ Idóneo</Badge>
+                                )}
+                              </div>
+                              <p className="font-bold text-sm mt-0.5 leading-tight truncate">{c.carrera.nombre}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{c.carrera.facultad}</p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-2xl font-bold" style={{ color: accent }}>{c.porcentaje}%</div>
+                            <p className="text-[9px] uppercase text-muted-foreground">match</p>
+                          </div>
+                        </div>
+
+                        {/* Timeline */}
+                        <div className="relative pl-6 pt-1">
+                          <div className="absolute left-[10px] top-2 bottom-2 w-0.5" style={{ backgroundColor: `${accent}40` }} />
+                          {hitos.map((h, hi) => (
+                            <div key={hi} className="relative pb-4 last:pb-0">
+                              <div className="absolute -left-[18px] top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-md" style={{ backgroundColor: accent }}>
+                                {h.n}
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                <p className="font-semibold text-xs">{h.titulo}</p>
+                                <Badge variant="outline" className="text-[9px] h-4 px-1.5">{h.duracion}</Badge>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-snug">{h.detalle}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        <Button size="sm" variant="outline" className="w-full text-xs gap-1" asChild>
+                          <a href={c.carrera.urlUniversidad} target="_blank" rel="noopener noreferrer">
+                            Ver malla curricular de {c.carrera.siglaUniversidad} <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+
+              <div className="flex gap-2 justify-end pt-2">
+                <Button variant="outline" size="sm" onClick={descargar}><Download className="w-4 h-4 mr-1" />Descargar</Button>
+                <Button size="sm" onClick={guardarResultados}><Save className="w-4 h-4 mr-1" />Guardar plan</Button>
+              </div>
             </>
           )}
         </TabsContent>

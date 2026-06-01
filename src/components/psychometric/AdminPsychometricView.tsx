@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,10 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { allTests, Test, InterpretResult } from "@/data/testData";
-import { ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from "recharts";
+import { ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from "recharts";
 import { motion } from "framer-motion";
-import { Users, Eye, CheckCircle, Clock, Brain, Search } from "lucide-react";
+import { Users, Eye, CheckCircle, Clock, Brain, Search, History, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Input } from "@/components/ui/input";
+
+interface AttemptRow {
+  id: string;
+  user_id: string;
+  test_key: string;
+  scores: Record<string, number>;
+  duration_seconds: number;
+  created_at: string;
+}
 
 interface StudentRow {
   user_id: string;
@@ -17,6 +26,8 @@ interface StudentRow {
   apellidos: string;
   cedula: string;
   results: Record<string, { scores: Record<string, number> }>;
+  attempts: Record<string, AttemptRow[]>; // test_key -> attempts ordered ASC
+  totalAttempts: number;
   completedCount: number;
 }
 
@@ -25,6 +36,13 @@ const AREA_COLORS: Record<string, string> = {
   actitudes: "#993C1D", aptitudes: "#185FA5", inteligencias: "#3C3489",
   aprendizaje: "#27500A", bienestar: "#A32D2D",
 };
+
+function fmtDuration(s: number) {
+  if (!s || s < 1) return "—";
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60); const r = s % 60;
+  return `${m}m ${r}s`;
+}
 
 export default function AdminPsychometricView() {
   const [students, setStudents] = useState<StudentRow[]>([]);
@@ -36,9 +54,11 @@ export default function AdminPsychometricView() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const [{ data: profiles }, { data: results }] = await Promise.all([
+    setLoading(true);
+    const [{ data: profiles }, { data: results }, { data: attempts }] = await Promise.all([
       supabase.from("profiles").select("user_id, nombre, apellidos, cedula"),
       supabase.from("psychometric_results").select("user_id, test_key, scores"),
+      supabase.from("psychometric_attempts").select("id, user_id, test_key, scores, duration_seconds, created_at").order("created_at", { ascending: true }),
     ]);
 
     const resultMap: Record<string, Record<string, { scores: Record<string, number> }>> = {};
@@ -47,14 +67,27 @@ export default function AdminPsychometricView() {
       resultMap[r.user_id][r.test_key] = { scores: r.scores };
     });
 
-    const rows: StudentRow[] = (profiles || []).map((p) => ({
-      user_id: p.user_id,
-      nombre: p.nombre,
-      apellidos: p.apellidos,
-      cedula: p.cedula,
-      results: resultMap[p.user_id] || {},
-      completedCount: Object.keys(resultMap[p.user_id] || {}).length,
-    }));
+    const attemptMap: Record<string, Record<string, AttemptRow[]>> = {};
+    (attempts as AttemptRow[] | null)?.forEach((a) => {
+      if (!attemptMap[a.user_id]) attemptMap[a.user_id] = {};
+      if (!attemptMap[a.user_id][a.test_key]) attemptMap[a.user_id][a.test_key] = [];
+      attemptMap[a.user_id][a.test_key].push(a);
+    });
+
+    const rows: StudentRow[] = (profiles || []).map((p) => {
+      const studentAttempts = attemptMap[p.user_id] || {};
+      const totalAttempts = Object.values(studentAttempts).reduce((s, arr) => s + arr.length, 0);
+      return {
+        user_id: p.user_id,
+        nombre: p.nombre,
+        apellidos: p.apellidos,
+        cedula: p.cedula,
+        results: resultMap[p.user_id] || {},
+        attempts: studentAttempts,
+        totalAttempts,
+        completedCount: Object.keys(resultMap[p.user_id] || {}).length,
+      };
+    });
 
     setStudents(rows.sort((a, b) => b.completedCount - a.completedCount));
     setLoading(false);
@@ -128,6 +161,7 @@ export default function AdminPsychometricView() {
                   <TableHead>Estudiante</TableHead>
                   <TableHead className="hidden md:table-cell">Cédula</TableHead>
                   <TableHead className="text-center">Tests</TableHead>
+                  <TableHead className="text-center hidden md:table-cell">Intentos</TableHead>
                   <TableHead className="text-center hidden sm:table-cell">Estado</TableHead>
                   <TableHead className="text-center">Ver</TableHead>
                 </TableRow>
@@ -135,11 +169,11 @@ export default function AdminPsychometricView() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Cargando...</TableCell>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Cargando...</TableCell>
                   </TableRow>
                 ) : filteredStudents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Sin resultados</TableCell>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Sin resultados</TableCell>
                   </TableRow>
                 ) : (
                   filteredStudents.map((s) => (
@@ -149,6 +183,11 @@ export default function AdminPsychometricView() {
                       <TableCell className="text-center">
                         <span className="font-bold">{s.completedCount}</span>
                         <span className="text-muted-foreground">/{allTests.length}</span>
+                      </TableCell>
+                      <TableCell className="text-center hidden md:table-cell">
+                        <Badge variant="outline" className="text-[10px]">
+                          <History className="w-3 h-3 mr-1" /> {s.totalAttempts}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-center hidden sm:table-cell">
                         <Badge variant={s.completedCount === allTests.length ? "default" : "secondary"} className="text-[10px]">
@@ -270,6 +309,121 @@ export default function AdminPsychometricView() {
                         );
                       })}
                     </div>
+
+                    {/* Historial de intentos + Evolución temporal */}
+                    {(() => {
+                      const attempts = selected.attempts[selectedTest.id] || [];
+                      if (attempts.length === 0) {
+                        return (
+                          <div className="rounded-lg border border-dashed p-3 text-center text-xs text-muted-foreground">
+                            <History className="w-4 h-4 mx-auto mb-1 opacity-50" />
+                            Sin intentos registrados (resultado previo a la activación del historial).
+                          </div>
+                        );
+                      }
+                      const avgDur = Math.round(attempts.reduce((a, x) => a + (x.duration_seconds || 0), 0) / attempts.length);
+                      const categories = Object.keys(attempts[0].scores || {});
+
+                      // Build line chart data
+                      const lineData = attempts.map((a, i) => {
+                        const row: any = { n: `#${i + 1}`, fecha: new Date(a.created_at).toLocaleDateString("es", { day: "2-digit", month: "2-digit" }) };
+                        categories.forEach(c => { row[c] = a.scores[c] ?? 0; });
+                        return row;
+                      });
+
+                      // Variation between first and last attempt
+                      const firstA = attempts[0]; const lastA = attempts[attempts.length - 1];
+                      const variations = categories.map(c => {
+                        const f = firstA.scores[c] ?? 0; const l = lastA.scores[c] ?? 0;
+                        const diff = l - f;
+                        return { cat: c, first: f, last: l, diff };
+                      });
+
+                      const palette = ["#534AB7", "#0F6E56", "#854F0B", "#993C1D", "#185FA5", "#3C3489", "#27500A", "#A32D2D"];
+
+                      return (
+                        <div className="space-y-3 pt-2 border-t">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <History className="w-4 h-4 text-primary" />
+                              <p className="font-semibold text-sm">Historial de intentos</p>
+                            </div>
+                            <div className="flex gap-2 flex-wrap">
+                              <Badge variant="secondary" className="text-[10px]">{attempts.length} intento{attempts.length !== 1 ? "s" : ""}</Badge>
+                              <Badge variant="outline" className="text-[10px]"><Clock className="w-3 h-3 mr-1" />Prom. {fmtDuration(avgDur)}</Badge>
+                            </div>
+                          </div>
+
+                          {/* Tabla de intentos */}
+                          <div className="overflow-x-auto rounded-lg border">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-[10px] h-8">#</TableHead>
+                                  <TableHead className="text-[10px] h-8">Fecha</TableHead>
+                                  <TableHead className="text-[10px] h-8 text-center">Duración</TableHead>
+                                  {categories.map(c => (
+                                    <TableHead key={c} className="text-[10px] h-8 text-center">{c}</TableHead>
+                                  ))}
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {attempts.map((a, i) => (
+                                  <TableRow key={a.id}>
+                                    <TableCell className="text-[10px] py-1.5 font-mono">#{i + 1}</TableCell>
+                                    <TableCell className="text-[10px] py-1.5">{new Date(a.created_at).toLocaleString("es", { dateStyle: "short", timeStyle: "short" })}</TableCell>
+                                    <TableCell className="text-[10px] py-1.5 text-center">{fmtDuration(a.duration_seconds)}</TableCell>
+                                    {categories.map(c => (
+                                      <TableCell key={c} className="text-[10px] py-1.5 text-center font-mono">{a.scores[c] ?? "—"}</TableCell>
+                                    ))}
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+
+                          {/* Gráfico de evolución (solo si hay ≥2 intentos) */}
+                          {attempts.length >= 2 && (
+                            <>
+                              <div className="h-[220px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart data={lineData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                    <XAxis dataKey="n" tick={{ fontSize: 10 }} />
+                                    <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                                    <Tooltip contentStyle={{ fontSize: 11 }} />
+                                    <Legend wrapperStyle={{ fontSize: 10 }} />
+                                    {categories.map((c, i) => (
+                                      <Line key={c} type="monotone" dataKey={c} stroke={palette[i % palette.length]} strokeWidth={2} dot={{ r: 3 }} />
+                                    ))}
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+
+                              {/* Variaciones primer vs último */}
+                              <div className="rounded-lg border p-3 space-y-1.5 bg-muted/20">
+                                <p className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Variación entre primer y último intento</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+                                  {variations.map(v => {
+                                    const Icon = v.diff > 0 ? TrendingUp : v.diff < 0 ? TrendingDown : Minus;
+                                    const color = v.diff > 2 ? "text-emerald-600 dark:text-emerald-400" : v.diff < -2 ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground";
+                                    return (
+                                      <div key={v.cat} className="flex items-center justify-between gap-1 text-[11px] px-2 py-1 rounded bg-card border">
+                                        <span className="truncate">{v.cat}</span>
+                                        <span className={`flex items-center gap-0.5 font-mono font-semibold ${color}`}>
+                                          <Icon className="w-3 h-3" />
+                                          {v.diff > 0 ? "+" : ""}{v.diff}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })()}

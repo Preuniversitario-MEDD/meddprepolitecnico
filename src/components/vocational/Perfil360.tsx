@@ -97,10 +97,9 @@ export default function Perfil360({ perfil, top, testsCount, onIrATests }: Props
     })();
   }, [user, top5, perfilHash]);
 
-  async function generarAnalisisCarrera(carrera: any, force = false) {
-    if (!force && analisisCarreras[carrera.id]) { setOpenCarrera(carrera.id); return; }
-    setLoadingCarrera(carrera.id);
-    setOpenCarrera(carrera.id);
+  async function generarAnalisisCarrera(carrera: any, force = false, silent = false) {
+    if (!force && analisisCarreras[carrera.id]) { if (!silent) setOpenCarrera(carrera.id); return; }
+    if (!silent) { setLoadingCarrera(carrera.id); setOpenCarrera(carrera.id); }
     try {
       const { data, error } = await supabase.functions.invoke('perfil-360', {
         body: { tipo: 'carrera', carrera, perfil, perfilHash, concentracion, schulte },
@@ -110,13 +109,30 @@ export default function Perfil360({ perfil, top, testsCount, onIrATests }: Props
       setAnalisisCarreras(prev => ({ ...prev, [carrera.id]: data as AnalisisCarrera }));
     } catch (e: any) {
       const msg = e?.message || '';
+      if (silent) return;
       if (msg.includes('429') || msg.includes('RATE_LIMIT')) toast.error('Demasiadas solicitudes', { description: 'Espera unos segundos.' });
       else if (msg.includes('402') || msg.includes('PAYMENT')) toast.error('Sin créditos de IA', { description: 'Recarga tu workspace para continuar.' });
       else toast.error('No se pudo generar el análisis', { description: msg });
     } finally {
-      setLoadingCarrera(null);
+      if (!silent) setLoadingCarrera(null);
     }
   }
+
+  // Auto-pregenerar análisis de los top 3 cuando el perfil está completo (≥5 tests)
+  useEffect(() => {
+    if (testsCount < 5 || top5.length === 0) return;
+    const pendientes = top5.slice(0, 3).filter(c => !analisisCarreras[c.carrera.id]);
+    if (pendientes.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      for (const c of pendientes) {
+        if (cancelled) break;
+        await generarAnalisisCarrera(c.carrera, false, true);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testsCount, top5.map(c => c.carrera.id).join(','), perfilHash]);
 
   async function generarComparacion() {
     const A = top5.find(c => c.carrera.id === carreraSelA);
@@ -213,6 +229,11 @@ export default function Perfil360({ perfil, top, testsCount, onIrATests }: Props
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <Badge variant="secondary" className="text-[10px] h-5">#{i + 1}</Badge>
                           <Badge variant="outline" className="text-[10px] h-5 border-primary/40">{c.carrera.siglaUniversidad}</Badge>
+                          {c.porcentaje >= 85 && (
+                            <Badge className="text-[10px] h-5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/15">
+                              ★ Perfil idóneo
+                            </Badge>
+                          )}
                         </div>
                         <p className="font-semibold text-sm mt-1 leading-tight">{c.carrera.nombre}</p>
                         <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{c.carrera.facultad}</p>

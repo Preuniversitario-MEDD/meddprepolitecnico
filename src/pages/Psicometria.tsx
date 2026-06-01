@@ -515,28 +515,42 @@ export default function Psicometria() {
   const [viewingSession, setViewingSession] = useState<SessionResult | null>(null);
   const [loadingDb, setLoadingDb] = useState(true);
 
+  const reloadSessions = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("psychometric_results")
+      .select("test_key, scores, answers, updated_at")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false });
+    const testsMap = Object.fromEntries(allTests.map(t => [t.id, t]));
+    const loaded: SessionResult[] = [];
+    (data || []).forEach((row: any) => {
+      const test = testsMap[row.test_key];
+      if (!test) return;
+      loaded.push({
+        test,
+        results: test.interpret(row.scores as Record<string, number>),
+        date: row.updated_at ? new Date(row.updated_at).toLocaleDateString("es") : "",
+      });
+    });
+    setSessions(loaded);
+  }, [user]);
+
   useEffect(() => {
     if (!user) { setLoadingDb(false); return; }
-    (async () => {
-      const { data } = await supabase
-        .from("psychometric_results")
-        .select("test_key, scores, answers")
-        .eq("user_id", user.id);
-      if (data && data.length > 0) {
-        const loaded: SessionResult[] = [];
-        const testsMap = Object.fromEntries(allTests.map(t => [t.id, t]));
-        for (const row of data) {
-          const test = testsMap[row.test_key];
-          if (!test) continue;
-          const scores = row.scores as Record<string, number>;
-          const interpretedResults = test.interpret(scores);
-          loaded.push({ test, results: interpretedResults, date: "" });
-        }
-        setSessions(loaded);
-      }
-      setLoadingDb(false);
-    })();
-  }, [user]);
+    reloadSessions().finally(() => setLoadingDb(false));
+  }, [user, reloadSessions]);
+
+  // Realtime: cualquier nuevo resultado/intento del usuario refresca el panel
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase
+      .channel(`psy-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "psychometric_results", filter: `user_id=eq.${user.id}` }, () => reloadSessions())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "psychometric_attempts", filter: `user_id=eq.${user.id}` }, () => reloadSessions())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user, reloadSessions]);
 
   const startTest = useCallback((test: Test) => {
     setActiveTest(test); setPhase("test"); setViewingSession(null);
