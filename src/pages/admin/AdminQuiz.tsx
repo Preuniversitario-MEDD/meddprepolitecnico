@@ -621,12 +621,17 @@ export default function AdminQuiz() {
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/20 text-primary font-medium">G{p.grupo}</span>
                     <span className="text-[10px] text-muted-foreground">#{i + 1}</span>
                   </div>
-                  <p className="text-sm font-medium line-clamp-2">{p.pregunta}</p>
-                  {p.imagen_url && <p className="text-xs text-neon-pink mt-1">🖼️ Con imagen</p>}
+                  <div className="text-sm font-medium line-clamp-2"><MathText text={p.pregunta} /></div>
+                  {p.imagen_url && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <img src={p.imagen_url} alt="" className="w-16 h-16 object-cover rounded border border-border/60" loading="lazy" />
+                      <span className="text-[10px] text-neon-pink">🖼️ Con imagen</span>
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-1 mt-1">
                     {p.opciones.map((o, j) => (
-                      <span key={j} className={`text-[10px] px-1.5 py-0.5 rounded ${j === p.respuesta_correcta ? 'bg-accent/20 text-accent font-bold' : 'bg-muted text-muted-foreground'}`}>
-                        {String.fromCharCode(65 + j)}. {o.slice(0, 30)}{o.length > 30 ? '...' : ''}
+                      <span key={j} className={`text-[10px] px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${j === p.respuesta_correcta ? 'bg-accent/20 text-accent font-bold' : 'bg-muted text-muted-foreground'}`}>
+                        {String.fromCharCode(65 + j)}. <MathText text={o.length > 40 ? o.slice(0, 40) + '…' : o} />
                       </span>
                     ))}
                   </div>
