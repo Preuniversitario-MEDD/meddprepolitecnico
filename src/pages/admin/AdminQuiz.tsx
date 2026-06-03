@@ -175,6 +175,7 @@ export default function AdminQuiz() {
   }
 
   async function handlePasteImage(e: React.ClipboardEvent) {
+    if (!dialogOpen) return;
     const clipboardItems = e.clipboardData?.items;
     if (!clipboardItems) return;
     for (const item of Array.from(clipboardItems)) {
