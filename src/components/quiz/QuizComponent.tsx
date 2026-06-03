@@ -61,12 +61,28 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     if (!allQuestions || allQuestions.length === 0) { setQuestions([]); return; }
 
     const { data: progress } = await supabase.from('progreso_estudiante').select('preguntas_respondidas').eq('user_id', userId).eq('sesion_id', sesionId).maybeSingle();
-    const answeredIds: string[] = (progress?.preguntas_respondidas as string[]) || [];
+    const answeredIds = new Set<string>((progress?.preguntas_respondidas as string[]) || []);
 
-    let available = allQuestions.filter(q => !answeredIds.includes(q.id));
-    if (available.length < 10) available = allQuestions;
+    // Bucket by group (1..N). User wants 200 in groups of 10: complete a group before moving on.
+    const byGroup = new Map<number, typeof allQuestions>();
+    allQuestions.forEach(q => {
+      const g = q.grupo || 1;
+      if (!byGroup.has(g)) byGroup.set(g, [] as any);
+      byGroup.get(g)!.push(q);
+    });
 
-    const shuffled = available.sort(() => Math.random() - 0.5).slice(0, 10);
+    const sortedGroups = Array.from(byGroup.keys()).sort((a, b) => a - b);
+
+    // Pick the first group that still has unanswered questions.
+    let pool: typeof allQuestions = [] as any;
+    for (const g of sortedGroups) {
+      const remaining = byGroup.get(g)!.filter(q => !answeredIds.has(q.id));
+      if (remaining.length > 0) { pool = remaining; break; }
+    }
+    // All groups exhausted → recycle the whole bank.
+    if (pool.length === 0) pool = allQuestions;
+
+    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 10);
     setQuestions(shuffled.map(q => ({
       id: q.id, pregunta: q.pregunta, opciones: (q.opciones as string[]) || [],
       respuesta_correcta: q.respuesta_correcta, imagen_url: q.imagen_url, grupo: q.grupo,
