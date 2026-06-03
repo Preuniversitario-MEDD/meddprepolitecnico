@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit, ClipboardPaste, X, Download, Upload, FileUp, Copy, Scissors, Sparkles, Filter, ShieldCheck, BarChart3 } from 'lucide-react';
 import QuizReviewDialog from '@/components/quiz/QuizReviewDialog';
 import QuizStatsDialog from '@/components/quiz/QuizStatsDialog';
+import MathText from '@/components/quiz/MathText';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import type { Tables } from '@/integrations/supabase/types';
