@@ -344,7 +344,9 @@ export default function QuizComponent({ sesionId, userId }: Props) {
         <motion.div key={currentIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
           <Card className="border-border/50 bg-card overflow-hidden">
             <CardContent className="p-4 md:p-6 space-y-4">
-              <p className="font-display font-bold text-base md:text-lg text-foreground break-words leading-snug">{currentQ.pregunta}</p>
+              <div className="font-display font-bold text-base md:text-lg text-foreground break-words leading-snug">
+                <MathText text={currentQ.pregunta} />
+              </div>
               {currentQ.imagen_url && (
                 <div className="rounded-xl overflow-hidden border border-border/50">
                   <img src={currentQ.imagen_url} alt="Pregunta" className="w-full h-auto" />
