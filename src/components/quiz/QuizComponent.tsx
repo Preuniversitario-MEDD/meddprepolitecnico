@@ -8,6 +8,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Timer, CheckCircle, XCircle, Trophy, RotateCcw, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import MathText from './MathText';
+import { useGameSounds } from '@/hooks/useGameSounds';
 
 interface QuizQuestion {
   id: string;
@@ -38,6 +40,7 @@ export default function QuizComponent({ sesionId, userId }: Props) {
   const [totalAttempts, setTotalAttempts] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
+  const { playCorrect, playIncorrect, playPodium } = useGameSounds();
 
   useEffect(() => {
     loadQuestions();
@@ -58,12 +61,28 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     if (!allQuestions || allQuestions.length === 0) { setQuestions([]); return; }
 
     const { data: progress } = await supabase.from('progreso_estudiante').select('preguntas_respondidas').eq('user_id', userId).eq('sesion_id', sesionId).maybeSingle();
-    const answeredIds: string[] = (progress?.preguntas_respondidas as string[]) || [];
+    const answeredIds = new Set<string>((progress?.preguntas_respondidas as string[]) || []);
 
-    let available = allQuestions.filter(q => !answeredIds.includes(q.id));
-    if (available.length < 10) available = allQuestions;
+    // Bucket by group (1..N). User wants 200 in groups of 10: complete a group before moving on.
+    const byGroup = new Map<number, typeof allQuestions>();
+    allQuestions.forEach(q => {
+      const g = q.grupo || 1;
+      if (!byGroup.has(g)) byGroup.set(g, [] as any);
+      byGroup.get(g)!.push(q);
+    });
 
-    const shuffled = available.sort(() => Math.random() - 0.5).slice(0, 10);
+    const sortedGroups = Array.from(byGroup.keys()).sort((a, b) => a - b);
+
+    // Pick the first group that still has unanswered questions.
+    let pool: typeof allQuestions = [] as any;
+    for (const g of sortedGroups) {
+      const remaining = byGroup.get(g)!.filter(q => !answeredIds.has(q.id));
+      if (remaining.length > 0) { pool = remaining; break; }
+    }
+    // All groups exhausted → recycle the whole bank.
+    if (pool.length === 0) pool = allQuestions;
+
+    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 10);
     setQuestions(shuffled.map(q => ({
       id: q.id, pregunta: q.pregunta, opciones: (q.opciones as string[]) || [],
       respuesta_correcta: q.respuesta_correcta, imagen_url: q.imagen_url, grupo: q.grupo,
@@ -100,6 +119,9 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     if (correct) {
       scoreRef.current += 1;
       setScore(scoreRef.current);
+      playCorrect();
+    } else {
+      playIncorrect();
     }
     setAnswers(prev => [...prev, correct]);
     setState('feedback');
@@ -147,7 +169,24 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     setTotalCorrect(newCorrectTotal);
     setTotalAttempts(prevAttempts + 1);
 
-    if (finalScore >= 90) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    if (finalScore >= 90) {
+      playPodium();
+      // Soft, non-intrusive bursts from both bottom corners
+      const burst = (origin: { x: number; y: number }) =>
+        confetti({
+          particleCount: 45,
+          spread: 55,
+          startVelocity: 32,
+          gravity: 0.9,
+          scalar: 0.85,
+          ticks: 140,
+          origin,
+          colors: ['#34d399', '#a78bfa', '#60a5fa', '#f472b6'],
+        });
+      burst({ x: 0.2, y: 0.85 });
+      setTimeout(() => burst({ x: 0.8, y: 0.85 }), 180);
+      setTimeout(() => burst({ x: 0.5, y: 0.9 }), 360);
+    }
 
     if (isComplete && !existingProgress?.completada) {
       await autoUnlockNextSession();
@@ -305,7 +344,9 @@ export default function QuizComponent({ sesionId, userId }: Props) {
         <motion.div key={currentIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
           <Card className="border-border/50 bg-card overflow-hidden">
             <CardContent className="p-4 md:p-6 space-y-4">
-              <p className="font-display font-bold text-base md:text-lg text-foreground break-words leading-snug">{currentQ.pregunta}</p>
+              <div className="font-display font-bold text-base md:text-lg text-foreground break-words leading-snug">
+                <MathText text={currentQ.pregunta} />
+              </div>
               {currentQ.imagen_url && (
                 <div className="rounded-xl overflow-hidden border border-border/50">
                   <img src={currentQ.imagen_url} alt="Pregunta" className="w-full h-auto" />
@@ -338,7 +379,7 @@ export default function QuizComponent({ sesionId, userId }: Props) {
                         }`}>
                           {String.fromCharCode(65 + i)}
                         </span>
-                        <span className="pt-0.5">{opcion}</span>
+                        <span className="pt-0.5"><MathText text={opcion} /></span>
                       </div>
                       {state === 'feedback' && isCorrect && (
                         <CheckCircle className="w-4 h-4 text-neon-mint absolute right-3 top-1/2 -translate-y-1/2" />

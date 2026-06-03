@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit, ClipboardPaste, X, Download, Upload, FileUp, Copy, Scissors, Sparkles, Filter, ShieldCheck, BarChart3 } from 'lucide-react';
 import QuizReviewDialog from '@/components/quiz/QuizReviewDialog';
 import QuizStatsDialog from '@/components/quiz/QuizStatsDialog';
+import MathText from '@/components/quiz/MathText';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import type { Tables } from '@/integrations/supabase/types';
@@ -663,7 +664,24 @@ export default function AdminQuiz() {
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-display">{editItem ? 'Editar' : 'Nueva'} Pregunta</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label>Pregunta</Label><Textarea value={form.pregunta} onChange={e => setForm({ ...form, pregunta: e.target.value })} rows={3} /></div>
+            <div>
+              <Label>Pregunta</Label>
+              <Textarea
+                value={form.pregunta}
+                onChange={e => setForm({ ...form, pregunta: e.target.value })}
+                rows={3}
+                placeholder="Ej: ¿Cuál es la fórmula del agua? Usa LaTeX: $H_2O$ o $$\frac{a}{b}$$"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                💡 Fórmulas con <code>$...$</code> (en línea) o <code>$$...$$</code> (bloque). También <code>\(...\)</code> y <code>\[...\]</code>.
+              </p>
+              {form.pregunta && (
+                <div className="mt-2 p-3 rounded-lg border border-border/60 bg-muted/30 text-sm">
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Vista previa</p>
+                  <MathText text={form.pregunta} />
+                </div>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div><Label>Grupo</Label><Input type="number" min={1} value={form.grupo} onChange={e => setForm({ ...form, grupo: parseInt(e.target.value) || 1 })} /></div>
               <div><Label>Respuesta correcta</Label>
