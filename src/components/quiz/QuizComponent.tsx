@@ -379,7 +379,7 @@ export default function QuizComponent({ sesionId, userId }: Props) {
                         }`}>
                           {String.fromCharCode(65 + i)}
                         </span>
-                        <span className="pt-0.5">{opcion}</span>
+                        <span className="pt-0.5"><MathText text={opcion} /></span>
                       </div>
                       {state === 'feedback' && isCorrect && (
                         <CheckCircle className="w-4 h-4 text-neon-mint absolute right-3 top-1/2 -translate-y-1/2" />
