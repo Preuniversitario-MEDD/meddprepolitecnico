@@ -8,6 +8,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Timer, CheckCircle, XCircle, Trophy, RotateCcw, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import MathText from './MathText';
+import { useGameSounds } from '@/hooks/useGameSounds';
 
 interface QuizQuestion {
   id: string;
