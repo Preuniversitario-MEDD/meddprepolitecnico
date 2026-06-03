@@ -40,6 +40,7 @@ export default function QuizComponent({ sesionId, userId }: Props) {
   const [totalAttempts, setTotalAttempts] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
+  const { playCorrect, playIncorrect, playPodium } = useGameSounds();
 
   useEffect(() => {
     loadQuestions();
