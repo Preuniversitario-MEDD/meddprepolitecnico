@@ -697,13 +697,21 @@ export default function AdminQuiz() {
               </div>
             </div>
             {form.opciones.map((op, i) => (
-              <div key={i} className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <Label>Opción {String.fromCharCode(65 + i)} {i === form.respuesta_correcta && '✅'}</Label>
-                  <Input value={op} onChange={e => { const ops = [...form.opciones]; ops[i] = e.target.value; setForm({ ...form, opciones: ops }); }} />
+              <div key={i} className="space-y-1">
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Label>Opción {String.fromCharCode(65 + i)} {i === form.respuesta_correcta && '✅'}</Label>
+                    <Input value={op} onChange={e => { const ops = [...form.opciones]; ops[i] = e.target.value; setForm({ ...form, opciones: ops }); }} placeholder="Texto u opción con LaTeX: $\\Delta H$" />
+                  </div>
+                  {form.opciones.length > 2 && (
+                    <Button variant="ghost" size="icon" onClick={() => removeOption(i)} className="shrink-0 mb-0.5"><X className="w-4 h-4 text-destructive" /></Button>
+                  )}
                 </div>
-                {form.opciones.length > 2 && (
-                  <Button variant="ghost" size="icon" onClick={() => removeOption(i)} className="shrink-0 mb-0.5"><X className="w-4 h-4 text-destructive" /></Button>
+                {op && /[\$\\]/.test(op) && (
+                  <div className="text-xs px-2 py-1 rounded bg-muted/40 border border-border/40">
+                    <span className="text-[10px] uppercase text-muted-foreground mr-2">vista</span>
+                    <MathText text={op} />
+                  </div>
                 )}
               </div>
             ))}
@@ -712,10 +720,18 @@ export default function AdminQuiz() {
             )}
             <div>
               <Label>Imagen (opcional — también puedes pegar con Ctrl+V)</Label>
-              <div className="flex gap-2 items-center">
-                <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={handleImageUpload} disabled={uploading} />
-                {form.imagen_url && <img src={form.imagen_url} alt="preview" className="w-12 h-12 object-cover rounded" />}
+              <div className="flex gap-2 items-start">
+                <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={handleImageUpload} disabled={uploading} className="flex-1" />
+                {form.imagen_url && (
+                  <div className="relative shrink-0">
+                    <img src={form.imagen_url} alt="preview" className="w-24 h-24 object-cover rounded border border-border/60" />
+                    <button type="button" onClick={() => setForm({ ...form, imagen_url: '' })} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5 shadow-md hover:scale-110 transition">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
               </div>
+              {uploading && <p className="text-xs text-muted-foreground mt-1">Subiendo imagen...</p>}
             </div>
             <Button onClick={savePregunta} className="w-full gradient-primary text-primary-foreground">
               {editItem ? 'Guardar Cambios' : 'Agregar Pregunta'}
