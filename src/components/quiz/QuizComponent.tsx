@@ -169,7 +169,24 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     setTotalCorrect(newCorrectTotal);
     setTotalAttempts(prevAttempts + 1);
 
-    if (finalScore >= 90) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    if (finalScore >= 90) {
+      playPodium();
+      // Soft, non-intrusive bursts from both bottom corners
+      const burst = (origin: { x: number; y: number }) =>
+        confetti({
+          particleCount: 45,
+          spread: 55,
+          startVelocity: 32,
+          gravity: 0.9,
+          scalar: 0.85,
+          ticks: 140,
+          origin,
+          colors: ['#34d399', '#a78bfa', '#60a5fa', '#f472b6'],
+        });
+      burst({ x: 0.2, y: 0.85 });
+      setTimeout(() => burst({ x: 0.8, y: 0.85 }), 180);
+      setTimeout(() => burst({ x: 0.5, y: 0.9 }), 360);
+    }
 
     if (isComplete && !existingProgress?.completada) {
       await autoUnlockNextSession();
