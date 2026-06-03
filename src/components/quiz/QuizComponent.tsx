@@ -119,6 +119,9 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     if (correct) {
       scoreRef.current += 1;
       setScore(scoreRef.current);
+      playCorrect();
+    } else {
+      playIncorrect();
     }
     setAnswers(prev => [...prev, correct]);
     setState('feedback');
