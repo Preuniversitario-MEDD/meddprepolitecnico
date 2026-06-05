@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -61,6 +61,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   const isAdminOnStudentView = role === 'admin' && location.pathname.startsWith('/student');
 
+  const handleExitStudentView = useCallback(() => {
+    setSelectedStudent('');
+    navigate('/admin', { replace: true });
+  }, [navigate]);
+
   useEffect(() => {
     if (role === 'admin') {
       supabase.from('profiles').select('user_id, nombre, apellidos').then(({ data }) => {
@@ -76,14 +81,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Admin-as-Student floating banner */}
       {isAdminOnStudentView && (
-        <div className="fixed top-0 left-0 right-0 z-[60] bg-[hsl(var(--neon-orange))] text-primary-foreground px-4 py-1.5 flex items-center justify-between text-xs font-medium shadow-lg">
-          <div className="flex items-center gap-2">
-            <Eye className="w-4 h-4" />
-            <span className="font-display font-bold">MODO VISTA ESTUDIANTE</span>
-          </div>
-          <div className="flex items-center gap-2">
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-neon-orange text-primary-foreground px-3 py-2 sm:px-4 sm:py-1.5 text-xs font-medium shadow-lg">
+          <div className="mx-auto flex w-full max-w-screen-2xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-2">
+              <Eye className="w-4 h-4 shrink-0" />
+              <span className="font-display font-bold truncate">MODO VISTA ESTUDIANTE</span>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex">
             <Select value={selectedStudent} onValueChange={(val) => setSelectedStudent(val)}>
-              <SelectTrigger className="h-6 text-xs bg-background/20 border-0 text-primary-foreground w-[160px]">
+              <SelectTrigger className="h-8 sm:h-6 text-xs bg-background/20 border-0 text-primary-foreground w-full sm:w-[160px]">
                 <SelectValue placeholder="Ver como…" />
               </SelectTrigger>
               <SelectContent>
@@ -97,17 +103,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <Button
               size="sm"
               variant="secondary"
-              className="h-6 text-xs gap-1 bg-background/20 hover:bg-background/30 text-primary-foreground border-0"
-              onClick={() => navigate('/admin')}
+              className="h-8 sm:h-6 text-xs gap-1 bg-background/20 hover:bg-background/30 text-primary-foreground border-0 px-2"
+              onClick={handleExitStudentView}
             >
               <ArrowLeft className="w-3 h-3" /> Volver
             </Button>
+            </div>
           </div>
         </div>
       )}
 
       {!isMobile && (
-        <motion.aside initial={{ x: -80 }} animate={{ x: 0 }} className={`w-64 border-r border-border bg-sidebar flex flex-col ${isAdminOnStudentView ? 'pt-9' : ''}`}>
+          <motion.aside initial={{ x: -80 }} animate={{ x: 0 }} className={`w-64 border-r border-border bg-sidebar flex flex-col ${isAdminOnStudentView ? 'pt-9' : ''}`}>
           <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
             <div className="w-10 h-10 rounded-full ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.3)] overflow-hidden bg-background">
               <img src={meddLogo} alt="MEDD Logo" className="w-full h-full object-cover" />
@@ -173,9 +180,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </motion.aside>
       )}
 
-      <main className={`flex-1 overflow-auto pb-20 md:pb-0 ${isAdminOnStudentView ? 'pt-9 md:pt-0' : ''}`}>
+      <main className={`flex-1 overflow-auto pb-20 md:pb-0 ${isAdminOnStudentView ? 'pt-[74px] sm:pt-9 md:pt-0' : ''}`}>
         {isMobile && (
-          <header className={`sticky ${isAdminOnStudentView ? 'top-9' : 'top-0'} z-40 glass border-b border-border px-4 py-3 flex items-center justify-between`}>
+          <header className={`sticky ${isAdminOnStudentView ? 'top-[74px] sm:top-9' : 'top-0'} z-40 glass border-b border-border px-4 py-3 flex items-center justify-between`}>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full ring-2 ring-primary/30 shadow-[0_0_8px_hsl(var(--primary)/0.2)] overflow-hidden bg-background">
                 <img src={meddLogo} alt="MEDD Logo" className="w-full h-full object-cover" />
