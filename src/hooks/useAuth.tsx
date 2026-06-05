@@ -57,23 +57,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    setLoading(true);
+    try {
+      const [{ data: profileData, error: profileError }, { data: rolesData, error: rolesError }] = await Promise.all([
+        supabase.from('profiles').select('*').eq('user_id', userId).single(),
+        supabase.from('user_roles').select('role').eq('user_id', userId),
+      ]);
 
-    const { data: rolesData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId);
+      if (profileError) console.error('[Auth] Error cargando perfil:', profileError);
+      if (rolesError) console.error('[Auth] Error cargando roles:', rolesError);
 
-    setProfile(profileData);
-    if (rolesData && rolesData.length > 0) {
-      const hasAdmin = rolesData.some(r => r.role === 'admin');
-      setRole(hasAdmin ? 'admin' : 'estudiante');
-    } else {
-      setRole('estudiante');
+      setProfile(profileData);
+      if (rolesData && rolesData.length > 0) {
+        const hasAdmin = rolesData.some(r => r.role === 'admin');
+        setRole(hasAdmin ? 'admin' : 'estudiante');
+      } else {
+        setRole('estudiante');
+      }
+    } catch (error) {
+      console.error('[Auth] Falló la conexión al cargar la sesión:', error);
+      setProfile(null);
+      setRole(null);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -112,20 +118,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
-        setTimeout(() => fetchProfile(session.user.id), 100);
+        setRole(null);
+        setProfile(null);
+        void fetchProfile(session.user.id);
       } else {
         setUser(null);
         setProfile(null);
         setRole(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        fetchProfile(session.user.id);
+        setRole(null);
+        setProfile(null);
+        void fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
       }
+    }).catch((error) => {
+      console.error('[Auth] No se pudo recuperar la sesión:', error);
+      setUser(null);
+      setProfile(null);
+      setRole(null);
       setLoading(false);
     });
 
