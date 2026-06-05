@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import AppErrorBoundary from "@/components/AppErrorBoundary";
+import PreviewConnectionBanner from "@/components/PreviewConnectionBanner";
 import Login from "./pages/Login";
 import AppLayout from "./components/layout/AppLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -41,20 +43,6 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { logAccess } from "@/lib/security";
 import { supabase } from "@/integrations/supabase/client";
-
-/**
- * Información global de la aplicación.
- * © 2019-2026 Víctor Cañizares González — PreUniversitario MEDD.
- */
-export const APP_INFO = {
-  nombre: 'PreUniversitario MEDD',
-  version: '2.0.0',
-  autor: 'Víctor Cañizares González',
-  fundacion: '2019-01-09',
-  copyright: '© 2019-2026 Víctor Cañizares González',
-  descripcion: 'Plataforma educativa digital para preparación universitaria',
-  contacto: 'admin@meddprepolitecnico.com',
-} as const;
 
 const queryClient = new QueryClient();
 
@@ -133,19 +121,22 @@ function AppRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <AppErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <PreviewConnectionBanner />
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </AppErrorBoundary>
 );
 
 export default App;
