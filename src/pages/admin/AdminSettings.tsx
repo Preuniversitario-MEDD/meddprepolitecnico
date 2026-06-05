@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
-import { APP_INFO } from '@/App';
+import { APP_INFO } from '@/lib/appInfo';
 import { Info } from 'lucide-react';
 
 interface RoleRow {
