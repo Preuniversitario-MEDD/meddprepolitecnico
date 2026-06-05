@@ -78,7 +78,7 @@ function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode;
     return () => { cancelled = true; };
   }, [user, location.pathname]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
+  if (loading || (user && role === null)) return <div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
   if (!user) return <Navigate to="/login" replace state={{ msg: 'Sesión expirada. Por favor inicia sesión nuevamente.' }} />;
   if (requiredRole && role !== requiredRole) return <Navigate to={role === 'admin' ? '/admin' : '/student'} replace />;
   return <AppLayout>{children}</AppLayout>;
