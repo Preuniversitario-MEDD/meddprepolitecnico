@@ -86,7 +86,7 @@ function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode;
 
 function AppRoutes() {
   const { user, role, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center gradient-primary"><div className="w-12 h-12 rounded-full border-4 border-primary-foreground border-t-transparent animate-spin" /></div>;
+  if (loading || (user && role === null)) return <div className="min-h-screen flex items-center justify-center gradient-primary"><div className="w-12 h-12 rounded-full border-4 border-primary-foreground border-t-transparent animate-spin" /></div>;
 
   return (
     <Routes>
