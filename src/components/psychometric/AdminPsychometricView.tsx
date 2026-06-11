@@ -252,11 +252,34 @@ export default function AdminPsychometricView() {
 
       {/* Student Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-[95vw] md:max-w-3xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
+        <DialogContent aria-describedby={undefined} className="max-w-[95vw] md:max-w-3xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
           <DialogHeader>
-            <DialogTitle className="font-display text-base md:text-lg">
-              {selected?.nombre} {selected?.apellidos}
-            </DialogTitle>
+            <div className="flex items-start justify-between gap-2">
+              <DialogTitle className="font-display text-base md:text-lg">
+                {selected?.nombre} {selected?.apellidos}
+              </DialogTitle>
+              {selected && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 shrink-0 mr-6">
+                      <RotateCcw className="w-3 h-3" /> Reiniciar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Reiniciar tests de {selected.nombre}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        El estudiante empezará desde cero. El historial de intentos previos se conserva (solo visible para el administrador).
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => resetStudentTests(selected.user_id, selected.nombre)} className="bg-destructive hover:bg-destructive/90">Reiniciar</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </DialogHeader>
 
           {selected && (
