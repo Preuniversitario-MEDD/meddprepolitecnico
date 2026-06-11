@@ -7,6 +7,9 @@ interface State {
   message: string;
 }
 
+// Errores transitorios (extensiones, traducción, observers) que recuperamos automáticamente
+const RECOVERABLE = [/removeChild/i, /insertBefore/i, /ResizeObserver/i, /NotFoundError: Failed to execute/i];
+
 export default class AppErrorBoundary extends Component<{ children: ReactNode }, State> {
   state: State = { hasError: false, message: '' };
 
@@ -16,7 +19,15 @@ export default class AppErrorBoundary extends Component<{ children: ReactNode },
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[AppErrorBoundary] Fallo de renderizado:', error, info.componentStack);
+    // Auto-recuperar errores transitorios sin mostrar pantalla de error
+    if (RECOVERABLE.some((p) => p.test(error.message || ''))) {
+      setTimeout(() => this.setState({ hasError: false, message: '' }), 50);
+    }
   }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, message: '' });
+  };
 
   render() {
     if (!this.state.hasError) return this.props.children;
@@ -29,12 +40,17 @@ export default class AppErrorBoundary extends Component<{ children: ReactNode },
           </div>
           <div className="space-y-2">
             <h1 className="font-display text-xl font-bold">No se pudo cargar la aplicación</h1>
-            <p className="text-sm text-muted-foreground">La vista previa encontró un error de conexión o renderizado.</p>
+            <p className="text-sm text-muted-foreground">La vista previa encontró un error de renderizado.</p>
             {this.state.message && <p className="text-xs text-muted-foreground break-words">{this.state.message}</p>}
           </div>
-          <Button className="w-full" onClick={() => window.location.reload()}>
-            <RefreshCw className="w-4 h-4" /> Reintentar
-          </Button>
+          <div className="flex gap-2">
+            <Button className="flex-1" variant="outline" onClick={this.handleRetry}>
+              Continuar
+            </Button>
+            <Button className="flex-1" onClick={() => window.location.reload()}>
+              <RefreshCw className="w-4 h-4" /> Recargar
+            </Button>
+          </div>
         </section>
       </main>
     );
