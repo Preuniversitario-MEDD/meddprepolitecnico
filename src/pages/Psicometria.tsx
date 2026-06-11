@@ -396,8 +396,9 @@ function TestScreen({ test, onFinish, onBack }: {
 // ══════════════════════════════════════════════════════════════
 // TEST CARD
 // ══════════════════════════════════════════════════════════════
-function TestCard({ test, onStart, completed }: { test: Test; onStart: () => void; completed?: boolean }) {
+function TestCard({ test, onStart, completed, percent = 0 }: { test: Test; onStart: () => void; completed?: boolean; percent?: number }) {
   const meta = AREA[test.area] ?? AREA.aptitudes;
+  const pct = completed ? Math.round(percent) : 0;
   return (
     <div
       onClick={onStart}
@@ -421,15 +422,17 @@ function TestCard({ test, onStart, completed }: { test: Test; onStart: () => voi
         position:"absolute", top:-30, right:-30, width:80, height:80,
         borderRadius:"50%", background:meta.glow, filter:"blur(40px)", opacity:0.4,
       }} />
-      {completed && (
-        <div style={{
-          position:"absolute", top:12, right:12,
-          background:`${meta.color}30`, color:meta.color,
-          fontSize:10, fontWeight:600, borderRadius:99, padding:"3px 10px",
-          border:`1px solid ${meta.color}40`,
-          boxShadow:`0 0 10px ${meta.glow}`,
-        }}>✓ Completado</div>
-      )}
+      <div style={{
+        position:"absolute", top:12, right:12,
+        background: completed ? `${meta.color}30` : "rgba(255,255,255,0.06)",
+        color: completed ? meta.color : "rgba(255,255,255,0.5)",
+        fontSize:10, fontWeight:700, borderRadius:99, padding:"3px 10px",
+        border:`1px solid ${completed ? meta.color + '40' : 'rgba(255,255,255,0.1)'}`,
+        boxShadow: completed ? `0 0 10px ${meta.glow}` : "none",
+        display:"flex", alignItems:"center", gap:4,
+      }}>
+        {completed ? `✓ ${pct}%` : `0%`}
+      </div>
       <div style={{ fontSize:28, marginBottom:10 }}>{meta.icon}</div>
       <div style={{ fontSize:11, color:meta.color, textTransform:"uppercase", letterSpacing:1.5, marginBottom:4, fontWeight:600 }}>
         {meta.label}
@@ -689,13 +692,20 @@ export default function Psicometria() {
 
         {/* Grid de tests */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px,1fr))", gap:14 }}>
-          {filtered.map(test => (
-            <TestCard
-              key={test.id} test={test}
-              onStart={() => startTest(test)}
-              completed={completedIds.has(test.id)}
-            />
-          ))}
+          {filtered.map(test => {
+            const sess = sessions.find(s => s.test.id === test.id);
+            const avgPct = sess && sess.results.length > 0
+              ? sess.results.reduce((a, r) => a + (r.percent || 0), 0) / sess.results.length
+              : 0;
+            return (
+              <TestCard
+                key={test.id} test={test}
+                onStart={() => startTest(test)}
+                completed={completedIds.has(test.id)}
+                percent={avgPct}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

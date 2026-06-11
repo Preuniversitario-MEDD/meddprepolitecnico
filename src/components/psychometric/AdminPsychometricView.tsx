@@ -8,8 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { allTests, Test, InterpretResult } from "@/data/testData";
 import { ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from "recharts";
 import { motion } from "framer-motion";
-import { Users, Eye, CheckCircle, Clock, Brain, Search, History, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Users, Eye, CheckCircle, Clock, Brain, Search, History, TrendingUp, TrendingDown, Minus, RotateCcw, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface AttemptRow {
   id: string;
@@ -104,15 +106,51 @@ export default function AdminPsychometricView() {
     return test.interpret(data.scores);
   }
 
+  async function resetStudentTests(userId: string, nombre: string) {
+    const { error } = await supabase.from("psychometric_results").delete().eq("user_id", userId);
+    if (error) { toast.error("Error al reiniciar: " + error.message); return; }
+    toast.success(`Tests reiniciados para ${nombre}. El historial se conserva.`);
+    setSelected(null);
+    await loadData();
+  }
+
+  async function resetAllStudentsTests() {
+    const { error } = await supabase.from("psychometric_results").delete().neq("user_id", "00000000-0000-0000-0000-000000000000");
+    if (error) { toast.error("Error al reiniciar todos: " + error.message); return; }
+    toast.success("Todos los tests reiniciados. El historial completo se conserva para comparación.");
+    await loadData();
+  }
+
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-xl md:text-2xl font-display font-bold flex items-center gap-2">
-          <Brain className="w-5 h-5 md:w-6 md:h-6 text-primary" /> Analítica Psicométrica
-        </h1>
-        <p className="text-xs md:text-sm text-muted-foreground mt-1">
-          Perfil psicológico y aptitudinal — {allTests.length} tests disponibles
-        </p>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl md:text-2xl font-display font-bold flex items-center gap-2">
+            <Brain className="w-5 h-5 md:w-6 md:h-6 text-primary" /> Analítica Psicométrica
+          </h1>
+          <p className="text-xs md:text-sm text-muted-foreground mt-1">
+            Perfil psicológico y aptitudinal — {allTests.length} tests disponibles
+          </p>
+        </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm" className="gap-1.5">
+              <RotateCcw className="w-4 h-4" /> Reiniciar todos los tests
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-destructive" /> ¿Reiniciar todos los tests?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Todos los estudiantes volverán a empezar desde cero. <strong>El historial completo de intentos se conserva</strong> y solo es visible para el administrador para comparar evoluciones.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={resetAllStudentsTests} className="bg-destructive hover:bg-destructive/90">Reiniciar todos</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </motion.div>
 
       {/* Summary cards */}
@@ -214,11 +252,34 @@ export default function AdminPsychometricView() {
 
       {/* Student Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-[95vw] md:max-w-3xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
+        <DialogContent aria-describedby={undefined} className="max-w-[95vw] md:max-w-3xl max-h-[90vh] overflow-y-auto p-4 md:p-6">
           <DialogHeader>
-            <DialogTitle className="font-display text-base md:text-lg">
-              {selected?.nombre} {selected?.apellidos}
-            </DialogTitle>
+            <div className="flex items-start justify-between gap-2">
+              <DialogTitle className="font-display text-base md:text-lg">
+                {selected?.nombre} {selected?.apellidos}
+              </DialogTitle>
+              {selected && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 shrink-0 mr-6">
+                      <RotateCcw className="w-3 h-3" /> Reiniciar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Reiniciar tests de {selected.nombre}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        El estudiante empezará desde cero. El historial de intentos previos se conserva (solo visible para el administrador).
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => resetStudentTests(selected.user_id, selected.nombre)} className="bg-destructive hover:bg-destructive/90">Reiniciar</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </DialogHeader>
 
           {selected && (

@@ -7,13 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Ban, CheckCircle, KeyRound, Search, Edit, Eye, BookOpen, Users, BarChart3 } from 'lucide-react';
+import { UserPlus, Trash2, Ban, CheckCircle, KeyRound, Search, Edit, Eye, BookOpen, Users, BarChart3, Wifi } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AvatarUpload from '@/components/AvatarUpload';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import CourseManager from '@/components/admin/CourseManager';
 import StudentStatsTab from '@/components/admin/StudentStatsTab';
+import ConnectionsTab from '@/components/admin/ConnectionsTab';
 import { validarCedulaEcuatoriana, sanitizeInput } from '@/lib/security';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -246,10 +247,11 @@ export default function AdminStudents() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="students" className="gap-1"><Users className="w-4 h-4" /> Estudiantes</TabsTrigger>
-          <TabsTrigger value="courses" className="gap-1"><BookOpen className="w-4 h-4" /> Cursos</TabsTrigger>
-          <TabsTrigger value="stats" className="gap-1"><BarChart3 className="w-4 h-4" /> Estadísticas</TabsTrigger>
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsTrigger value="students" className="gap-1"><Users className="w-4 h-4" /> <span className="hidden sm:inline">Estudiantes</span></TabsTrigger>
+          <TabsTrigger value="courses" className="gap-1"><BookOpen className="w-4 h-4" /> <span className="hidden sm:inline">Cursos</span></TabsTrigger>
+          <TabsTrigger value="stats" className="gap-1"><BarChart3 className="w-4 h-4" /> <span className="hidden sm:inline">Estadísticas</span></TabsTrigger>
+          <TabsTrigger value="connections" className="gap-1"><Wifi className="w-4 h-4" /> <span className="hidden sm:inline">Conexiones</span></TabsTrigger>
         </TabsList>
 
         <TabsContent value="students" className="space-y-3 mt-3">
@@ -344,6 +346,10 @@ export default function AdminStudents() {
 
         <TabsContent value="stats" className="mt-3">
           <StudentStatsTab students={students} />
+        </TabsContent>
+
+        <TabsContent value="connections" className="mt-3">
+          <ConnectionsTab students={students as any} />
         </TabsContent>
       </Tabs>
     </div>
