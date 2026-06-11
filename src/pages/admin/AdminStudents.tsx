@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import CourseManager from '@/components/admin/CourseManager';
 import StudentStatsTab from '@/components/admin/StudentStatsTab';
+import ConnectionsTab from '@/components/admin/ConnectionsTab';
 import { validarCedulaEcuatoriana, sanitizeInput } from '@/lib/security';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -345,6 +346,10 @@ export default function AdminStudents() {
 
         <TabsContent value="stats" className="mt-3">
           <StudentStatsTab students={students} />
+        </TabsContent>
+
+        <TabsContent value="connections" className="mt-3">
+          <ConnectionsTab students={students as any} />
         </TabsContent>
       </Tabs>
     </div>
