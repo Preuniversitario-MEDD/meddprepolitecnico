@@ -348,6 +348,51 @@ export type Database = {
         }
         Relationships: []
       }
+      connection_sessions: {
+        Row: {
+          active_seconds: number
+          background_seconds: number
+          created_at: string
+          device_type: string | null
+          ended_at: string | null
+          id: string
+          idle_seconds: number
+          ip_address: string | null
+          last_heartbeat_at: string
+          started_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          active_seconds?: number
+          background_seconds?: number
+          created_at?: string
+          device_type?: string | null
+          ended_at?: string | null
+          id?: string
+          idle_seconds?: number
+          ip_address?: string | null
+          last_heartbeat_at?: string
+          started_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          active_seconds?: number
+          background_seconds?: number
+          created_at?: string
+          device_type?: string | null
+          ended_at?: string | null
+          id?: string
+          idle_seconds?: number
+          ip_address?: string | null
+          last_heartbeat_at?: string
+          started_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       contenido: {
         Row: {
           created_at: string
