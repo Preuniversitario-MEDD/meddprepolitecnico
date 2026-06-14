@@ -55,6 +55,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const unreadCount = useUnreadMessages();
   usePresenceTracker();
   useConnectionLogger();
+  useSessionDuration();
   const location = useLocation();
   const navigate = useNavigate();
   const [students, setStudents] = useState<{ user_id: string; nombre: string; apellidos: string }[]>([]);
