@@ -113,7 +113,7 @@ export default function AdminStudents() {
     const usuario = generateUsuario(form.nombre, form.apellidos);
 
     const { data, error } = await supabase.functions.invoke('admin-users', {
-      body: { action: 'register', cedula: form.cedula, password: '123*789*h', nombre: form.nombre, apellidos: form.apellidos }
+      body: { action: 'register', cedula: form.cedula, nombre: form.nombre, apellidos: form.apellidos }
     });
 
     if (error || data?.error) {
@@ -133,7 +133,12 @@ export default function AdminStudents() {
       } as any).eq('user_id', data.user.id);
     }
 
-    toast({ title: '¡Éxito!', description: `Estudiante ${form.nombre} agregado. Cédula: ${form.cedula}, Clave: 123*789*h` });
+    const tempPwd = data?.tempPassword || '(consulta a soporte)';
+    toast({
+      title: '¡Éxito!',
+      description: `Estudiante ${form.nombre} creado. Cédula: ${form.cedula} · Clave temporal: ${tempPwd}`,
+      duration: 20000,
+    });
     setForm({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '', colegio: '' });
     setAddOpen(false);
     setLoading(false);
@@ -155,8 +160,18 @@ export default function AdminStudents() {
 
   async function resetPassword(student: Profile) {
     if (!confirm(`¿Reiniciar contraseña de ${student.nombre}?`)) return;
-    await supabase.functions.invoke('admin-users', { body: { action: 'reset_password', userId: student.user_id, newPassword: '123*789*h' } });
-    toast({ title: 'Contraseña reiniciada', description: `Nueva clave temporal: 123*789*h` });
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: { action: 'reset_password', userId: student.user_id }
+    });
+    if (error || data?.error) {
+      toast({ title: 'Error', description: data?.error || error?.message, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: 'Contraseña reiniciada',
+      description: `Nueva clave temporal para ${student.nombre}: ${data?.tempPassword || '(error)'}`,
+      duration: 20000,
+    });
   }
 
   async function saveEdit() {
