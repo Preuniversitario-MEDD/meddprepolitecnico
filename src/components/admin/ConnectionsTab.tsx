@@ -1,13 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import {
   Monitor, Smartphone, Tablet, LogIn, LogOut, Search, RefreshCw, Wifi,
-  Activity, Coffee, EyeOff, Timer,
+  Activity, Coffee, EyeOff, Timer, ArrowUpDown, CalendarIcon, X,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -71,23 +77,41 @@ function isLive(s: SessionRow) {
   return Date.now() - new Date(s.last_heartbeat_at).getTime() < 2 * 60 * 1000; // <2min
 }
 
+type DatePreset = 'all' | '7' | '30' | '90' | 'custom';
+type AggSort = 'total_desc' | 'total_asc' | 'active_desc' | 'idle_desc' | 'name_asc' | 'last_seen_desc' | 'live_first';
+type SessSort = 'recent' | 'oldest' | 'duration_desc' | 'duration_asc' | 'live_first' | 'name_asc';
+type LiveFilter = 'all' | 'live' | 'offline';
+
 export default function ConnectionsTab({ students }: { students: Profile[] }) {
   const [logs, setLogs] = useState<ConnectionRow[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  const studentMap = Object.fromEntries(students.map((s) => [s.user_id, s]));
+  // Filtros de fecha
+  const [datePreset, setDatePreset] = useState<DatePreset>('all');
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
+
+  // Ordenamientos y filtros
+  const [aggSort, setAggSort] = useState<AggSort>('total_desc');
+  const [sessSort, setSessSort] = useState<SessSort>('recent');
+  const [liveFilter, setLiveFilter] = useState<LiveFilter>('all');
+
+  const studentMap = useMemo(
+    () => Object.fromEntries(students.map((s) => [s.user_id, s])),
+    [students]
+  );
 
   async function load() {
     setLoading(true);
     const [logRes, sessRes] = await Promise.all([
       supabase.from('connection_logs')
         .select('id, user_id, event_type, device_type, ip_address, user_agent, created_at')
-        .order('created_at', { ascending: false }).limit(300),
+        .order('created_at', { ascending: false }).limit(500),
       supabase.from('connection_sessions')
         .select('id, user_id, started_at, ended_at, last_heartbeat_at, active_seconds, idle_seconds, background_seconds, device_type, ip_address')
-        .order('started_at', { ascending: false }).limit(500),
+        .order('started_at', { ascending: false }).limit(1000),
     ]);
     setLogs((logRes.data as ConnectionRow[]) || []);
     setSessions((sessRes.data as SessionRow[]) || []);
@@ -96,32 +120,117 @@ export default function ConnectionsTab({ students }: { students: Profile[] }) {
 
   useEffect(() => { load(); }, []);
 
-  const q = search.toLowerCase();
-  const matchUser = (uid: string, extra = '') => {
-    const p = studentMap[uid];
-    return `${p?.nombre || ''} ${p?.apellidos || ''} ${p?.cedula || ''} ${extra}`.toLowerCase().includes(q);
+  // Rango de fechas activo
+  const dateRange = useMemo<{ from?: Date; to?: Date }>(() => {
+    const now = new Date();
+    if (datePreset === '7') return { from: new Date(now.getTime() - 7 * 86400e3) };
+    if (datePreset === '30') return { from: new Date(now.getTime() - 30 * 86400e3) };
+    if (datePreset === '90') return { from: new Date(now.getTime() - 90 * 86400e3) };
+    if (datePreset === 'custom') {
+      const to = customTo ? new Date(customTo) : undefined;
+      if (to) to.setHours(23, 59, 59, 999);
+      return { from: customFrom, to };
+    }
+    return {};
+  }, [datePreset, customFrom, customTo]);
+
+  const inDateRange = (iso: string) => {
+    if (!dateRange.from && !dateRange.to) return true;
+    const t = new Date(iso).getTime();
+    if (dateRange.from && t < dateRange.from.getTime()) return false;
+    if (dateRange.to && t > dateRange.to.getTime()) return false;
+    return true;
   };
 
-  const filteredSessions = sessions.filter((s) => matchUser(s.user_id, s.ip_address || ''));
-  const filteredLogs = logs.filter((l) => matchUser(l.user_id, l.ip_address || ''));
+  const q = search.trim().toLowerCase();
+  const matchUser = (uid: string, extra = '') => {
+    if (!q) return true;
+    const p = studentMap[uid];
+    return `${p?.nombre || ''} ${p?.apellidos || ''} ${p?.cedula || ''} ${p?.cedula || ''} ${extra}`
+      .toLowerCase()
+      .includes(q);
+  };
 
-  // Online ahora: sesión sin ended_at y heartbeat < 2 min
+  // SESIONES filtradas
+  const filteredSessionsBase = sessions.filter((s) => matchUser(s.user_id, s.ip_address || '') && inDateRange(s.started_at));
+  const filteredSessions = filteredSessionsBase.filter((s) => {
+    if (liveFilter === 'live') return isLive(s);
+    if (liveFilter === 'offline') return !isLive(s);
+    return true;
+  });
+
+  const sortedSessions = [...filteredSessions].sort((a, b) => {
+    const ta = (a.active_seconds || 0) + (a.idle_seconds || 0) + (a.background_seconds || 0);
+    const tb = (b.active_seconds || 0) + (b.idle_seconds || 0) + (b.background_seconds || 0);
+    const nameA = `${studentMap[a.user_id]?.nombre || ''} ${studentMap[a.user_id]?.apellidos || ''}`.toLowerCase();
+    const nameB = `${studentMap[b.user_id]?.nombre || ''} ${studentMap[b.user_id]?.apellidos || ''}`.toLowerCase();
+    switch (sessSort) {
+      case 'oldest': return new Date(a.started_at).getTime() - new Date(b.started_at).getTime();
+      case 'duration_desc': return tb - ta;
+      case 'duration_asc': return ta - tb;
+      case 'live_first': return Number(isLive(b)) - Number(isLive(a)) || new Date(b.started_at).getTime() - new Date(a.started_at).getTime();
+      case 'name_asc': return nameA.localeCompare(nameB);
+      case 'recent':
+      default: return new Date(b.started_at).getTime() - new Date(a.started_at).getTime();
+    }
+  });
+
+  // EVENTOS filtrados (mismo search/fecha)
+  const filteredLogs = logs.filter((l) => matchUser(l.user_id, l.ip_address || '') && inDateRange(l.created_at));
+
+  // Online ahora (global, no filtrado por fecha)
   const onlineCount = sessions.filter(isLive).length;
 
-  // Agregado por estudiante
-  type Agg = { user_id: string; sessions: number; active: number; idle: number; background: number; total: number; lastSeen: string };
+  // Agregado por estudiante usando el rango de fechas
+  type Agg = { user_id: string; sessions: number; active: number; idle: number; background: number; total: number; lastSeen: string; live: boolean };
   const aggMap = new Map<string, Agg>();
-  for (const s of filteredSessions) {
-    const a = aggMap.get(s.user_id) || { user_id: s.user_id, sessions: 0, active: 0, idle: 0, background: 0, total: 0, lastSeen: s.last_heartbeat_at };
+  for (const s of filteredSessionsBase) {
+    const a = aggMap.get(s.user_id) || { user_id: s.user_id, sessions: 0, active: 0, idle: 0, background: 0, total: 0, lastSeen: s.last_heartbeat_at, live: false };
     a.sessions += 1;
     a.active += s.active_seconds || 0;
     a.idle += s.idle_seconds || 0;
     a.background += s.background_seconds || 0;
     a.total = a.active + a.idle + a.background;
     if (new Date(s.last_heartbeat_at) > new Date(a.lastSeen)) a.lastSeen = s.last_heartbeat_at;
+    if (isLive(s)) a.live = true;
     aggMap.set(s.user_id, a);
   }
-  const aggregates = Array.from(aggMap.values()).sort((a, b) => b.total - a.total);
+  let aggregates = Array.from(aggMap.values());
+  if (liveFilter === 'live') aggregates = aggregates.filter((a) => a.live);
+  if (liveFilter === 'offline') aggregates = aggregates.filter((a) => !a.live);
+
+  aggregates.sort((a, b) => {
+    const nameA = `${studentMap[a.user_id]?.nombre || ''} ${studentMap[a.user_id]?.apellidos || ''}`.toLowerCase();
+    const nameB = `${studentMap[b.user_id]?.nombre || ''} ${studentMap[b.user_id]?.apellidos || ''}`.toLowerCase();
+    switch (aggSort) {
+      case 'total_asc': return a.total - b.total;
+      case 'active_desc': return b.active - a.active;
+      case 'idle_desc': return b.idle - a.idle;
+      case 'name_asc': return nameA.localeCompare(nameB);
+      case 'last_seen_desc': return new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+      case 'live_first': return Number(b.live) - Number(a.live) || b.total - a.total;
+      case 'total_desc':
+      default: return b.total - a.total;
+    }
+  });
+
+  const dateLabel = (() => {
+    if (datePreset === 'all') return 'Todo el tiempo';
+    if (datePreset === '7') return 'Últimos 7 días';
+    if (datePreset === '30') return 'Últimos 30 días';
+    if (datePreset === '90') return 'Últimos 90 días';
+    if (customFrom && customTo) return `${format(customFrom, 'dd MMM', { locale: es })} – ${format(customTo, 'dd MMM', { locale: es })}`;
+    if (customFrom) return `Desde ${format(customFrom, 'dd MMM yyyy', { locale: es })}`;
+    return 'Rango personalizado';
+  })();
+
+  const clearFilters = () => {
+    setSearch('');
+    setDatePreset('all');
+    setCustomFrom(undefined);
+    setCustomTo(undefined);
+    setLiveFilter('all');
+  };
 
   return (
     <div className="space-y-3">
@@ -133,29 +242,99 @@ export default function ConnectionsTab({ students }: { students: Profile[] }) {
         </CardContent></Card>
         <Card className="card-elevated"><CardContent className="p-3 text-center">
           <Timer className="w-4 h-4 mx-auto mb-1 text-primary" />
-          <p className="text-xl font-bold">{sessions.length}</p>
-          <p className="text-[10px] text-muted-foreground">Sesiones registradas</p>
+          <p className="text-xl font-bold">{filteredSessionsBase.length}</p>
+          <p className="text-[10px] text-muted-foreground">Sesiones en rango</p>
         </CardContent></Card>
         <Card className="card-elevated"><CardContent className="p-3 text-center">
           <Activity className="w-4 h-4 mx-auto mb-1 text-[hsl(var(--neon-mint))]" />
-          <p className="text-xl font-bold">{fmtDur(sessions.reduce((s, x) => s + (x.active_seconds || 0), 0))}</p>
+          <p className="text-xl font-bold">{fmtDur(filteredSessionsBase.reduce((s, x) => s + (x.active_seconds || 0), 0))}</p>
           <p className="text-[10px] text-muted-foreground">Total activo</p>
         </CardContent></Card>
         <Card className="card-elevated"><CardContent className="p-3 text-center">
           <Coffee className="w-4 h-4 mx-auto mb-1 text-[hsl(var(--neon-orange))]" />
-          <p className="text-xl font-bold">{fmtDur(sessions.reduce((s, x) => s + (x.idle_seconds || 0), 0))}</p>
+          <p className="text-xl font-bold">{fmtDur(filteredSessionsBase.reduce((s, x) => s + (x.idle_seconds || 0), 0))}</p>
           <p className="text-[10px] text-muted-foreground">Total inactivo</p>
         </CardContent></Card>
       </div>
 
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Buscar por nombre, cédula o IP..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+      {/* Barra de búsqueda + filtros */}
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, cédula o IP..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button variant="outline" size="icon" onClick={load} title="Actualizar">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
-        <Button variant="outline" size="icon" onClick={load} title="Actualizar">
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        </Button>
+
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Preset fechas */}
+          <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
+            <SelectTrigger className="h-9 w-auto min-w-[160px]">
+              <CalendarIcon className="w-3.5 h-3.5 mr-1" />
+              <SelectValue placeholder="Rango" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo el tiempo</SelectItem>
+              <SelectItem value="7">Últimos 7 días</SelectItem>
+              <SelectItem value="30">Últimos 30 días</SelectItem>
+              <SelectItem value="90">Últimos 90 días</SelectItem>
+              <SelectItem value="custom">Personalizado…</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Calendario personalizado */}
+          {datePreset === 'custom' && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn('h-9 justify-start gap-2', !customFrom && 'text-muted-foreground')}>
+                  <CalendarIcon className="w-3.5 h-3.5" />
+                  {customFrom
+                    ? `${format(customFrom, 'dd MMM', { locale: es })}${customTo ? ' – ' + format(customTo, 'dd MMM', { locale: es }) : ''}`
+                    : 'Elegir fechas'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={{ from: customFrom, to: customTo }}
+                  onSelect={(r: any) => { setCustomFrom(r?.from); setCustomTo(r?.to); }}
+                  numberOfMonths={2}
+                  locale={es}
+                  className={cn('p-3 pointer-events-auto')}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {/* Filtro EN VIVO */}
+          <Select value={liveFilter} onValueChange={(v) => setLiveFilter(v as LiveFilter)}>
+            <SelectTrigger className="h-9 w-auto min-w-[120px]">
+              <Wifi className="w-3.5 h-3.5 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="live">Solo EN VIVO</SelectItem>
+              <SelectItem value="offline">Solo desconectados</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {(search || datePreset !== 'all' || liveFilter !== 'all') && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 gap-1">
+              <X className="w-3.5 h-3.5" /> Limpiar
+            </Button>
+          )}
+
+          <Badge variant="outline" className="ml-auto text-[10px]">{dateLabel}</Badge>
+        </div>
       </div>
 
       <Tabs defaultValue="por-estudiante" className="w-full">
@@ -167,8 +346,27 @@ export default function ConnectionsTab({ students }: { students: Profile[] }) {
 
         {/* RANKING POR ESTUDIANTE */}
         <TabsContent value="por-estudiante" className="space-y-1.5 mt-3">
+          <div className="flex items-center justify-between gap-2 px-1">
+            <p className="text-xs text-muted-foreground">{aggregates.length} estudiante{aggregates.length !== 1 ? 's' : ''}</p>
+            <Select value={aggSort} onValueChange={(v) => setAggSort(v as AggSort)}>
+              <SelectTrigger className="h-8 w-auto min-w-[180px] text-xs">
+                <ArrowUpDown className="w-3 h-3 mr-1" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="total_desc">Mayor duración total</SelectItem>
+                <SelectItem value="total_asc">Menor duración total</SelectItem>
+                <SelectItem value="active_desc">Más tiempo activo</SelectItem>
+                <SelectItem value="idle_desc">Más tiempo inactivo</SelectItem>
+                <SelectItem value="last_seen_desc">Visto más reciente</SelectItem>
+                <SelectItem value="live_first">EN VIVO primero</SelectItem>
+                <SelectItem value="name_asc">Nombre (A→Z)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {aggregates.length === 0 && !loading && (
-            <p className="text-center py-8 text-muted-foreground text-sm">Sin datos de sesión todavía</p>
+            <p className="text-center py-8 text-muted-foreground text-sm">Sin datos para el rango seleccionado</p>
           )}
           {aggregates.map((a, i) => {
             const p = studentMap[a.user_id];
@@ -182,10 +380,14 @@ export default function ConnectionsTab({ students }: { students: Profile[] }) {
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0">
-                        <p className="font-semibold text-sm truncate">
-                          {p ? `${p.nombre} ${p.apellidos}` : <span className="text-muted-foreground italic">Usuario eliminado</span>}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm truncate">
+                            {p ? `${p.nombre} ${p.apellidos}` : <span className="text-muted-foreground italic">Usuario eliminado</span>}
+                          </p>
+                          {a.live && <Badge className="text-[9px] h-4 bg-[hsl(var(--neon-mint))] text-background">EN VIVO</Badge>}
+                        </div>
                         <p className="text-[11px] text-muted-foreground">
+                          {p?.cedula && <span className="mr-2">📋 {p.cedula}</span>}
                           {a.sessions} sesión{a.sessions !== 1 ? 'es' : ''} · última: {timeAgo(a.lastSeen)}
                         </p>
                       </div>
@@ -210,10 +412,28 @@ export default function ConnectionsTab({ students }: { students: Profile[] }) {
 
         {/* SESIONES INDIVIDUALES */}
         <TabsContent value="sesiones" className="space-y-1.5 mt-3">
-          {filteredSessions.length === 0 && !loading && (
-            <p className="text-center py-8 text-muted-foreground text-sm">Sin sesiones registradas</p>
+          <div className="flex items-center justify-between gap-2 px-1">
+            <p className="text-xs text-muted-foreground">{sortedSessions.length} sesión{sortedSessions.length !== 1 ? 'es' : ''}</p>
+            <Select value={sessSort} onValueChange={(v) => setSessSort(v as SessSort)}>
+              <SelectTrigger className="h-8 w-auto min-w-[180px] text-xs">
+                <ArrowUpDown className="w-3 h-3 mr-1" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">Más recientes</SelectItem>
+                <SelectItem value="oldest">Más antiguas</SelectItem>
+                <SelectItem value="duration_desc">Mayor duración</SelectItem>
+                <SelectItem value="duration_asc">Menor duración</SelectItem>
+                <SelectItem value="live_first">EN VIVO primero</SelectItem>
+                <SelectItem value="name_asc">Nombre (A→Z)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {sortedSessions.length === 0 && !loading && (
+            <p className="text-center py-8 text-muted-foreground text-sm">Sin sesiones para el rango seleccionado</p>
           )}
-          {filteredSessions.map((s, i) => {
+          {sortedSessions.map((s, i) => {
             const p = studentMap[s.user_id];
             const Icon = deviceIcon(s.device_type);
             const live = isLive(s);
@@ -237,6 +457,7 @@ export default function ConnectionsTab({ students }: { students: Profile[] }) {
                         )}
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground mt-0.5">
+                        {p?.cedula && <span>📋 {p.cedula}</span>}
                         <span className="flex items-center gap-1"><Activity className="w-3 h-3 text-[hsl(var(--neon-mint))]" /> {fmtDur(s.active_seconds)}</span>
                         <span className="flex items-center gap-1"><Coffee className="w-3 h-3 text-[hsl(var(--neon-orange))]" /> {fmtDur(s.idle_seconds)}</span>
                         <span className="flex items-center gap-1"><EyeOff className="w-3 h-3" /> {fmtDur(s.background_seconds)}</span>
@@ -254,7 +475,7 @@ export default function ConnectionsTab({ students }: { students: Profile[] }) {
         {/* EVENTOS LOGIN/LOGOUT */}
         <TabsContent value="eventos" className="space-y-1.5 mt-3">
           {filteredLogs.length === 0 && !loading && (
-            <p className="text-center py-8 text-muted-foreground text-sm">Sin eventos registrados</p>
+            <p className="text-center py-8 text-muted-foreground text-sm">Sin eventos para el rango seleccionado</p>
           )}
           {filteredLogs.map((l, i) => {
             const p = studentMap[l.user_id];
