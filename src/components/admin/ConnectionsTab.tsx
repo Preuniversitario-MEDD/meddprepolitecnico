@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   Monitor, Smartphone, Tablet, LogIn, LogOut, Search, RefreshCw, Wifi,
-  Activity, Coffee, EyeOff, Timer, ArrowUpDown, CalendarIcon, X,
+  Activity, Coffee, EyeOff, Timer, ArrowUpDown, CalendarIcon, X, AlertTriangle, Radio,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
