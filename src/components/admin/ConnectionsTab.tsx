@@ -346,12 +346,128 @@ export default function ConnectionsTab({ students }: { students: Profile[] }) {
         </div>
       </div>
 
-      <Tabs defaultValue="por-estudiante" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full">
-          <TabsTrigger value="por-estudiante">Por estudiante</TabsTrigger>
-          <TabsTrigger value="sesiones">Sesiones</TabsTrigger>
-          <TabsTrigger value="eventos">Eventos</TabsTrigger>
+      <Tabs defaultValue="en-vivo" className="w-full">
+        <TabsList className="grid grid-cols-5 w-full">
+          <TabsTrigger value="en-vivo" className="gap-1 text-xs">
+            <Radio className="w-3 h-3" /> En vivo
+            {onlineCount > 0 && <Badge className="ml-1 h-4 text-[9px] bg-[hsl(var(--neon-mint))] text-background">{onlineCount}</Badge>}
+          </TabsTrigger>
+          <TabsTrigger value="alertas" className="gap-1 text-xs">
+            <AlertTriangle className="w-3 h-3" /> Alertas
+          </TabsTrigger>
+          <TabsTrigger value="por-estudiante" className="text-xs">Por estudiante</TabsTrigger>
+          <TabsTrigger value="sesiones" className="text-xs">Sesiones</TabsTrigger>
+          <TabsTrigger value="eventos" className="text-xs">Eventos</TabsTrigger>
         </TabsList>
+
+        {/* EN VIVO – tiempo real */}
+        <TabsContent value="en-vivo" className="space-y-1.5 mt-3">
+          {(() => {
+            const liveSessions = sessions
+              .filter(isLive)
+              .filter((s) => matchUser(s.user_id, s.ip_address || ''));
+            if (liveSessions.length === 0) {
+              return <p className="text-center py-8 text-muted-foreground text-sm">Nadie conectado en este momento</p>;
+            }
+            return liveSessions
+              .sort((a, b) => (b.active_seconds || 0) - (a.active_seconds || 0))
+              .map((s, i) => {
+                const p = studentMap[s.user_id];
+                const Icon = deviceIcon(s.device_type);
+                const sinceStart = Math.floor((Date.now() - new Date(s.started_at).getTime()) / 1000);
+                const sinceHb = Math.floor((Date.now() - new Date(s.last_heartbeat_at).getTime()) / 1000);
+                // Si el último heartbeat fue hace <60s, sumamos ese tiempo al "activo" en vivo
+                const liveActive = (s.active_seconds || 0) + (sinceHb < 60 ? sinceHb : 0);
+                return (
+                  <motion.div key={s.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.02, 0.2) }}>
+                    <Card className="card-elevated border-[hsl(var(--neon-mint))]/30">
+                      <CardContent className="p-3 flex items-center gap-3">
+                        <div className="relative">
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center bg-[hsl(var(--neon-mint)/0.15)] text-[hsl(var(--neon-mint))]">
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[hsl(var(--neon-mint))] ring-2 ring-background animate-pulse" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-sm truncate">
+                              {p ? `${p.nombre} ${p.apellidos}` : <span className="text-muted-foreground italic">Usuario eliminado</span>}
+                            </p>
+                            <Badge className="text-[9px] h-4 bg-[hsl(var(--neon-mint))] text-background animate-pulse">EN VIVO</Badge>
+                          </div>
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground mt-0.5">
+                            {p?.cedula && <span>📋 {p.cedula}</span>}
+                            <span className="flex items-center gap-1 text-[hsl(var(--neon-mint))] font-mono">
+                              <Activity className="w-3 h-3" /> Activo ahora: {fmtDur(liveActive)}
+                            </span>
+                            <span>Conectado hace {fmtDur(sinceStart)}</span>
+                            {s.ip_address && <span>🌐 {s.ip_address}</span>}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              });
+          })()}
+        </TabsContent>
+
+        {/* ALERTAS – inactivos / segundo plano prolongado */}
+        <TabsContent value="alertas" className="space-y-1.5 mt-3">
+          {(() => {
+            const IDLE_ALERT = 10 * 60; // 10 min
+            const BG_ALERT = 15 * 60; // 15 min
+            const alerts = sessions
+              .filter(isLive)
+              .filter((s) => matchUser(s.user_id, s.ip_address || ''))
+              .map((s) => {
+                const sinceHb = Math.floor((Date.now() - new Date(s.last_heartbeat_at).getTime()) / 1000);
+                const reasons: { type: 'idle' | 'background'; seconds: number }[] = [];
+                if ((s.idle_seconds || 0) >= IDLE_ALERT) reasons.push({ type: 'idle', seconds: s.idle_seconds });
+                if ((s.background_seconds || 0) >= BG_ALERT) reasons.push({ type: 'background', seconds: s.background_seconds });
+                return { s, sinceHb, reasons };
+              })
+              .filter((x) => x.reasons.length > 0)
+              .sort((a, b) => Math.max(...b.reasons.map((r) => r.seconds)) - Math.max(...a.reasons.map((r) => r.seconds)));
+
+            if (alerts.length === 0) {
+              return <p className="text-center py-8 text-muted-foreground text-sm">Sin alertas activas. Todos los estudiantes conectados están participando 👌</p>;
+            }
+            return alerts.map(({ s, sinceHb, reasons }, i) => {
+              const p = studentMap[s.user_id];
+              const primary = reasons[0];
+              const color = primary.type === 'idle' ? 'hsl(var(--neon-orange))' : 'hsl(var(--muted-foreground))';
+              return (
+                <motion.div key={s.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.02, 0.2) }}>
+                  <Card className="card-elevated" style={{ borderColor: color + '55' }}>
+                    <CardContent className="p-3 flex items-center gap-3">
+                      <AlertTriangle className="w-5 h-5 shrink-0" style={{ color }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">
+                          {p ? `${p.nombre} ${p.apellidos}` : <span className="text-muted-foreground italic">Usuario eliminado</span>}
+                          {p?.cedula && <span className="ml-2 text-[11px] text-muted-foreground font-normal">📋 {p.cedula}</span>}
+                        </p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground mt-0.5">
+                          {reasons.map((r) => (
+                            <span key={r.type} className="flex items-center gap-1">
+                              {r.type === 'idle' ? <Coffee className="w-3 h-3 text-[hsl(var(--neon-orange))]" /> : <EyeOff className="w-3 h-3" />}
+                              {r.type === 'idle' ? 'Inactivo' : 'Segundo plano'} {fmtDur(r.seconds)}
+                            </span>
+                          ))}
+                          <span>Última actividad: hace {fmtDur(sinceHb)}</span>
+                          {s.ip_address && <span>🌐 {s.ip_address}</span>}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] shrink-0" style={{ borderColor: color, color }}>
+                        {primary.type === 'idle' ? 'Inactivo' : '2.º plano'}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            });
+          })()}
+        </TabsContent>
 
         {/* RANKING POR ESTUDIANTE */}
         <TabsContent value="por-estudiante" className="space-y-1.5 mt-3">
