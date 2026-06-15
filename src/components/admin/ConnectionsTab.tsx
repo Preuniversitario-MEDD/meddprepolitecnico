@@ -120,6 +120,15 @@ export default function ConnectionsTab({ students }: { students: Profile[] }) {
 
   useEffect(() => { load(); }, []);
 
+  // Auto-refresh cada 15s y tick cada 1s para los contadores en vivo
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const t1 = setInterval(load, 15000);
+    const t2 = setInterval(() => setTick((x) => x + 1), 1000);
+    return () => { clearInterval(t1); clearInterval(t2); };
+  }, []);
+  void tick;
+
   // Rango de fechas activo
   const dateRange = useMemo<{ from?: Date; to?: Date }>(() => {
     const now = new Date();
