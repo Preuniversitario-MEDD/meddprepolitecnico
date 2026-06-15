@@ -38,6 +38,7 @@ import SchulteTest from "./pages/student/SchulteTest";
 import SchulteRecords from "./pages/student/SchulteRecords";
 import AdminConcentracion from "./pages/admin/AdminConcentracion";
 import OrientacionVocacional from "./pages/student/OrientacionVocacional";
+import StudentTutor from "./pages/student/StudentTutor";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
@@ -114,6 +115,7 @@ function AppRoutes() {
       <Route path="/student/schulte" element={<ProtectedRoute><SchulteTest /></ProtectedRoute>} />
       <Route path="/student/schulte-records" element={<ProtectedRoute><SchulteRecords /></ProtectedRoute>} />
       <Route path="/student/orientacion-vocacional" element={<ProtectedRoute><OrientacionVocacional /></ProtectedRoute>} />
+      <Route path="/student/tutor" element={<ProtectedRoute><StudentTutor /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
