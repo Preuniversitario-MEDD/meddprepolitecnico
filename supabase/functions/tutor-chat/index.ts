@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
   try {
     const auth = await requireUser(req);
-    if (auth instanceof Response) return auth;
+    if ("error" in auth) return auth.error;
 
     const { messages } = await req.json();
     if (!Array.isArray(messages)) {
