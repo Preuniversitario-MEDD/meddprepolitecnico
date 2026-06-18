@@ -22,6 +22,7 @@ type Part = { type: 'text'; text: string } | { type: 'image_url'; image_url: { u
 type Msg = { role: 'user' | 'assistant'; content: string | Part[] };
 
 const STORAGE_KEY = 'medd_tutor_chat_v2';
+const DRAFT_KEY = 'medd_tutor_draft_v1';
 const SUGGESTIONS = [
   '¿Cómo balanceo H₂ + O₂ → H₂O?',
   'Explícame derivadas como si tuviera 15 años',
