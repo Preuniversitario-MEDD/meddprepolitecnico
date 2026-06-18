@@ -1186,6 +1186,63 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_usage: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          tokens_in: number | null
+          tokens_out: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tutor_video_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          questions: Json
+          topic: string | null
+          user_id: string
+          video_id: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          questions?: Json
+          topic?: string | null
+          user_id: string
+          video_id: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          questions?: Json
+          topic?: string | null
+          user_id?: string
+          video_id?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
