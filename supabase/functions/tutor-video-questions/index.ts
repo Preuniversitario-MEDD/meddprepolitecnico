@@ -1,5 +1,6 @@
-// Genera preguntas con timestamps a partir de un link de YouTube y un tema.
-// El front pausa el video en cada timestamp hasta que el estudiante responda.
+// Genera preguntas con timestamps y segmento de respuesta a partir de un link de YouTube.
+// El front pausa el video en cada timestamp. Si el estudiante responde correctamente,
+// el video continúa automáticamente. Si responde mal, vuelve a "segment_start_seconds".
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireUser } from "../_shared/auth.ts";
 
@@ -24,11 +25,12 @@ function extractYouTubeId(url: string): string | null {
 
 const SYSTEM = `Eres MR. VICTOR, tutor académico. Generas preguntas de comprensión para un video educativo.
 Devuelves SOLO JSON válido con esta forma:
-{"questions":[{"timestamp_seconds":number,"question":"...","options":["a","b","c","d"],"correct_index":0,"explanation":"..."}]}
+{"questions":[{"timestamp_seconds":number,"segment_start_seconds":number,"question":"...","options":["a","b","c","d"],"correct_index":0,"explanation":"..."}]}
 Reglas:
-- Crea entre 4 y 8 preguntas distribuidas en el rango de duración indicado.
-- timestamp_seconds debe ser un entero > 30 y < (duración - 10).
-- options: exactamente 4 opciones plausibles.
+- Entre 4 y 8 preguntas distribuidas en el rango de duración indicado.
+- timestamp_seconds: entero > 30 y < (duración - 10). Punto donde se pausa el video para preguntar.
+- segment_start_seconds: entero >= 0 y < timestamp_seconds. Es el inicio del segmento del video donde se explica la respuesta (típicamente 15-45 segundos antes del timestamp). Se usa para re-reproducir si el estudiante falla.
+- options: 4 opciones plausibles.
 - correct_index: 0..3.
 - explanation: 1-2 frases con la justificación.
 - Idioma: español. Nivel preuniversitario. Sin contenido sensible.`;
@@ -60,7 +62,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const userPrompt = `Video: ${video_url}\nTema/contexto: ${topic || "(no especificado)"}\nDuración: ${dur} segundos.\nGenera preguntas de comprensión distribuidas en el tiempo.`;
+    const userPrompt = `Video: ${video_url}\nTema/contexto: ${topic || "(no especificado)"}\nDuración: ${dur} segundos.\nGenera preguntas de comprensión distribuidas en el tiempo, con segment_start_seconds 15-45s antes de cada timestamp.`;
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -93,17 +95,24 @@ Deno.serve(async (req) => {
     const questions = Array.isArray(parsed.questions)
       ? parsed.questions
           .filter((q: any) => q && typeof q.question === "string" && Array.isArray(q.options) && q.options.length === 4)
-          .map((q: any) => ({
-            timestamp_seconds: Math.max(10, Math.min(dur - 5, Math.floor(Number(q.timestamp_seconds) || 30))),
-            question: String(q.question).slice(0, 500),
-            options: q.options.slice(0, 4).map((o: any) => String(o).slice(0, 200)),
-            correct_index: Math.max(0, Math.min(3, Number(q.correct_index) || 0)),
-            explanation: String(q.explanation || "").slice(0, 600),
-          }))
+          .map((q: any) => {
+            const ts = Math.max(10, Math.min(dur - 5, Math.floor(Number(q.timestamp_seconds) || 30)));
+            const segRaw = Number(q.segment_start_seconds);
+            const seg = Number.isFinite(segRaw)
+              ? Math.max(0, Math.min(ts - 5, Math.floor(segRaw)))
+              : Math.max(0, ts - 25);
+            return {
+              timestamp_seconds: ts,
+              segment_start_seconds: seg,
+              question: String(q.question).slice(0, 500),
+              options: q.options.slice(0, 4).map((o: any) => String(o).slice(0, 200)),
+              correct_index: Math.max(0, Math.min(3, Number(q.correct_index) || 0)),
+              explanation: String(q.explanation || "").slice(0, 600),
+            };
+          })
           .sort((a: any, b: any) => a.timestamp_seconds - b.timestamp_seconds)
       : [];
 
-    // Guardar sesión
     const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: saved } = await service.from("tutor_video_sessions").insert({
       user_id: auth.user.id,
