@@ -404,6 +404,24 @@ export default function CourseManager({ students }: { students: Profile[] }) {
                             </div>
                           )}
                         </div>
+
+                        {/* Módulos del curso */}
+                        <div>
+                          <h3 className="text-sm font-semibold flex items-center gap-1 mb-2">
+                            <Layers className="w-4 h-4" /> Módulos disponibles
+                          </h3>
+                          <p className="text-[11px] text-muted-foreground mb-2">
+                            Activa o desactiva funciones para los estudiantes asignados a este curso.
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {(Object.keys(MODULE_LABELS) as Array<keyof CourseModules>).map((k) => (
+                              <div key={k} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border bg-card/40">
+                                <span className="text-sm">{MODULE_LABELS[k]}</span>
+                                <Switch checked={curso.modulos[k]} onCheckedChange={() => toggleModulo(curso, k)} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
                   )}
