@@ -47,6 +47,11 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    if (!topic || typeof topic !== "string" || !topic.trim()) {
+      return new Response(JSON.stringify({ error: "El objetivo del video es obligatorio" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const videoId = extractYouTubeId(video_url);
     if (!videoId) {
       return new Response(JSON.stringify({ error: "URL de YouTube inválida" }), {

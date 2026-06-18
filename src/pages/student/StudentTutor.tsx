@@ -67,7 +67,10 @@ export default function StudentTutor() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    if (typeof document !== 'undefined' && document.hidden) return;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'auto' });
+    });
   }, [messages]);
 
   // Persistir borrador (resiliente a recargas)
@@ -473,35 +476,58 @@ function VideoQuestionsMode() {
   const { toast } = useToast();
   const [url, setUrl] = useState('');
   const [topic, setTopic] = useState('');
-  const [duration, setDuration] = useState(600);
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<VQ[]>([]);
-  const [answered, setAnswered] = useState<Record<number, number>>({}); // qIndex -> selected
+  const [answered, setAnswered] = useState<Record<number, number>>({}); // qIndex -> selected (cuando es correcto queda fijo)
   const [currentQ, setCurrentQ] = useState<number | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [playerReady, setPlayerReady] = useState(false);
   const playerRef = useRef<any>(null);
   const containerId = useMemo(() => `yt-player-${Math.random().toString(36).slice(2)}`, []);
   const checkRef = useRef<number | null>(null);
+  const answeredRef = useRef<Record<number, number>>({});
+  const questionsRef = useRef<VQ[]>([]);
+  const currentQRef = useRef<number | null>(null);
+  const visibleRef = useRef<boolean>(typeof document !== 'undefined' ? !document.hidden : true);
 
-  async function generate() {
+  useEffect(() => { answeredRef.current = answered; }, [answered]);
+  useEffect(() => { questionsRef.current = questions; }, [questions]);
+  useEffect(() => { currentQRef.current = currentQ; }, [currentQ]);
+
+  // Pausar polling cuando la pestaña no es visible para evitar parpadeo / dobles disparos
+  useEffect(() => {
+    const onVis = () => { visibleRef.current = !document.hidden; };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
+  // PASO 1: cargar player para leer la duración real
+  async function loadVideo() {
     const id = extractId(url);
     if (!id) { toast({ title: 'URL inválida', description: 'Pega un link de YouTube', variant: 'destructive' }); return; }
+    if (!topic.trim()) { toast({ title: 'Falta el objetivo', description: 'Describe qué quieres aprender del video', variant: 'destructive' }); return; }
+    setQuestions([]); setAnswered({}); setCurrentQ(null); setDuration(0); setCurrentTime(0); setPlayerReady(false);
+    setVideoId(id);
+  }
+
+  // PASO 2: cuando el player está listo y conocemos la duración, generamos preguntas
+  async function generateQuestions(dur: number) {
     setLoading(true);
-    setQuestions([]); setAnswered({}); setCurrentQ(null); setVideoId(null);
     try {
       const { data: sess } = await supabase.auth.getSession();
       const token = sess.session?.access_token;
       const resp = await fetch(`https://xoaondyfwefdnuknlaix.supabase.co/functions/v1/tutor-video-questions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ video_url: url, topic, duration_seconds: duration }),
+        body: JSON.stringify({ video_url: url, topic, duration_seconds: dur }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Error generando preguntas');
       if (!data.questions?.length) throw new Error('No se pudieron generar preguntas');
       setQuestions(data.questions);
-      setVideoId(data.video_id || id);
-      toast({ title: `${data.questions.length} preguntas listas`, description: 'El video se pausará en cada una.' });
+      toast({ title: `${data.questions.length} preguntas listas`, description: 'No podrás avanzar sin responder cada una correctamente.' });
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     } finally {
@@ -520,22 +546,60 @@ function VideoQuestionsMode() {
       playerRef.current = new window.YT.Player(containerId, {
         videoId,
         width: '100%', height: '360',
-        playerVars: { rel: 0, modestbranding: 1 },
+        playerVars: { rel: 0, modestbranding: 1, disablekb: 1 },
         events: {
           onReady: () => {
+            const p = playerRef.current;
+            if (!p?.getDuration) return;
+            const d = Math.floor(p.getDuration() || 0);
+            if (d > 0) {
+              setDuration(d);
+              setPlayerReady(true);
+              // Auto-generar preguntas una vez sepamos la duración real
+              if (questionsRef.current.length === 0) generateQuestions(d);
+            }
             if (checkRef.current) clearInterval(checkRef.current);
             checkRef.current = window.setInterval(() => {
-              const p = playerRef.current;
-              if (!p?.getCurrentTime) return;
-              const t = Math.floor(p.getCurrentTime());
-              const nextIdx = questions.findIndex((q, i) =>
-                answered[i] === undefined && t >= q.timestamp_seconds && t <= q.timestamp_seconds + 2
-              );
-              if (nextIdx >= 0 && currentQ === null) {
-                try { p.pauseVideo(); } catch {}
-                setCurrentQ(nextIdx);
+              const pl = playerRef.current;
+              if (!pl?.getCurrentTime || !visibleRef.current) return;
+              const t = pl.getCurrentTime();
+              setCurrentTime(t);
+              const qs = questionsRef.current;
+              const ans = answeredRef.current;
+              const cq = currentQRef.current;
+              if (cq !== null) return;
+              // 1) Bloquear adelanto: si el tiempo pasa de la siguiente pregunta no respondida, devolverlo
+              const unansweredAhead = qs.findIndex((q, i) => {
+                const correct = ans[i] === q.correct_index;
+                return !correct && t >= q.timestamp_seconds;
+              });
+              if (unansweredAhead >= 0) {
+                try { pl.pauseVideo(); } catch {}
+                // si el usuario saltó muy lejos, lo devolvemos al timestamp exacto de la pregunta
+                if (t > qs[unansweredAhead].timestamp_seconds + 1) {
+                  try { pl.seekTo(qs[unansweredAhead].timestamp_seconds, true); } catch {}
+                }
+                setCurrentQ(unansweredAhead);
               }
-            }, 500);
+            }, 400);
+          },
+          onStateChange: (ev: any) => {
+            // Estado 3 = buffering tras seek manual: re-checar bloqueos
+            if (ev.data === 3 || ev.data === 1) {
+              const pl = playerRef.current;
+              if (!pl?.getCurrentTime) return;
+              const t = pl.getCurrentTime();
+              const qs = questionsRef.current;
+              const ans = answeredRef.current;
+              const blocking = qs.findIndex((q, i) => ans[i] !== q.correct_index && t >= q.timestamp_seconds);
+              if (blocking >= 0 && currentQRef.current === null) {
+                try { pl.pauseVideo(); } catch {}
+                if (t > qs[blocking].timestamp_seconds + 1) {
+                  try { pl.seekTo(qs[blocking].timestamp_seconds, true); } catch {}
+                }
+                setCurrentQ(blocking);
+              }
+            }
           },
         },
       });
@@ -549,9 +613,7 @@ function VideoQuestionsMode() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId]);
 
-  // Al responder: si es correcta, auto-continuar tras una breve pausa.
-  // Si es incorrecta, rebobinar al segment_start_seconds y reproducir desde ahí
-  // (la pregunta se vuelve a abrir cuando el video llegue otra vez al timestamp).
+  // Al responder: correcta → continúa. Incorrecta → rebobina al segmento y reabre.
   function answer(qi: number, oi: number) {
     const q = questions[qi];
     const correct = oi === q.correct_index;
@@ -560,9 +622,8 @@ function VideoQuestionsMode() {
       setTimeout(() => {
         setCurrentQ(null);
         try { playerRef.current?.playVideo(); } catch {}
-      }, 1200);
+      }, 1000);
     } else {
-      // permitir reintento: limpiar respuesta para que el chequeo de "answered === undefined" vuelva a disparar
       const rewindTo = Math.max(0, q.segment_start_seconds ?? Math.max(0, q.timestamp_seconds - 25));
       setTimeout(() => {
         setAnswered((a) => { const c = { ...a }; delete c[qi]; return c; });
@@ -571,15 +632,18 @@ function VideoQuestionsMode() {
           playerRef.current?.seekTo(rewindTo, true);
           playerRef.current?.playVideo();
         } catch {}
-      }, 2500);
+      }, 2200);
     }
   }
-  function continueVideo() {
-    setCurrentQ(null);
-    try { playerRef.current?.playVideo(); } catch {}
-  }
 
-  const progress = questions.length ? Math.round((Object.keys(answered).length / questions.length) * 100) : 0;
+  const totalAnswered = questions.filter((q, i) => answered[i] === q.correct_index).length;
+  const progress = questions.length ? Math.round((totalAnswered / questions.length) * 100) : 0;
+  const playedPct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+
+  function fmt(s: number) {
+    const m = Math.floor(s / 60); const r = Math.floor(s % 60);
+    return `${m}:${String(r).padStart(2, '0')}`;
+  }
 
   return (
     <div className="space-y-4">
@@ -589,22 +653,16 @@ function VideoQuestionsMode() {
             <label className="text-xs font-medium">Link de YouTube</label>
             <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" />
           </div>
-          <div className="grid sm:grid-cols-[1fr_auto] gap-2">
-            <div>
-              <label className="text-xs font-medium">Tema / objetivo (opcional)</label>
-              <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Ej: Leyes de Newton, mol y estequiometría…" />
-            </div>
-            <div>
-              <label className="text-xs font-medium">Duración (seg)</label>
-              <Input type="number" min={60} max={7200} value={duration} onChange={(e) => setDuration(Number(e.target.value) || 600)} className="w-28" />
-            </div>
+          <div className="grid gap-2">
+            <label className="text-xs font-medium">Objetivo del video</label>
+            <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Ej: entender las leyes de Newton aplicadas a problemas" />
           </div>
-          <Button onClick={generate} disabled={loading || !url} className="w-full gap-2">
+          <Button onClick={loadVideo} disabled={loading || !url || !topic.trim()} className="w-full gap-2">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            Generar preguntas y empezar
+            {loading ? 'Generando preguntas…' : 'Cargar video y generar preguntas'}
           </Button>
           <p className="text-[11px] text-muted-foreground">
-            MR. VICTOR genera 4–8 preguntas con timestamps. El video se pausa en cada una hasta que respondas.
+            MR. VICTOR detecta la duración del video y crea 4–8 preguntas. No podrás adelantar el video sin responder correctamente.
           </p>
         </CardContent>
       </Card>
@@ -615,10 +673,41 @@ function VideoQuestionsMode() {
             <div className="relative aspect-video bg-black rounded overflow-hidden">
               <div id={containerId} className="w-full h-full" />
             </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Progreso: {Object.keys(answered).length}/{questions.length}</span>
-              <Badge variant="outline">{progress}%</Badge>
-            </div>
+
+            {/* Barra de progreso con marcadores de pregunta */}
+            {duration > 0 && (
+              <div className="space-y-1.5">
+                <div className="relative h-3 rounded-full bg-muted overflow-visible">
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full bg-primary/70"
+                    style={{ width: `${playedPct}%` }}
+                  />
+                  {questions.map((q, i) => {
+                    const left = (q.timestamp_seconds / duration) * 100;
+                    const isAnswered = answered[i] === q.correct_index;
+                    const isCurrent = currentQ === i;
+                    return (
+                      <div
+                        key={i}
+                        title={`Pregunta ${i + 1} @ ${fmt(q.timestamp_seconds)}${isAnswered ? ' ✓' : ''}`}
+                        className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full border-2 border-background shadow ${
+                          isAnswered ? 'bg-emerald-500' : isCurrent ? 'bg-amber-400 animate-pulse' : 'bg-rose-500'
+                        }`}
+                        style={{ left: `${left}%` }}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>{fmt(currentTime)} / {fmt(duration)}</span>
+                  <span>Preguntas: {totalAnswered}/{questions.length} ({progress}%)</span>
+                </div>
+              </div>
+            )}
+
+            {!playerReady && (
+              <p className="text-[11px] text-muted-foreground text-center">Cargando video…</p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -629,8 +718,9 @@ function VideoQuestionsMode() {
             <div className="flex items-center gap-2">
               <Badge>Pregunta {currentQ + 1}</Badge>
               <span className="text-[11px] text-muted-foreground">
-                @ {Math.floor(questions[currentQ].timestamp_seconds/60)}:{String(questions[currentQ].timestamp_seconds%60).padStart(2,'0')}
+                @ {fmt(questions[currentQ].timestamp_seconds)}
               </span>
+              <Badge variant="outline" className="text-[10px] ml-auto">Debes responder para continuar</Badge>
             </div>
             <p className="font-medium">{questions[currentQ].question}</p>
             <div className="grid gap-2">
@@ -662,13 +752,10 @@ function VideoQuestionsMode() {
                 {answered[currentQ] === questions[currentQ].correct_index ? (
                   <div className="text-emerald-600">✓ Correcto — el video continúa automáticamente…</div>
                 ) : (
-                  <div className="text-amber-600">↺ Vamos a repasar el segmento ({Math.floor((questions[currentQ].segment_start_seconds ?? Math.max(0, questions[currentQ].timestamp_seconds - 25))/60)}:{String((questions[currentQ].segment_start_seconds ?? Math.max(0, questions[currentQ].timestamp_seconds - 25))%60).padStart(2,'0')}) e intentamos otra vez…</div>
+                  <div className="text-amber-600">↺ Repasaremos el segmento ({fmt(questions[currentQ].segment_start_seconds ?? Math.max(0, questions[currentQ].timestamp_seconds - 25))}) e intentamos otra vez…</div>
                 )}
               </div>
             )}
-            <Button onClick={continueVideo} variant="outline" size="sm" className="w-full">
-              Saltar y continuar ▶
-            </Button>
           </CardContent>
         </Card>
       )}
