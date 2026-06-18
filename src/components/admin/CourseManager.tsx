@@ -71,7 +71,19 @@ export default function CourseManager({ students }: { students: Profile[] }) {
     for (const c of cursosData) {
       const { count: sc } = await supabase.from('curso_sesiones').select('*', { count: 'exact', head: true }).eq('curso_id', c.id);
       const { count: ec } = await supabase.from('curso_estudiantes').select('*', { count: 'exact', head: true }).eq('curso_id', c.id);
-      enriched.push({ ...c, descripcion: c.descripcion || '', sesiones_count: sc || 0, estudiantes_count: ec || 0 });
+      const rawMod = (c as any).modulos;
+      const mod: CourseModules = rawMod && typeof rawMod === 'object' && !Array.isArray(rawMod)
+        ? { ...DEFAULT_MODULES, ...(rawMod as Partial<CourseModules>) }
+        : DEFAULT_MODULES;
+      enriched.push({
+        id: c.id,
+        titulo: c.titulo,
+        descripcion: c.descripcion || '',
+        created_at: c.created_at,
+        modulos: mod,
+        sesiones_count: sc || 0,
+        estudiantes_count: ec || 0,
+      });
     }
     setCursos(enriched);
   }
