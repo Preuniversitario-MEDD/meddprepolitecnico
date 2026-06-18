@@ -70,6 +70,20 @@ export default function StudentTutor() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
+  // Persistir borrador (resiliente a recargas)
+  useEffect(() => {
+    try { localStorage.setItem(DRAFT_KEY, input); } catch {}
+  }, [input]);
+
+  // Detectar online/offline
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+
   // Métrica: mensajes en último minuto
   useEffect(() => {
     const t = setInterval(() => {
