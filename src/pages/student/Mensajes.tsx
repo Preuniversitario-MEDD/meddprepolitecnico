@@ -106,14 +106,14 @@ export default function Mensajes() {
       .select('user_id, nombre, apellidos, avatar_url')
       .in('user_id', userIds) as any);
 
-    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+    const profileMap = new Map((profiles as any[] | null)?.map((p: any) => [p.user_id, p]) || []);
 
     const convList: Conversation[] = convIds.map(cid => {
       const parts = allParticipants?.filter(p => p.conversacion_id === cid && p.user_id !== user.id) || [];
       return {
         id: cid,
         participants: parts.map(p => {
-          const prof = profileMap.get(p.user_id);
+          const prof = profileMap.get(p.user_id) as any;
           return { user_id: p.user_id, nombre: prof?.nombre || '', apellidos: prof?.apellidos || '', avatar_url: prof?.avatar_url || null };
         }),
       };
