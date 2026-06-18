@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Sparkles, Send, Bot, User, Loader2, Trash2, Lightbulb,
-  ImagePlus, X, Video, MessageSquare, Gauge, CheckCircle2, XCircle,
+  ImagePlus, X, Video, MessageSquare, Gauge, CheckCircle2, XCircle, Wifi, WifiOff,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
