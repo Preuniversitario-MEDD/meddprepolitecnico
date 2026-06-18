@@ -59,6 +59,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   usePresenceTracker();
   useConnectionLogger();
   useSessionDuration();
+  const { modules } = useCourseModules();
   const location = useLocation();
   const navigate = useNavigate();
   const [students, setStudents] = useState<{ user_id: string; nombre: string; apellidos: string }[]>([]);
@@ -78,7 +79,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       });
     }
   }, [role, profile?.user_id]);
-  const links = isAdminOnStudentView ? studentLinks : (role === 'admin' ? adminLinks : studentLinks);
+  const filteredStudentLinks = useMemo(() => {
+    // Admin viewing as student keeps full access; real students get module-filtered links.
+    if (role === 'admin') return studentLinks;
+    return studentLinks.filter((l) => !l.moduleKey || (modules as any)[l.moduleKey]);
+  }, [modules, role]);
+  const links = isAdminOnStudentView ? studentLinks : (role === 'admin' ? adminLinks : filteredStudentLinks);
   const initials = profile ? (profile.nombre?.[0] || '') + (profile.apellidos?.[0] || '') : '?';
   const getMensajesPath = role === 'admin' && !isAdminOnStudentView ? '/admin/mensajes' : '/student/mensajes';
 
