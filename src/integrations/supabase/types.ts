@@ -1266,7 +1266,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          activo: boolean | null
+          apellidos: string | null
+          avatar_url: string | null
+          nombre: string | null
+          user_id: string | null
+          usuario: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          apellidos?: string | null
+          avatar_url?: string | null
+          nombre?: string | null
+          user_id?: string | null
+          usuario?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          apellidos?: string | null
+          avatar_url?: string | null
+          nombre?: string | null
+          user_id?: string | null
+          usuario?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
