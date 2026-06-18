@@ -276,6 +276,21 @@ export default function StudentTutor() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {!online && (
+            <Badge variant="destructive" className="gap-1 text-[10px]">
+              <WifiOff className="w-3 h-3" /> Sin conexión
+            </Badge>
+          )}
+          {online && retrying > 0 && (
+            <Badge variant="outline" className="gap-1 text-[10px] border-yellow-500 text-yellow-600">
+              <Loader2 className="w-3 h-3 animate-spin" /> Reintentando ({retrying})
+            </Badge>
+          )}
+          {online && retrying === 0 && (
+            <Badge variant="outline" className="gap-1 text-[10px]">
+              <Wifi className="w-3 h-3 text-emerald-500" /> En línea
+            </Badge>
+          )}
           <Badge variant="outline" className="gap-1 text-[10px]">
             <Gauge className="w-3 h-3" /> {msgsLastMin}/12 min
           </Badge>
