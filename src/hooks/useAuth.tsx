@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileRequestRef = useRef(0);
+  const currentUserIdRef = useRef<string | null>(null);
 
   const fetchProfile = useCallback(async (userId: string, showLoader = false) => {
     const requestId = ++profileRequestRef.current;
@@ -121,18 +122,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        setUser(prevUser => {
-          if (prevUser?.id !== session.user.id) {
-            setRole(null);
-            setProfile(null);
-            void fetchProfile(session.user.id, true);
-          } else {
-            void fetchProfile(session.user.id, false);
-          }
-          return session.user;
-        });
+        const isDifferentUser = currentUserIdRef.current !== session.user.id;
+        currentUserIdRef.current = session.user.id;
+        setUser(session.user);
+        if (isDifferentUser) {
+          setRole(null);
+          setProfile(null);
+        }
+        void fetchProfile(session.user.id, isDifferentUser);
       } else {
         profileRequestRef.current += 1;
+        currentUserIdRef.current = null;
         setUser(null);
         setProfile(null);
         setRole(null);
@@ -142,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        currentUserIdRef.current = session.user.id;
         setUser(session.user);
         setRole(null);
         setProfile(null);
