@@ -39,6 +39,7 @@ import SchulteRecords from "./pages/student/SchulteRecords";
 import AdminConcentracion from "./pages/admin/AdminConcentracion";
 import OrientacionVocacional from "./pages/student/OrientacionVocacional";
 import StudentTutor from "./pages/student/StudentTutor";
+import AdminTutorAnalytics from "./pages/admin/AdminTutorAnalytics";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
