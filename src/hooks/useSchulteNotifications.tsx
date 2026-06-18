@@ -41,7 +41,7 @@ export function useSchulteNotifications() {
         for (const r of others as any[]) {
           const mb = myBest.get(r.nivel);
           if (mb !== undefined && Number(r.tiempo_segundos) < mb) {
-            const { data: prof } = await supabase.from('profiles').select('nombre, apellidos').eq('user_id', r.user_id).maybeSingle();
+            const { data: prof } = await (supabase.from('public_profiles' as any).select('nombre, apellidos').eq('user_id', r.user_id).maybeSingle() as any);
             const nom = prof ? `${prof.nombre} ${(prof.apellidos || '')[0] || ''}.`.trim() : 'Un compañero';
             toast(`${nom} te superó en el nivel ${NIVEL_LABEL[r.nivel]} con ${Number(r.tiempo_segundos).toFixed(1)}s. ¡Acepta el reto!`);
             sessionStorage.setItem(KEY, '1');

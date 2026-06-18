@@ -46,7 +46,7 @@ export default function SchulteRecords() {
         .from('schulte_resultados')
         .select('user_id, nivel, tiempo_segundos, errores, fecha, calificacion')
         .eq('completado', true);
-      const { data: profs } = await supabase.from('profiles').select('user_id, nombre, apellidos');
+      const { data: profs } = await (supabase.from('public_profiles' as any).select('user_id, nombre, apellidos') as any);
       if (!res || !profs) { setLoading(false); return; }
       const profMap = new Map(profs.map(p => [p.user_id, `${p.nombre} ${p.apellidos}`.trim()]));
 
