@@ -32,20 +32,21 @@ const adminLinks = [
   { path: '/admin/competencias', icon: Zap, label: 'Competencias' },
   { path: '/admin/psychometric', icon: ClipboardCheck, label: 'Psicometría' },
   { path: '/admin/concentracion', icon: Eye, label: 'Concentración' },
+  { path: '/admin/tutor-analytics', icon: Sparkles, label: 'Tutor IA' },
   { path: '/admin/settings', icon: Settings, label: 'Roles' },
   { path: '/admin/profile', icon: GraduationCap, label: 'Mi Perfil' },
 ];
 
-const studentLinks = [
+const studentLinks: Array<{ path: string; icon: any; label: string; shortLabel: string; moduleKey?: string }> = [
   { path: '/student', icon: LayoutDashboard, label: 'Inicio', shortLabel: 'Inicio' },
   { path: '/student/sessions', icon: BookOpen, label: 'Sesiones', shortLabel: 'Sesion' },
-  { path: '/student/concentracion', icon: Eye, label: 'Concentración Visual', shortLabel: 'Foco' },
-  { path: '/student/library', icon: Library, label: 'Biblioteca', shortLabel: 'Biblio' },
+  { path: '/student/concentracion', icon: Eye, label: 'Concentración Visual', shortLabel: 'Foco', moduleKey: 'concentracion' },
+  { path: '/student/library', icon: Library, label: 'Biblioteca', shortLabel: 'Biblio', moduleKey: 'biblioteca' },
   { path: '/student/competencia', icon: Zap, label: 'Competencia', shortLabel: 'Compet' },
-  { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría', shortLabel: 'Psico' },
-  { path: '/student/orientacion-vocacional', icon: Compass, label: 'Orientación Vocacional', shortLabel: 'Vocac' },
-  { path: '/student/tutor', icon: Sparkles, label: 'Tutor IA', shortLabel: 'Tutor' },
-  { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes', shortLabel: 'Msj' },
+  { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría', shortLabel: 'Psico', moduleKey: 'psicometria' },
+  { path: '/student/orientacion-vocacional', icon: Compass, label: 'Orientación Vocacional', shortLabel: 'Vocac', moduleKey: 'orientacion_vocacional' },
+  { path: '/student/tutor', icon: Sparkles, label: 'Tutor IA', shortLabel: 'Tutor', moduleKey: 'tutor' },
+  { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes', shortLabel: 'Msj', moduleKey: 'mensajes' },
   { path: '/student/profile', icon: GraduationCap, label: 'Perfil', shortLabel: 'Perfil' },
 ];
 
