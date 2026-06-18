@@ -40,6 +40,7 @@ import AdminConcentracion from "./pages/admin/AdminConcentracion";
 import OrientacionVocacional from "./pages/student/OrientacionVocacional";
 import StudentTutor from "./pages/student/StudentTutor";
 import AdminTutorAnalytics from "./pages/admin/AdminTutorAnalytics";
+import AdminTutor from "./pages/admin/AdminTutor";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
@@ -100,6 +101,8 @@ function AppRoutes() {
       <Route path="/admin/psychometric" element={<ProtectedRoute requiredRole="admin"><AdminPsychometric /></ProtectedRoute>} />
       <Route path="/admin/concentracion" element={<ProtectedRoute requiredRole="admin"><AdminConcentracion /></ProtectedRoute>} />
       <Route path="/admin/tutor-analytics" element={<ProtectedRoute requiredRole="admin"><AdminTutorAnalytics /></ProtectedRoute>} />
+      <Route path="/admin/asistente" element={<ProtectedRoute requiredRole="admin"><AdminTutor /></ProtectedRoute>} />
+
 
       {/* Student Routes */}
       <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />

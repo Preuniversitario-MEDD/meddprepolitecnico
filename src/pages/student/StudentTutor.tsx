@@ -435,7 +435,7 @@ export default function StudentTutor() {
 // ============================================================================
 // VIDEO + PREGUNTAS QUE PAUSAN
 // ============================================================================
-type VQ = { timestamp_seconds: number; question: string; options: string[]; correct_index: number; explanation: string };
+type VQ = { timestamp_seconds: number; segment_start_seconds?: number; question: string; options: string[]; correct_index: number; explanation: string };
 
 declare global { interface Window { YT: any; onYouTubeIframeAPIReady: () => void } }
 
@@ -549,9 +549,30 @@ function VideoQuestionsMode() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId]);
 
-  // Cuando cambia answered/currentQ, reanudar al cerrar
+  // Al responder: si es correcta, auto-continuar tras una breve pausa.
+  // Si es incorrecta, rebobinar al segment_start_seconds y reproducir desde ahí
+  // (la pregunta se vuelve a abrir cuando el video llegue otra vez al timestamp).
   function answer(qi: number, oi: number) {
+    const q = questions[qi];
+    const correct = oi === q.correct_index;
     setAnswered((a) => ({ ...a, [qi]: oi }));
+    if (correct) {
+      setTimeout(() => {
+        setCurrentQ(null);
+        try { playerRef.current?.playVideo(); } catch {}
+      }, 1200);
+    } else {
+      // permitir reintento: limpiar respuesta para que el chequeo de "answered === undefined" vuelva a disparar
+      const rewindTo = Math.max(0, q.segment_start_seconds ?? Math.max(0, q.timestamp_seconds - 25));
+      setTimeout(() => {
+        setAnswered((a) => { const c = { ...a }; delete c[qi]; return c; });
+        setCurrentQ(null);
+        try {
+          playerRef.current?.seekTo(rewindTo, true);
+          playerRef.current?.playVideo();
+        } catch {}
+      }, 2500);
+    }
   }
   function continueVideo() {
     setCurrentQ(null);
@@ -636,12 +657,17 @@ function VideoQuestionsMode() {
               })}
             </div>
             {answered[currentQ] !== undefined && (
-              <div className="text-xs bg-muted/50 p-2 rounded">
-                <strong>Explicación:</strong> {questions[currentQ].explanation}
+              <div className="text-xs bg-muted/50 p-2 rounded space-y-1">
+                <div><strong>Explicación:</strong> {questions[currentQ].explanation}</div>
+                {answered[currentQ] === questions[currentQ].correct_index ? (
+                  <div className="text-emerald-600">✓ Correcto — el video continúa automáticamente…</div>
+                ) : (
+                  <div className="text-amber-600">↺ Vamos a repasar el segmento ({Math.floor((questions[currentQ].segment_start_seconds ?? Math.max(0, questions[currentQ].timestamp_seconds - 25))/60)}:{String((questions[currentQ].segment_start_seconds ?? Math.max(0, questions[currentQ].timestamp_seconds - 25))%60).padStart(2,'0')}) e intentamos otra vez…</div>
+                )}
               </div>
             )}
-            <Button onClick={continueVideo} disabled={answered[currentQ] === undefined} className="w-full">
-              Continuar video ▶
+            <Button onClick={continueVideo} variant="outline" size="sm" className="w-full">
+              Saltar y continuar ▶
             </Button>
           </CardContent>
         </Card>

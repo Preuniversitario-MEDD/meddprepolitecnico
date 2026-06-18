@@ -34,6 +34,7 @@ const adminLinks = [
   { path: '/admin/psychometric', icon: ClipboardCheck, label: 'Psicometría' },
   { path: '/admin/concentracion', icon: Eye, label: 'Concentración' },
   { path: '/admin/tutor-analytics', icon: Sparkles, label: 'Tutor IA' },
+  { path: '/admin/asistente', icon: Sparkles, label: 'Mr. Victor' },
   { path: '/admin/settings', icon: Settings, label: 'Roles' },
   { path: '/admin/profile', icon: GraduationCap, label: 'Mi Perfil' },
 ];
