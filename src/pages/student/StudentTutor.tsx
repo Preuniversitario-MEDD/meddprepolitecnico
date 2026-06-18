@@ -67,7 +67,10 @@ export default function StudentTutor() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    if (typeof document !== 'undefined' && document.hidden) return;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'auto' });
+    });
   }, [messages]);
 
   // Persistir borrador (resiliente a recargas)
