@@ -55,14 +55,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const profileRequestRef = useRef(0);
+  const currentUserIdRef = useRef<string | null>(null);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    setLoading(true);
+  const fetchProfile = useCallback(async (userId: string, showLoader = false) => {
+    const requestId = ++profileRequestRef.current;
+    if (showLoader) setLoading(true);
     try {
       const [{ data: profileData, error: profileError }, { data: rolesData, error: rolesError }] = await Promise.all([
         supabase.from('profiles').select('*').eq('user_id', userId).single(),
         supabase.from('user_roles').select('role').eq('user_id', userId),
       ]);
+
+      if (requestId !== profileRequestRef.current) return;
 
       if (profileError) console.error('[Auth] Error cargando perfil:', profileError);
       if (rolesError) console.error('[Auth] Error cargando roles:', rolesError);
@@ -79,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       setRole(null);
     } finally {
-      setLoading(false);
+      if (requestId === profileRequestRef.current) setLoading(false);
     }
   }, []);
 
@@ -117,11 +122,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
+        const isDifferentUser = currentUserIdRef.current !== session.user.id;
+        currentUserIdRef.current = session.user.id;
         setUser(session.user);
-        setRole(null);
-        setProfile(null);
-        void fetchProfile(session.user.id);
+        if (isDifferentUser) {
+          setRole(null);
+          setProfile(null);
+        }
+        void fetchProfile(session.user.id, isDifferentUser);
       } else {
+        profileRequestRef.current += 1;
+        currentUserIdRef.current = null;
         setUser(null);
         setProfile(null);
         setRole(null);
@@ -131,10 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        currentUserIdRef.current = session.user.id;
         setUser(session.user);
         setRole(null);
         setProfile(null);
-        void fetchProfile(session.user.id);
+        void fetchProfile(session.user.id, true);
       } else {
         setLoading(false);
       }
