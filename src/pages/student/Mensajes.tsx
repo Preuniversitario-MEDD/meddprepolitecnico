@@ -101,19 +101,19 @@ export default function Mensajes() {
       .in('conversacion_id', convIds);
 
     const userIds = [...new Set(allParticipants?.map(p => p.user_id) || [])];
-    const { data: profiles } = await supabase
-      .from('profiles')
+    const { data: profiles } = await (supabase
+      .from('public_profiles' as any)
       .select('user_id, nombre, apellidos, avatar_url')
-      .in('user_id', userIds);
+      .in('user_id', userIds) as any);
 
-    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+    const profileMap = new Map((profiles as any[] | null)?.map((p: any) => [p.user_id, p]) || []);
 
     const convList: Conversation[] = convIds.map(cid => {
       const parts = allParticipants?.filter(p => p.conversacion_id === cid && p.user_id !== user.id) || [];
       return {
         id: cid,
         participants: parts.map(p => {
-          const prof = profileMap.get(p.user_id);
+          const prof = profileMap.get(p.user_id) as any;
           return { user_id: p.user_id, nombre: prof?.nombre || '', apellidos: prof?.apellidos || '', avatar_url: prof?.avatar_url || null };
         }),
       };
@@ -294,11 +294,10 @@ export default function Mensajes() {
   };
 
   const loadUsers = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('user_id, nombre, apellidos, avatar_url, cedula')
-      .neq('user_id', user?.id || '')
-      .eq('activo', true);
+    const { data } = await (supabase
+      .from('public_profiles' as any)
+      .select('user_id, nombre, apellidos, avatar_url')
+      .neq('user_id', user?.id || '') as any);
     setUsers(data || []);
     setShowNewChat(true);
     setSearchUser('');
