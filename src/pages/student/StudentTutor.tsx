@@ -105,7 +105,8 @@ export default function StudentTutor() {
         toast({ title: 'Imagen muy grande', description: 'Máx 5MB', variant: 'destructive' });
         continue;
       }
-      setImages((p) => [...p, await fileToDataUrl(f)]);
+      const url = await fileToDataUrl(f);
+      setImages((p) => [...p, url]);
     }
   }
 
