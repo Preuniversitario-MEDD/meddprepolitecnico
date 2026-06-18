@@ -4,20 +4,32 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Copy, Trash2, BookOpen, Users, ChevronDown, ChevronUp, UserPlus, UserMinus, ExternalLink, Pencil, Check, X, FolderPlus } from 'lucide-react';
+import { Plus, Copy, Trash2, BookOpen, Users, ChevronDown, ChevronUp, UserPlus, UserMinus, ExternalLink, Pencil, Check, X, FolderPlus, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
+import { MODULE_LABELS, type CourseModules } from '@/hooks/useCourseModules';
 
 type Profile = Tables<'profiles'>;
+
+const DEFAULT_MODULES: CourseModules = {
+  concentracion: true,
+  psicometria: true,
+  mensajes: true,
+  biblioteca: true,
+  tutor: true,
+  orientacion_vocacional: true,
+};
 
 interface Curso {
   id: string;
   titulo: string;
   descripcion: string;
+  modulos: CourseModules;
   created_at: string;
   sesiones_count?: number;
   estudiantes_count?: number;
