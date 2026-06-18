@@ -42,6 +42,7 @@ import StudentTutor from "./pages/student/StudentTutor";
 import AdminTutorAnalytics from "./pages/admin/AdminTutorAnalytics";
 import AdminTutor from "./pages/admin/AdminTutor";
 import NotFound from "./pages/NotFound";
+import Trust from "./pages/Trust";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { logAccess } from "@/lib/security";
@@ -122,6 +123,7 @@ function AppRoutes() {
       <Route path="/student/orientacion-vocacional" element={<ProtectedRoute><OrientacionVocacional /></ProtectedRoute>} />
       <Route path="/student/tutor" element={<ProtectedRoute><StudentTutor /></ProtectedRoute>} />
 
+      <Route path="/trust" element={<Trust />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

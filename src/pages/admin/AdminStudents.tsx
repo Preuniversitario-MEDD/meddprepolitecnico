@@ -220,7 +220,7 @@ export default function AdminStudents() {
                 {form.nombre && form.apellidos && (
                   <div className="text-sm text-muted-foreground space-y-1">
                     <p>Usuario: <span className="font-mono text-primary font-semibold">{generateUsuario(form.nombre, form.apellidos)}</span></p>
-                    <p>Credenciales: <span className="font-mono text-foreground">{form.cedula || '___'}</span> / <span className="font-mono text-foreground">123*789*h</span></p>
+                    <p>Se generará una clave temporal segura al crear el estudiante. Cópiala del aviso de éxito y entrégasela al estudiante de forma privada.</p>
                   </div>
                 )}
                 <Button onClick={addStudent} disabled={loading} className="w-full gradient-primary text-primary-foreground">
