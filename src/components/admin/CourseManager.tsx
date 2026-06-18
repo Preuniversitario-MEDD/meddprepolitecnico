@@ -124,6 +124,16 @@ export default function CourseManager({ students }: { students: Profile[] }) {
     loadCursos();
   }
 
+  async function toggleModulo(curso: Curso, key: keyof CourseModules) {
+    const next = { ...curso.modulos, [key]: !curso.modulos[key] };
+    setCursos((cs) => cs.map((c) => (c.id === curso.id ? { ...c, modulos: next } : c)));
+    const { error } = await supabase.from('cursos').update({ modulos: next as any }).eq('id', curso.id);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      loadCursos();
+    }
+  }
+
   async function copyCurso(curso: Curso) {
     const { data: newCurso } = await supabase.from('cursos').insert({
       titulo: `${curso.titulo} (copia)`,
