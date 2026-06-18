@@ -4,20 +4,32 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Copy, Trash2, BookOpen, Users, ChevronDown, ChevronUp, UserPlus, UserMinus, ExternalLink, Pencil, Check, X, FolderPlus } from 'lucide-react';
+import { Plus, Copy, Trash2, BookOpen, Users, ChevronDown, ChevronUp, UserPlus, UserMinus, ExternalLink, Pencil, Check, X, FolderPlus, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
+import { MODULE_LABELS, type CourseModules } from '@/hooks/useCourseModules';
 
 type Profile = Tables<'profiles'>;
+
+const DEFAULT_MODULES: CourseModules = {
+  concentracion: true,
+  psicometria: true,
+  mensajes: true,
+  biblioteca: true,
+  tutor: true,
+  orientacion_vocacional: true,
+};
 
 interface Curso {
   id: string;
   titulo: string;
   descripcion: string;
+  modulos: CourseModules;
   created_at: string;
   sesiones_count?: number;
   estudiantes_count?: number;
@@ -59,7 +71,19 @@ export default function CourseManager({ students }: { students: Profile[] }) {
     for (const c of cursosData) {
       const { count: sc } = await supabase.from('curso_sesiones').select('*', { count: 'exact', head: true }).eq('curso_id', c.id);
       const { count: ec } = await supabase.from('curso_estudiantes').select('*', { count: 'exact', head: true }).eq('curso_id', c.id);
-      enriched.push({ ...c, descripcion: c.descripcion || '', sesiones_count: sc || 0, estudiantes_count: ec || 0 });
+      const rawMod = (c as any).modulos;
+      const mod: CourseModules = rawMod && typeof rawMod === 'object' && !Array.isArray(rawMod)
+        ? { ...DEFAULT_MODULES, ...(rawMod as Partial<CourseModules>) }
+        : DEFAULT_MODULES;
+      enriched.push({
+        id: c.id,
+        titulo: c.titulo,
+        descripcion: c.descripcion || '',
+        created_at: c.created_at,
+        modulos: mod,
+        sesiones_count: sc || 0,
+        estudiantes_count: ec || 0,
+      });
     }
     setCursos(enriched);
   }
@@ -98,6 +122,16 @@ export default function CourseManager({ students }: { students: Profile[] }) {
     toast({ title: 'Curso actualizado' });
     setEditingCursoId(null);
     loadCursos();
+  }
+
+  async function toggleModulo(curso: Curso, key: keyof CourseModules) {
+    const next = { ...curso.modulos, [key]: !curso.modulos[key] };
+    setCursos((cs) => cs.map((c) => (c.id === curso.id ? { ...c, modulos: next } : c)));
+    const { error } = await supabase.from('cursos').update({ modulos: next as any }).eq('id', curso.id);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      loadCursos();
+    }
   }
 
   async function copyCurso(curso: Curso) {
@@ -369,6 +403,24 @@ export default function CourseManager({ students }: { students: Profile[] }) {
                               ))}
                             </div>
                           )}
+                        </div>
+
+                        {/* Módulos del curso */}
+                        <div>
+                          <h3 className="text-sm font-semibold flex items-center gap-1 mb-2">
+                            <Layers className="w-4 h-4" /> Módulos disponibles
+                          </h3>
+                          <p className="text-[11px] text-muted-foreground mb-2">
+                            Activa o desactiva funciones para los estudiantes asignados a este curso.
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {(Object.keys(MODULE_LABELS) as Array<keyof CourseModules>).map((k) => (
+                              <div key={k} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-border bg-card/40">
+                                <span className="text-sm">{MODULE_LABELS[k]}</span>
+                                <Switch checked={curso.modulos[k]} onCheckedChange={() => toggleModulo(curso, k)} />
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </motion.div>

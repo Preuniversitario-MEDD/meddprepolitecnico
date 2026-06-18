@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect, useCallback } from 'react';
+import { ReactNode, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -6,6 +6,7 @@ import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { usePresenceTracker } from '@/hooks/usePresenceTracker';
 import { useConnectionLogger } from '@/hooks/useConnectionLogger';
 import { useSessionDuration } from '@/hooks/useSessionDuration';
+import { useCourseModules } from '@/hooks/useCourseModules';
 import { ViewAsStudentContext } from '@/hooks/useViewAsStudent';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -32,20 +33,21 @@ const adminLinks = [
   { path: '/admin/competencias', icon: Zap, label: 'Competencias' },
   { path: '/admin/psychometric', icon: ClipboardCheck, label: 'Psicometría' },
   { path: '/admin/concentracion', icon: Eye, label: 'Concentración' },
+  { path: '/admin/tutor-analytics', icon: Sparkles, label: 'Tutor IA' },
   { path: '/admin/settings', icon: Settings, label: 'Roles' },
   { path: '/admin/profile', icon: GraduationCap, label: 'Mi Perfil' },
 ];
 
-const studentLinks = [
+const studentLinks: Array<{ path: string; icon: any; label: string; shortLabel: string; moduleKey?: string }> = [
   { path: '/student', icon: LayoutDashboard, label: 'Inicio', shortLabel: 'Inicio' },
   { path: '/student/sessions', icon: BookOpen, label: 'Sesiones', shortLabel: 'Sesion' },
-  { path: '/student/concentracion', icon: Eye, label: 'Concentración Visual', shortLabel: 'Foco' },
-  { path: '/student/library', icon: Library, label: 'Biblioteca', shortLabel: 'Biblio' },
+  { path: '/student/concentracion', icon: Eye, label: 'Concentración Visual', shortLabel: 'Foco', moduleKey: 'concentracion' },
+  { path: '/student/library', icon: Library, label: 'Biblioteca', shortLabel: 'Biblio', moduleKey: 'biblioteca' },
   { path: '/student/competencia', icon: Zap, label: 'Competencia', shortLabel: 'Compet' },
-  { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría', shortLabel: 'Psico' },
-  { path: '/student/orientacion-vocacional', icon: Compass, label: 'Orientación Vocacional', shortLabel: 'Vocac' },
-  { path: '/student/tutor', icon: Sparkles, label: 'Tutor IA', shortLabel: 'Tutor' },
-  { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes', shortLabel: 'Msj' },
+  { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría', shortLabel: 'Psico', moduleKey: 'psicometria' },
+  { path: '/student/orientacion-vocacional', icon: Compass, label: 'Orientación Vocacional', shortLabel: 'Vocac', moduleKey: 'orientacion_vocacional' },
+  { path: '/student/tutor', icon: Sparkles, label: 'Tutor IA', shortLabel: 'Tutor', moduleKey: 'tutor' },
+  { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes', shortLabel: 'Msj', moduleKey: 'mensajes' },
   { path: '/student/profile', icon: GraduationCap, label: 'Perfil', shortLabel: 'Perfil' },
 ];
 
@@ -57,6 +59,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   usePresenceTracker();
   useConnectionLogger();
   useSessionDuration();
+  const { modules } = useCourseModules();
   const location = useLocation();
   const navigate = useNavigate();
   const [students, setStudents] = useState<{ user_id: string; nombre: string; apellidos: string }[]>([]);
@@ -76,7 +79,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       });
     }
   }, [role, profile?.user_id]);
-  const links = isAdminOnStudentView ? studentLinks : (role === 'admin' ? adminLinks : studentLinks);
+  const filteredStudentLinks = useMemo(() => {
+    // Admin viewing as student keeps full access; real students get module-filtered links.
+    if (role === 'admin') return studentLinks;
+    return studentLinks.filter((l) => !l.moduleKey || (modules as any)[l.moduleKey]);
+  }, [modules, role]);
+  const links = isAdminOnStudentView ? studentLinks : (role === 'admin' ? adminLinks : filteredStudentLinks);
   const initials = profile ? (profile.nombre?.[0] || '') + (profile.apellidos?.[0] || '') : '?';
   const getMensajesPath = role === 'admin' && !isAdminOnStudentView ? '/admin/mensajes' : '/student/mensajes';
 

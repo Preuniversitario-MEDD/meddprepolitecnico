@@ -1,0 +1,1 @@
+ALTER TABLE public.cursos ADD COLUMN IF NOT EXISTS modulos jsonb NOT NULL DEFAULT '{"concentracion":true,"psicometria":true,"mensajes":true,"biblioteca":true,"tutor":true,"orientacion_vocacional":true}'::jsonb;

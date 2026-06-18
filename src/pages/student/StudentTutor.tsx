@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Sparkles, Send, Bot, User, Loader2, Trash2, Lightbulb,
-  ImagePlus, X, Video, MessageSquare, Gauge, CheckCircle2, XCircle,
+  ImagePlus, X, Video, MessageSquare, Gauge, CheckCircle2, XCircle, Wifi, WifiOff,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,7 @@ type Part = { type: 'text'; text: string } | { type: 'image_url'; image_url: { u
 type Msg = { role: 'user' | 'assistant'; content: string | Part[] };
 
 const STORAGE_KEY = 'medd_tutor_chat_v2';
+const DRAFT_KEY = 'medd_tutor_draft_v1';
 const SUGGESTIONS = [
   '¿Cómo balanceo H₂ + O₂ → H₂O?',
   'Explícame derivadas como si tuviera 15 años',
@@ -51,10 +52,14 @@ export default function StudentTutor() {
   const [messages, setMessages] = useState<Msg[]>(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
   });
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState<string>(() => {
+    try { return localStorage.getItem(DRAFT_KEY) || ''; } catch { return ''; }
+  });
   const [images, setImages] = useState<string[]>([]); // dataURLs pending to send
   const [streaming, setStreaming] = useState(false);
   const [msgsLastMin, setMsgsLastMin] = useState(0);
+  const [online, setOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [retrying, setRetrying] = useState<number>(0); // attempt # currently retrying
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +69,20 @@ export default function StudentTutor() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  // Persistir borrador (resiliente a recargas)
+  useEffect(() => {
+    try { localStorage.setItem(DRAFT_KEY, input); } catch {}
+  }, [input]);
+
+  // Detectar online/offline
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
 
   // Métrica: mensajes en último minuto
   useEffect(() => {
@@ -121,6 +140,7 @@ export default function StudentTutor() {
     }
 
     setInput('');
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
     const pendingImages = images;
     setImages([]);
 
@@ -136,64 +156,106 @@ export default function StudentTutor() {
     setStreaming(true);
     sentTimes.current.push(Date.now());
 
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      const url = `https://xoaondyfwefdnuknlaix.supabase.co/functions/v1/tutor-chat`;
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          messages: next.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
-        }),
-      });
+    // Resiliencia: reintentos con backoff exponencial para fallos transitorios de red.
+    const MAX_ATTEMPTS = 3;
+    let attempt = 0;
+    let acc = '';
+    let lastError: any = null;
 
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: 'Error desconocido' }));
-        throw new Error(err.error || `HTTP ${resp.status}`);
-      }
-      if (!resp.body) throw new Error('Sin respuesta del servidor');
+    while (attempt < MAX_ATTEMPTS) {
+      attempt += 1;
+      setRetrying(attempt > 1 ? attempt : 0);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const url = `https://xoaondyfwefdnuknlaix.supabase.co/functions/v1/tutor-chat`;
+        // Timeout adaptativo para conexiones lentas
+        const controller = new AbortController();
+        const timeoutMs = 60_000;
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let acc = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        for (const line of lines) {
-          const t = line.trim();
-          if (!t.startsWith('data:')) continue;
-          const payload = t.slice(5).trim();
-          if (payload === '[DONE]') continue;
-          try {
-            const json = JSON.parse(payload);
-            const delta = json.choices?.[0]?.delta?.content || '';
-            if (delta) {
-              acc += delta;
-              setMessages((m) => {
-                const copy = [...m];
-                copy[copy.length - 1] = { role: 'assistant', content: acc };
-                return copy;
-              });
-            }
-          } catch { /* */ }
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            messages: next.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
+          }),
+          signal: controller.signal,
+        });
+
+        if (!resp.ok) {
+          clearTimeout(timeoutId);
+          // 4xx (excepto 408/429) no se reintentan
+          if (resp.status >= 400 && resp.status < 500 && resp.status !== 408 && resp.status !== 429) {
+            const err = await resp.json().catch(() => ({ error: 'Error desconocido' }));
+            throw new Error(err.error || `HTTP ${resp.status}`);
+          }
+          throw new Error(`HTTP ${resp.status}`);
         }
+        if (!resp.body) { clearTimeout(timeoutId); throw new Error('Sin respuesta del servidor'); }
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        acc = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            const t = line.trim();
+            if (!t.startsWith('data:')) continue;
+            const payload = t.slice(5).trim();
+            if (payload === '[DONE]') continue;
+            try {
+              const json = JSON.parse(payload);
+              const delta = json.choices?.[0]?.delta?.content || '';
+              if (delta) {
+                acc += delta;
+                setMessages((m) => {
+                  const copy = [...m];
+                  copy[copy.length - 1] = { role: 'assistant', content: acc };
+                  return copy;
+                });
+              }
+            } catch { /* */ }
+          }
+        }
+        clearTimeout(timeoutId);
+        lastError = null;
+        break; // éxito
+      } catch (e: any) {
+        lastError = e;
+        const nonRetriable = e?.message?.startsWith('HTTP 4') && !e.message.includes('408') && !e.message.includes('429');
+        if (nonRetriable || attempt >= MAX_ATTEMPTS) break;
+        // backoff exponencial 1s, 2s, 4s
+        const wait = 1000 * Math.pow(2, attempt - 1);
+        setMessages((m) => {
+          const copy = [...m];
+          copy[copy.length - 1] = { role: 'assistant', content: acc || `⏳ Conexión inestable, reintentando (${attempt}/${MAX_ATTEMPTS - 1})…` };
+          return copy;
+        });
+        await new Promise((r) => setTimeout(r, wait));
       }
-    } catch (e: any) {
+    }
+
+    setRetrying(0);
+    if (lastError) {
       setMessages((m) => {
         const copy = [...m];
-        copy[copy.length - 1] = { role: 'assistant', content: `⚠️ ${e.message || 'Error contactando a MR. VICTOR.'}` };
+        copy[copy.length - 1] = { role: 'assistant', content: `⚠️ ${lastError.message || 'Error contactando a MR. VICTOR.'}\n\nTu mensaje quedó guardado en el cuadro de texto; reintenta cuando recuperes la conexión.` };
         return copy;
       });
-      toast({ title: 'Error', description: e.message, variant: 'destructive' });
-    } finally {
-      setStreaming(false);
-      textareaRef.current?.focus();
+      // Re-poblar el draft con el contenido del usuario para no perderlo
+      if (typeof userContent === 'string') {
+        setInput(userContent);
+      }
+      toast({ title: 'Sin conexión estable', description: lastError.message || 'Intenta de nuevo', variant: 'destructive' });
     }
+    setStreaming(false);
+    textareaRef.current?.focus();
   }
 
   function clearChat() {
@@ -214,6 +276,21 @@ export default function StudentTutor() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {!online && (
+            <Badge variant="destructive" className="gap-1 text-[10px]">
+              <WifiOff className="w-3 h-3" /> Sin conexión
+            </Badge>
+          )}
+          {online && retrying > 0 && (
+            <Badge variant="outline" className="gap-1 text-[10px] border-yellow-500 text-yellow-600">
+              <Loader2 className="w-3 h-3 animate-spin" /> Reintentando ({retrying})
+            </Badge>
+          )}
+          {online && retrying === 0 && (
+            <Badge variant="outline" className="gap-1 text-[10px]">
+              <Wifi className="w-3 h-3 text-emerald-500" /> En línea
+            </Badge>
+          )}
           <Badge variant="outline" className="gap-1 text-[10px]">
             <Gauge className="w-3 h-3" /> {msgsLastMin}/12 min
           </Badge>
