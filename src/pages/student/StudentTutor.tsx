@@ -52,10 +52,14 @@ export default function StudentTutor() {
   const [messages, setMessages] = useState<Msg[]>(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
   });
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState<string>(() => {
+    try { return localStorage.getItem(DRAFT_KEY) || ''; } catch { return ''; }
+  });
   const [images, setImages] = useState<string[]>([]); // dataURLs pending to send
   const [streaming, setStreaming] = useState(false);
   const [msgsLastMin, setMsgsLastMin] = useState(0);
+  const [online, setOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [retrying, setRetrying] = useState<number>(0); // attempt # currently retrying
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
