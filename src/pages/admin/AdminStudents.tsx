@@ -20,6 +20,8 @@ import type { Tables } from '@/integrations/supabase/types';
 
 type Profile = Tables<'profiles'> & { colegio?: string };
 
+const DEFAULT_STUDENT_PASSWORD = '123*789*h';
+
 function generateUsuario(nombre: string, apellidos: string): string {
   const n = nombre.toLowerCase().replace(/\s+/g, ' ').trim().split(' ');
   const a = apellidos.toLowerCase().replace(/\s+/g, ' ').trim().split(' ');
@@ -133,10 +135,9 @@ export default function AdminStudents() {
       } as any).eq('user_id', data.user.id);
     }
 
-    const tempPwd = data?.tempPassword || '(consulta a soporte)';
     toast({
       title: '¡Éxito!',
-      description: `Estudiante ${form.nombre} creado. Cédula: ${form.cedula} · Clave temporal: ${tempPwd}`,
+      description: `Estudiante ${form.nombre} creado. Cédula: ${form.cedula} · Clave temporal: ${DEFAULT_STUDENT_PASSWORD}`,
       duration: 20000,
     });
     setForm({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '', colegio: '' });
@@ -169,7 +170,7 @@ export default function AdminStudents() {
     }
     toast({
       title: 'Contraseña reiniciada',
-      description: `Nueva clave temporal para ${student.nombre}: ${data?.tempPassword || '(error)'}`,
+      description: `Nueva clave temporal para ${student.nombre}: ${DEFAULT_STUDENT_PASSWORD}`,
       duration: 20000,
     });
   }

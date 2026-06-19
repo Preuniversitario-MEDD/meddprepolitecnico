@@ -11,11 +11,11 @@ serve(async (req) => {
     if ("error" in authResult) return authResult.error;
     const adminClient = authResult.adminClient;
 
-    const { action, cedula, password, nombre, apellidos, userId, newPassword } = await req.json();
+    const { action, cedula, nombre, apellidos, userId } = await req.json();
 
     if (action === "register") {
       const email = `${cedula}@espolmedd.app`;
-      const tempPassword = password || DEFAULT_TEMP_PASSWORD;
+      const tempPassword = DEFAULT_TEMP_PASSWORD;
 
       const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
         email,
@@ -50,7 +50,7 @@ serve(async (req) => {
 
     if (action === "reset_password") {
       if (!userId) throw new Error("userId is required");
-      const tempPassword = newPassword || DEFAULT_TEMP_PASSWORD;
+      const tempPassword = DEFAULT_TEMP_PASSWORD;
       const { error } = await adminClient.auth.admin.updateUserById(userId, {
         password: tempPassword,
       });
