@@ -6,13 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Copy, Trash2, BookOpen, Users, ChevronDown, ChevronUp, UserPlus, UserMinus, ExternalLink, Pencil, Check, X, FolderPlus, Layers } from 'lucide-react';
+import { Plus, Copy, Trash2, BookOpen, Users, ChevronDown, ChevronUp, UserPlus, UserMinus, ExternalLink, Pencil, Check, X, FolderPlus, Layers, FileStack } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
 import { MODULE_LABELS, type CourseModules } from '@/hooks/useCourseModules';
+import { deepCloneCurso } from '@/lib/cloneCurso';
 
 type Profile = Tables<'profiles'>;
 
@@ -54,6 +57,9 @@ export default function CourseManager({ students }: { students: Profile[] }) {
   const [linkSesionOpen, setLinkSesionOpen] = useState(false);
   const [createSesionOpen, setCreateSesionOpen] = useState(false);
   const [form, setForm] = useState({ titulo: '', descripcion: '' });
+  const [createMode, setCreateMode] = useState<'blank' | 'reuse'>('blank');
+  const [reuseSourceId, setReuseSourceId] = useState<string>('');
+  const [creatingCurso, setCreatingCurso] = useState(false);
   const [searchStudent, setSearchStudent] = useState('');
   const [newSesionForm, setNewSesionForm] = useState({ numero: 0, titulo: '' });
   const [creatingSession, setCreatingSession] = useState(false);
@@ -108,12 +114,34 @@ export default function CourseManager({ students }: { students: Profile[] }) {
   }
 
   async function createCurso() {
-    if (!form.titulo.trim()) return;
-    await supabase.from('cursos').insert({ titulo: form.titulo, descripcion: form.descripcion });
-    toast({ title: '¡Curso creado!', description: form.titulo });
-    setForm({ titulo: '', descripcion: '' });
-    setAddOpen(false);
-    loadCursos();
+    if (!form.titulo.trim() && createMode === 'blank') return;
+    setCreatingCurso(true);
+    try {
+      if (createMode === 'reuse') {
+        if (!reuseSourceId) {
+          toast({ title: 'Selecciona un curso origen', variant: 'destructive' });
+          setCreatingCurso(false);
+          return;
+        }
+        const src = cursos.find(c => c.id === reuseSourceId);
+        await deepCloneCurso(reuseSourceId, {
+          titulo: form.titulo.trim() || `${src?.titulo || 'Curso'} (copia)`,
+          descripcion: form.descripcion.trim() || undefined,
+        });
+        toast({ title: '¡Curso creado a partir de una copia!', description: 'Sesiones, quizzes y exámenes clonados' });
+      } else {
+        await supabase.from('cursos').insert({ titulo: form.titulo, descripcion: form.descripcion });
+        toast({ title: '¡Curso creado!', description: form.titulo });
+      }
+      setForm({ titulo: '', descripcion: '' });
+      setReuseSourceId('');
+      setCreateMode('blank');
+      setAddOpen(false);
+      loadCursos();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message || 'No se pudo crear el curso', variant: 'destructive' });
+    }
+    setCreatingCurso(false);
   }
 
   async function updateCurso(cursoId: string) {
@@ -135,26 +163,13 @@ export default function CourseManager({ students }: { students: Profile[] }) {
   }
 
   async function copyCurso(curso: Curso) {
-    const { data: newCurso } = await supabase.from('cursos').insert({
-      titulo: `${curso.titulo} (copia)`,
-      descripcion: curso.descripcion,
-    }).select().single();
-    if (!newCurso) return;
-    const { data: originalSesiones } = await supabase.from('curso_sesiones').select('sesion_id, orden').eq('curso_id', curso.id);
-    if (originalSesiones?.length) {
-      for (const os of originalSesiones) {
-        const original = allSesiones.find(s => s.id === os.sesion_id);
-        if (!original) continue;
-        const { data: newSesion } = await supabase.from('sesiones').insert({
-          numero: original.numero, titulo: original.titulo, estado: 'bloqueada',
-        }).select().single();
-        if (newSesion) {
-          await supabase.from('curso_sesiones').insert({ curso_id: newCurso.id, sesion_id: newSesion.id, orden: os.orden });
-        }
-      }
+    try {
+      await deepCloneCurso(curso.id);
+      toast({ title: '¡Curso duplicado!', description: `Se creó una copia completa de ${curso.titulo}` });
+      loadCursos();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message || 'No se pudo duplicar', variant: 'destructive' });
     }
-    toast({ title: '¡Curso copiado!', description: `${curso.titulo} → copia creada con sesiones vacías` });
-    loadCursos();
   }
 
   async function deleteCurso(curso: Curso) {
@@ -168,17 +183,28 @@ export default function CourseManager({ students }: { students: Profile[] }) {
   async function createSesionAndLink(cursoId: string) {
     if (!newSesionForm.titulo.trim() || !newSesionForm.numero) return;
     setCreatingSession(true);
-    const { data: newSesion } = await supabase.from('sesiones').insert({
-      numero: newSesionForm.numero, titulo: newSesionForm.titulo, estado: 'bloqueada',
-    }).select().single();
-    if (newSesion) {
-      await supabase.from('curso_sesiones').insert({ curso_id: cursoId, sesion_id: newSesion.id, orden: cursoSesiones.length });
+    try {
+      const { data: newSesion, error: sErr } = await supabase.from('sesiones').insert({
+        numero: newSesionForm.numero,
+        titulo: newSesionForm.titulo,
+        estado: 'bloqueada',
+        curso_id: cursoId,
+      } as any).select().single();
+      if (sErr || !newSesion) throw sErr;
+
+      const { error: linkErr } = await supabase.from('curso_sesiones').insert({
+        curso_id: cursoId, sesion_id: newSesion.id, orden: cursoSesiones.length,
+      });
+      if (linkErr) throw linkErr;
+
       toast({ title: '✨ Sesión creada y vinculada', description: `S${newSesion.numero} - ${newSesion.titulo}` });
       setNewSesionForm({ numero: 0, titulo: '' });
       setCreateSesionOpen(false);
-      loadAllSesiones();
-      loadCursoDetail(cursoId);
-      loadCursos();
+      await loadAllSesiones();
+      await loadCursoDetail(cursoId);
+      await loadCursos();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message || 'No se pudo crear la sesión', variant: 'destructive' });
     }
     setCreatingSession(false);
   }
@@ -229,11 +255,33 @@ export default function CourseManager({ students }: { students: Profile[] }) {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle className="font-display">Nuevo Curso</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>Título</Label><Input value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} placeholder="Ej: Preparación Politécnica 2026" /></div>
-              <div><Label>Descripción</Label><Input value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} placeholder="Descripción opcional" /></div>
-              <Button onClick={createCurso} className="w-full bg-gradient-to-r from-[hsl(var(--neon-violet))] to-[hsl(var(--neon-blue))] text-white">Crear Curso</Button>
-            </div>
+            <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'blank' | 'reuse')}>
+              <TabsList className="grid grid-cols-2 w-full">
+                <TabsTrigger value="blank" className="gap-1"><Plus className="w-3.5 h-3.5" /> En blanco</TabsTrigger>
+                <TabsTrigger value="reuse" className="gap-1"><FileStack className="w-3.5 h-3.5" /> Reutilizar curso</TabsTrigger>
+              </TabsList>
+              <TabsContent value="blank" className="space-y-3 mt-4">
+                <div><Label>Título</Label><Input value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} placeholder="Ej: Preparación Politécnica 2026" /></div>
+                <div><Label>Descripción</Label><Input value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} placeholder="Descripción opcional" /></div>
+              </TabsContent>
+              <TabsContent value="reuse" className="space-y-3 mt-4">
+                <div>
+                  <Label>Curso a copiar</Label>
+                  <Select value={reuseSourceId} onValueChange={setReuseSourceId}>
+                    <SelectTrigger><SelectValue placeholder="Selecciona un curso base" /></SelectTrigger>
+                    <SelectContent>
+                      {cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Nuevo título (opcional)</Label><Input value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} placeholder="Deja vacío para usar '(copia)'" /></div>
+                <div><Label>Descripción (opcional)</Label><Input value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} /></div>
+                <p className="text-[11px] text-muted-foreground">Se duplicarán sesiones, teoría, quizzes, exámenes y módulos. Los cursos quedan independientes entre sí.</p>
+              </TabsContent>
+            </Tabs>
+            <Button onClick={createCurso} disabled={creatingCurso} className="w-full mt-3 bg-gradient-to-r from-[hsl(var(--neon-violet))] to-[hsl(var(--neon-blue))] text-white">
+              {creatingCurso ? 'Creando…' : (createMode === 'reuse' ? 'Copiar curso' : 'Crear curso')}
+            </Button>
           </DialogContent>
         </Dialog>
       </div>

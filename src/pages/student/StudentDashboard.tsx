@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useViewAsStudent } from '@/hooks/useViewAsStudent';
+import { useActiveCourse } from '@/hooks/useActiveCourse';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,8 +32,9 @@ interface ExamBlockConfig {
 }
 
 export default function StudentDashboard() {
-  const { profile, user } = useAuth();
+  const { profile, user, role } = useAuth();
   const { viewAsStudentId } = useViewAsStudent();
+  const { activeCursoId } = useActiveCourse();
   const { checkAndNotify } = usePushNotifications();
   const effectiveUserId = viewAsStudentId || user?.id;
   const navigate = useNavigate();
@@ -47,7 +49,7 @@ export default function StudentDashboard() {
   const prevUnlockedExamsRef = useRef<Set<string> | null>(null);
   const [unlockDialog, setUnlockDialog] = useState<ExamBlockConfig | null>(null);
 
-  useEffect(() => { loadData(); loadLiveComps(); }, [effectiveUserId]);
+  useEffect(() => { loadData(); loadLiveComps(); }, [effectiveUserId, activeCursoId]);
 
   // Trigger push notification check on dashboard load (real student only)
   useEffect(() => {
@@ -84,10 +86,17 @@ export default function StudentDashboard() {
       setViewedProfile(null);
     }
 
+    // Build session query — for admin (viewing as student) OR when no active course, show all
+    let sesionesQuery = supabase.from('sesiones').select('*').order('numero');
+    let examConfQuery = supabase.from('exam_configuracion').select('*').eq('activo', true).order('tipo');
+    if (activeCursoId && role !== 'admin') {
+      sesionesQuery = sesionesQuery.eq('curso_id', activeCursoId);
+      examConfQuery = examConfQuery.eq('curso_id', activeCursoId);
+    }
     const [{ data: ses }, overridesRes, { data: examConfigs }, { data: bloqueos }] = await Promise.all([
-      supabase.from('sesiones').select('*').order('numero'),
+      sesionesQuery,
       supabase.from('sesion_estudiante').select('*').eq('user_id', effectiveUserId),
-      supabase.from('exam_configuracion').select('*').eq('activo', true).order('tipo'),
+      examConfQuery,
       supabase.from('exam_bloqueos').select('*').eq('user_id', effectiveUserId),
     ]);
     setSesiones(ses || []);

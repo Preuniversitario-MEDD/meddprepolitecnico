@@ -222,6 +222,7 @@ export default function AdminContent() {
         titulo: `${sesion.titulo} (copia)`,
         descripcion: sesion.descripcion,
         estado: 'bloqueada',
+        curso_id: (sesion as any).curso_id ?? null,
       }).select().single();
 
       if (sesErr || !newSesion) throw sesErr;

@@ -4,8 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { ActiveCourseProvider, useActiveCourse } from "@/hooks/useActiveCourse";
 import { ThemeProvider } from "@/hooks/useTheme";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
+import ElegirCurso from "./pages/student/ElegirCurso";
 import PreviewConnectionBanner from "@/components/PreviewConnectionBanner";
 import Login from "./pages/Login";
 import AppLayout from "./components/layout/AppLayout";
@@ -73,7 +75,20 @@ function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode;
   if (loading || (user && role === null)) return <div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>;
   if (!user) return <Navigate to="/login" replace state={{ msg: 'Sesión expirada. Por favor inicia sesión nuevamente.' }} />;
   if (requiredRole && role !== requiredRole) return <Navigate to={role === 'admin' ? '/admin' : '/student'} replace />;
-  return <AppLayout>{children}</AppLayout>;
+  return <StudentCourseGate>{<AppLayout>{children}</AppLayout>}</StudentCourseGate>;
+}
+
+// Redirects students to /student/elegir-curso when they have >1 courses and none selected
+function StudentCourseGate({ children }: { children: React.ReactNode }) {
+  const { role } = useAuth();
+  const { needsSelection, loading } = useActiveCourse();
+  const location = useLocation();
+  if (role !== 'estudiante') return <>{children}</>;
+  if (loading) return <>{children}</>;
+  if (needsSelection && location.pathname !== '/student/elegir-curso') {
+    return <Navigate to="/student/elegir-curso" replace />;
+  }
+  return <>{children}</>;
 }
 
 function AppRoutes() {
@@ -122,6 +137,7 @@ function AppRoutes() {
       <Route path="/student/schulte-records" element={<ProtectedRoute><SchulteRecords /></ProtectedRoute>} />
       <Route path="/student/orientacion-vocacional" element={<ProtectedRoute><OrientacionVocacional /></ProtectedRoute>} />
       <Route path="/student/tutor" element={<ProtectedRoute><StudentTutor /></ProtectedRoute>} />
+      <Route path="/student/elegir-curso" element={<ProtectedRoute requiredRole="estudiante"><ElegirCurso /></ProtectedRoute>} />
 
       <Route path="/trust" element={<Trust />} />
       <Route path="*" element={<NotFound />} />
@@ -134,14 +150,16 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <PreviewConnectionBanner />
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </TooltipProvider>
+          <ActiveCourseProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <PreviewConnectionBanner />
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </TooltipProvider>
+          </ActiveCourseProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

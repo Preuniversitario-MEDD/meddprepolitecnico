@@ -61,15 +61,29 @@ export default function AdminExams() {
   const [newExam, setNewExam] = useState({ tipo: '', label: '', sessions: [] as number[], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80, modo: 'libre' as 'libre' | 'secuencial' });
   const [statusExam, setStatusExam] = useState<string | null>(null);
   const [studentStatuses, setStudentStatuses] = useState<any[]>([]);
+  const [cursos, setCursos] = useState<{ id: string; titulo: string }[]>([]);
+  const [selectedCurso, setSelectedCurso] = useState<string>('all');
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => { loadCursos(); }, []);
+  useEffect(() => { loadAll(); }, [selectedCurso]);
+
+  async function loadCursos() {
+    const { data } = await supabase.from('cursos').select('id, titulo').order('created_at');
+    setCursos(data || []);
+  }
 
   async function loadAll() {
     setLoading(true);
+    const cfgQuery = supabase.from('exam_configuracion').select('*').order('tipo');
+    const sesQuery = supabase.from('sesiones').select('id, numero, titulo, curso_id').order('numero');
+    if (selectedCurso !== 'all') {
+      cfgQuery.eq('curso_id', selectedCurso);
+      sesQuery.eq('curso_id', selectedCurso);
+    }
     const [{ data: cfgs }, { data: exams }, { data: ses }] = await Promise.all([
-      supabase.from('exam_configuracion').select('*').order('tipo'),
+      cfgQuery,
       supabase.from('examenes').select('*').order('fecha', { ascending: false }),
-      supabase.from('sesiones').select('id, numero, titulo').order('numero'),
+      sesQuery,
     ]);
 
     if (ses) setSesiones(ses as Sesion[]);
@@ -113,6 +127,7 @@ export default function AdminExams() {
 
   async function createExam() {
     if (!newExam.tipo.trim() || !newExam.label.trim()) { toast.error('Completa tipo y nombre'); return; }
+    if (selectedCurso === 'all') { toast.error('Selecciona un curso antes de crear el examen'); return; }
     const { error } = await supabase.from('exam_configuracion').insert({
       tipo: newExam.tipo,
       label: newExam.label,
@@ -121,7 +136,8 @@ export default function AdminExams() {
       cantidad_preguntas: newExam.cantidad_preguntas,
       puntaje_aprobacion: newExam.puntaje_aprobacion,
       modo: newExam.modo,
-    });
+      curso_id: selectedCurso,
+    } as any);
     if (error) { toast.error('Error: ' + error.message); return; }
     setCreateOpen(false);
     setNewExam({ tipo: '', label: '', sessions: [], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80, modo: 'libre' });
@@ -169,11 +185,20 @@ export default function AdminExams() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="text-2xl font-display font-bold text-foreground">Gestión de Exámenes</h1>
-        <Button onClick={() => setCreateOpen(true)} className="gradient-primary text-primary-foreground gap-2">
-          <Plus className="w-4 h-4" /> Crear Examen
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select value={selectedCurso} onValueChange={setSelectedCurso}>
+            <SelectTrigger className="w-52"><SelectValue placeholder="Filtrar por curso" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los cursos</SelectItem>
+              {cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button onClick={() => setCreateOpen(true)} className="gradient-primary text-primary-foreground gap-2">
+            <Plus className="w-4 h-4" /> Crear Examen
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4">
