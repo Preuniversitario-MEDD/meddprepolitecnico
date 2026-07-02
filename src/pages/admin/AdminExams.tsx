@@ -61,15 +61,29 @@ export default function AdminExams() {
   const [newExam, setNewExam] = useState({ tipo: '', label: '', sessions: [] as number[], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80, modo: 'libre' as 'libre' | 'secuencial' });
   const [statusExam, setStatusExam] = useState<string | null>(null);
   const [studentStatuses, setStudentStatuses] = useState<any[]>([]);
+  const [cursos, setCursos] = useState<{ id: string; titulo: string }[]>([]);
+  const [selectedCurso, setSelectedCurso] = useState<string>('all');
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => { loadCursos(); }, []);
+  useEffect(() => { loadAll(); }, [selectedCurso]);
+
+  async function loadCursos() {
+    const { data } = await supabase.from('cursos').select('id, titulo').order('created_at');
+    setCursos(data || []);
+  }
 
   async function loadAll() {
     setLoading(true);
+    const cfgQuery = supabase.from('exam_configuracion').select('*').order('tipo');
+    const sesQuery = supabase.from('sesiones').select('id, numero, titulo, curso_id').order('numero');
+    if (selectedCurso !== 'all') {
+      cfgQuery.eq('curso_id', selectedCurso);
+      sesQuery.eq('curso_id', selectedCurso);
+    }
     const [{ data: cfgs }, { data: exams }, { data: ses }] = await Promise.all([
-      supabase.from('exam_configuracion').select('*').order('tipo'),
+      cfgQuery,
       supabase.from('examenes').select('*').order('fecha', { ascending: false }),
-      supabase.from('sesiones').select('id, numero, titulo').order('numero'),
+      sesQuery,
     ]);
 
     if (ses) setSesiones(ses as Sesion[]);
