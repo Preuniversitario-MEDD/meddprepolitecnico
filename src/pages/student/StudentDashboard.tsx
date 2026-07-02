@@ -32,8 +32,9 @@ interface ExamBlockConfig {
 }
 
 export default function StudentDashboard() {
-  const { profile, user } = useAuth();
+  const { profile, user, role } = useAuth();
   const { viewAsStudentId } = useViewAsStudent();
+  const { activeCursoId } = useActiveCourse();
   const { checkAndNotify } = usePushNotifications();
   const effectiveUserId = viewAsStudentId || user?.id;
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ export default function StudentDashboard() {
   const prevUnlockedExamsRef = useRef<Set<string> | null>(null);
   const [unlockDialog, setUnlockDialog] = useState<ExamBlockConfig | null>(null);
 
-  useEffect(() => { loadData(); loadLiveComps(); }, [effectiveUserId]);
+  useEffect(() => { loadData(); loadLiveComps(); }, [effectiveUserId, activeCursoId]);
 
   // Trigger push notification check on dashboard load (real student only)
   useEffect(() => {
