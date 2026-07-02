@@ -127,6 +127,7 @@ export default function AdminExams() {
 
   async function createExam() {
     if (!newExam.tipo.trim() || !newExam.label.trim()) { toast.error('Completa tipo y nombre'); return; }
+    if (selectedCurso === 'all') { toast.error('Selecciona un curso antes de crear el examen'); return; }
     const { error } = await supabase.from('exam_configuracion').insert({
       tipo: newExam.tipo,
       label: newExam.label,
@@ -135,7 +136,8 @@ export default function AdminExams() {
       cantidad_preguntas: newExam.cantidad_preguntas,
       puntaje_aprobacion: newExam.puntaje_aprobacion,
       modo: newExam.modo,
-    });
+      curso_id: selectedCurso,
+    } as any);
     if (error) { toast.error('Error: ' + error.message); return; }
     setCreateOpen(false);
     setNewExam({ tipo: '', label: '', sessions: [], tiempo_minutos: 50, cantidad_preguntas: 30, puntaje_aprobacion: 80, modo: 'libre' });
