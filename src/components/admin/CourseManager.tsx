@@ -114,12 +114,34 @@ export default function CourseManager({ students }: { students: Profile[] }) {
   }
 
   async function createCurso() {
-    if (!form.titulo.trim()) return;
-    await supabase.from('cursos').insert({ titulo: form.titulo, descripcion: form.descripcion });
-    toast({ title: '¡Curso creado!', description: form.titulo });
-    setForm({ titulo: '', descripcion: '' });
-    setAddOpen(false);
-    loadCursos();
+    if (!form.titulo.trim() && createMode === 'blank') return;
+    setCreatingCurso(true);
+    try {
+      if (createMode === 'reuse') {
+        if (!reuseSourceId) {
+          toast({ title: 'Selecciona un curso origen', variant: 'destructive' });
+          setCreatingCurso(false);
+          return;
+        }
+        const src = cursos.find(c => c.id === reuseSourceId);
+        await deepCloneCurso(reuseSourceId, {
+          titulo: form.titulo.trim() || `${src?.titulo || 'Curso'} (copia)`,
+          descripcion: form.descripcion.trim() || undefined,
+        });
+        toast({ title: '¡Curso creado a partir de una copia!', description: 'Sesiones, quizzes y exámenes clonados' });
+      } else {
+        await supabase.from('cursos').insert({ titulo: form.titulo, descripcion: form.descripcion });
+        toast({ title: '¡Curso creado!', description: form.titulo });
+      }
+      setForm({ titulo: '', descripcion: '' });
+      setReuseSourceId('');
+      setCreateMode('blank');
+      setAddOpen(false);
+      loadCursos();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message || 'No se pudo crear el curso', variant: 'destructive' });
+    }
+    setCreatingCurso(false);
   }
 
   async function updateCurso(cursoId: string) {
@@ -141,26 +163,13 @@ export default function CourseManager({ students }: { students: Profile[] }) {
   }
 
   async function copyCurso(curso: Curso) {
-    const { data: newCurso } = await supabase.from('cursos').insert({
-      titulo: `${curso.titulo} (copia)`,
-      descripcion: curso.descripcion,
-    }).select().single();
-    if (!newCurso) return;
-    const { data: originalSesiones } = await supabase.from('curso_sesiones').select('sesion_id, orden').eq('curso_id', curso.id);
-    if (originalSesiones?.length) {
-      for (const os of originalSesiones) {
-        const original = allSesiones.find(s => s.id === os.sesion_id);
-        if (!original) continue;
-        const { data: newSesion } = await supabase.from('sesiones').insert({
-          numero: original.numero, titulo: original.titulo, estado: 'bloqueada',
-        }).select().single();
-        if (newSesion) {
-          await supabase.from('curso_sesiones').insert({ curso_id: newCurso.id, sesion_id: newSesion.id, orden: os.orden });
-        }
-      }
+    try {
+      await deepCloneCurso(curso.id);
+      toast({ title: '¡Curso duplicado!', description: `Se creó una copia completa de ${curso.titulo}` });
+      loadCursos();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message || 'No se pudo duplicar', variant: 'destructive' });
     }
-    toast({ title: '¡Curso copiado!', description: `${curso.titulo} → copia creada con sesiones vacías` });
-    loadCursos();
   }
 
   async function deleteCurso(curso: Curso) {
@@ -174,17 +183,28 @@ export default function CourseManager({ students }: { students: Profile[] }) {
   async function createSesionAndLink(cursoId: string) {
     if (!newSesionForm.titulo.trim() || !newSesionForm.numero) return;
     setCreatingSession(true);
-    const { data: newSesion } = await supabase.from('sesiones').insert({
-      numero: newSesionForm.numero, titulo: newSesionForm.titulo, estado: 'bloqueada',
-    }).select().single();
-    if (newSesion) {
-      await supabase.from('curso_sesiones').insert({ curso_id: cursoId, sesion_id: newSesion.id, orden: cursoSesiones.length });
+    try {
+      const { data: newSesion, error: sErr } = await supabase.from('sesiones').insert({
+        numero: newSesionForm.numero,
+        titulo: newSesionForm.titulo,
+        estado: 'bloqueada',
+        curso_id: cursoId,
+      } as any).select().single();
+      if (sErr || !newSesion) throw sErr;
+
+      const { error: linkErr } = await supabase.from('curso_sesiones').insert({
+        curso_id: cursoId, sesion_id: newSesion.id, orden: cursoSesiones.length,
+      });
+      if (linkErr) throw linkErr;
+
       toast({ title: '✨ Sesión creada y vinculada', description: `S${newSesion.numero} - ${newSesion.titulo}` });
       setNewSesionForm({ numero: 0, titulo: '' });
       setCreateSesionOpen(false);
-      loadAllSesiones();
-      loadCursoDetail(cursoId);
-      loadCursos();
+      await loadAllSesiones();
+      await loadCursoDetail(cursoId);
+      await loadCursos();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message || 'No se pudo crear la sesión', variant: 'destructive' });
     }
     setCreatingSession(false);
   }
