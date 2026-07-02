@@ -185,11 +185,20 @@ export default function AdminExams() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="text-2xl font-display font-bold text-foreground">Gestión de Exámenes</h1>
-        <Button onClick={() => setCreateOpen(true)} className="gradient-primary text-primary-foreground gap-2">
-          <Plus className="w-4 h-4" /> Crear Examen
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select value={selectedCurso} onValueChange={setSelectedCurso}>
+            <SelectTrigger className="w-52"><SelectValue placeholder="Filtrar por curso" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los cursos</SelectItem>
+              {cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button onClick={() => setCreateOpen(true)} className="gradient-primary text-primary-foreground gap-2">
+            <Plus className="w-4 h-4" /> Crear Examen
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4">
