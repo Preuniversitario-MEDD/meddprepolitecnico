@@ -86,10 +86,17 @@ export default function StudentDashboard() {
       setViewedProfile(null);
     }
 
+    // Build session query — for admin (viewing as student) OR when no active course, show all
+    let sesionesQuery = supabase.from('sesiones').select('*').order('numero');
+    let examConfQuery = supabase.from('exam_configuracion').select('*').eq('activo', true).order('tipo');
+    if (activeCursoId && role !== 'admin') {
+      sesionesQuery = sesionesQuery.eq('curso_id', activeCursoId);
+      examConfQuery = examConfQuery.eq('curso_id', activeCursoId);
+    }
     const [{ data: ses }, overridesRes, { data: examConfigs }, { data: bloqueos }] = await Promise.all([
-      supabase.from('sesiones').select('*').order('numero'),
+      sesionesQuery,
       supabase.from('sesion_estudiante').select('*').eq('user_id', effectiveUserId),
-      supabase.from('exam_configuracion').select('*').eq('activo', true).order('tipo'),
+      examConfQuery,
       supabase.from('exam_bloqueos').select('*').eq('user_id', effectiveUserId),
     ]);
     setSesiones(ses || []);
