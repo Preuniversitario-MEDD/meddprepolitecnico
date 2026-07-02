@@ -255,11 +255,33 @@ export default function CourseManager({ students }: { students: Profile[] }) {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle className="font-display">Nuevo Curso</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>Título</Label><Input value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} placeholder="Ej: Preparación Politécnica 2026" /></div>
-              <div><Label>Descripción</Label><Input value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} placeholder="Descripción opcional" /></div>
-              <Button onClick={createCurso} className="w-full bg-gradient-to-r from-[hsl(var(--neon-violet))] to-[hsl(var(--neon-blue))] text-white">Crear Curso</Button>
-            </div>
+            <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'blank' | 'reuse')}>
+              <TabsList className="grid grid-cols-2 w-full">
+                <TabsTrigger value="blank" className="gap-1"><Plus className="w-3.5 h-3.5" /> En blanco</TabsTrigger>
+                <TabsTrigger value="reuse" className="gap-1"><FileStack className="w-3.5 h-3.5" /> Reutilizar curso</TabsTrigger>
+              </TabsList>
+              <TabsContent value="blank" className="space-y-3 mt-4">
+                <div><Label>Título</Label><Input value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} placeholder="Ej: Preparación Politécnica 2026" /></div>
+                <div><Label>Descripción</Label><Input value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} placeholder="Descripción opcional" /></div>
+              </TabsContent>
+              <TabsContent value="reuse" className="space-y-3 mt-4">
+                <div>
+                  <Label>Curso a copiar</Label>
+                  <Select value={reuseSourceId} onValueChange={setReuseSourceId}>
+                    <SelectTrigger><SelectValue placeholder="Selecciona un curso base" /></SelectTrigger>
+                    <SelectContent>
+                      {cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Nuevo título (opcional)</Label><Input value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} placeholder="Deja vacío para usar '(copia)'" /></div>
+                <div><Label>Descripción (opcional)</Label><Input value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} /></div>
+                <p className="text-[11px] text-muted-foreground">Se duplicarán sesiones, teoría, quizzes, exámenes y módulos. Los cursos quedan independientes entre sí.</p>
+              </TabsContent>
+            </Tabs>
+            <Button onClick={createCurso} disabled={creatingCurso} className="w-full mt-3 bg-gradient-to-r from-[hsl(var(--neon-violet))] to-[hsl(var(--neon-blue))] text-white">
+              {creatingCurso ? 'Creando…' : (createMode === 'reuse' ? 'Copiar curso' : 'Crear curso')}
+            </Button>
           </DialogContent>
         </Dialog>
       </div>
