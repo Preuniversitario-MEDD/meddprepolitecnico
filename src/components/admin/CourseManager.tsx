@@ -57,6 +57,9 @@ export default function CourseManager({ students }: { students: Profile[] }) {
   const [linkSesionOpen, setLinkSesionOpen] = useState(false);
   const [createSesionOpen, setCreateSesionOpen] = useState(false);
   const [form, setForm] = useState({ titulo: '', descripcion: '' });
+  const [createMode, setCreateMode] = useState<'blank' | 'reuse'>('blank');
+  const [reuseSourceId, setReuseSourceId] = useState<string>('');
+  const [creatingCurso, setCreatingCurso] = useState(false);
   const [searchStudent, setSearchStudent] = useState('');
   const [newSesionForm, setNewSesionForm] = useState({ numero: 0, titulo: '' });
   const [creatingSession, setCreatingSession] = useState(false);
