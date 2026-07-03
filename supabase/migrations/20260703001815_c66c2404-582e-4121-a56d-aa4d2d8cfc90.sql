@@ -1,0 +1,2 @@
+ALTER TABLE public.sesiones DROP CONSTRAINT IF EXISTS sesiones_numero_key;
+CREATE UNIQUE INDEX IF NOT EXISTS sesiones_curso_numero_uniq ON public.sesiones (curso_id, numero) WHERE curso_id IS NOT NULL;
