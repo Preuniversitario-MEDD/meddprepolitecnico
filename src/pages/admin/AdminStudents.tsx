@@ -223,7 +223,7 @@ export default function AdminStudents() {
     if (!bulkCursoId || selectedIds.size === 0) return;
     setBulkBusy(true);
     const rows = Array.from(selectedIds).map(user_id => ({ user_id, curso_id: bulkCursoId }));
-    const { error } = await supabase.from('curso_estudiantes').upsert(rows, { onConflict: 'user_id,curso_id', ignoreDuplicates: true });
+    const { error } = await supabase.from('curso_estudiantes').upsert(rows, { onConflict: 'curso_id,user_id', ignoreDuplicates: true });
     setBulkBusy(false);
     if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
     toast({ title: 'Asignados', description: `${selectedIds.size} estudiante(s) vinculados al curso` });
@@ -246,7 +246,7 @@ export default function AdminStudents() {
   async function assignOne(userId: string, cursoId: string) {
     const { error } = await supabase.from('curso_estudiantes').upsert(
       { user_id: userId, curso_id: cursoId },
-      { onConflict: 'user_id,curso_id', ignoreDuplicates: true }
+      { onConflict: 'curso_id,user_id', ignoreDuplicates: true }
     );
     if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
     toast({ title: 'Asignado al curso' });
