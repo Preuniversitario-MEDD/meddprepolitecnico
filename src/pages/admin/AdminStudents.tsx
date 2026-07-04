@@ -75,12 +75,12 @@ export default function AdminStudents() {
     if (data) {
       setStudents(data as Profile[]);
       // Load course assignments for each student
-      const { data: allAssignments } = await supabase.from('curso_estudiantes').select('user_id, curso_id');
-      const { data: allCursos } = await supabase.from('cursos').select('id, titulo');
-      if (allAssignments && allCursos) {
+      const { data: cursosData } = await supabase.from('cursos').select('id, titulo').order('created_at', { ascending: false });
+      if (cursosData) setAllCursos(cursosData);
+      if (allAssignments && cursosData) {
         const map: Record<string, { id: string; titulo: string }[]> = {};
         for (const a of allAssignments) {
-          const curso = allCursos.find(c => c.id === a.curso_id);
+          const curso = cursosData.find(c => c.id === a.curso_id);
           if (curso) {
             if (!map[a.user_id]) map[a.user_id] = [];
             map[a.user_id].push(curso);
