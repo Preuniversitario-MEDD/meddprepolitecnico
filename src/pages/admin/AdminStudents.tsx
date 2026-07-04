@@ -206,6 +206,62 @@ export default function AdminStudents() {
     `${s.nombre} ${s.apellidos} ${s.cedula} ${s.usuario} ${(s as any).colegio || ''}`.toLowerCase().includes(search.toLowerCase())
   );
 
+  function toggleSelect(userId: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId); else next.add(userId);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === filtered.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(filtered.map(s => s.user_id)));
+  }
+
+  async function assignSelectedToCurso() {
+    if (!bulkCursoId || selectedIds.size === 0) return;
+    setBulkBusy(true);
+    const rows = Array.from(selectedIds).map(user_id => ({ user_id, curso_id: bulkCursoId }));
+    const { error } = await supabase.from('curso_estudiantes').upsert(rows, { onConflict: 'user_id,curso_id', ignoreDuplicates: true });
+    setBulkBusy(false);
+    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Asignados', description: `${selectedIds.size} estudiante(s) vinculados al curso` });
+    setSelectedIds(new Set());
+    loadStudents();
+  }
+
+  async function removeSelectedFromCurso() {
+    if (!bulkCursoId || selectedIds.size === 0) return;
+    setBulkBusy(true);
+    const { error } = await supabase.from('curso_estudiantes').delete()
+      .eq('curso_id', bulkCursoId).in('user_id', Array.from(selectedIds));
+    setBulkBusy(false);
+    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Removidos', description: `${selectedIds.size} estudiante(s) desvinculados del curso` });
+    setSelectedIds(new Set());
+    loadStudents();
+  }
+
+  async function assignOne(userId: string, cursoId: string) {
+    const { error } = await supabase.from('curso_estudiantes').upsert(
+      { user_id: userId, curso_id: cursoId },
+      { onConflict: 'user_id,curso_id', ignoreDuplicates: true }
+    );
+    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Asignado al curso' });
+    setQuickAssignFor(null);
+    loadStudents();
+  }
+
+  async function removeOne(userId: string, cursoId: string) {
+    const { error } = await supabase.from('curso_estudiantes').delete()
+      .eq('user_id', userId).eq('curso_id', cursoId);
+    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Removido del curso' });
+    loadStudents();
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
