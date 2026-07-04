@@ -60,6 +60,11 @@ export default function AdminStudents() {
   const [form, setForm] = useState({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '', colegio: '' });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('students');
+  const [allCursos, setAllCursos] = useState<{ id: string; titulo: string }[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkCursoId, setBulkCursoId] = useState<string>('');
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [quickAssignFor, setQuickAssignFor] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
