@@ -413,20 +413,39 @@ export default function AdminStudents() {
                             </Badge>
                           </div>
                         )}
-                        {studentCursos[student.user_id]?.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {studentCursos[student.user_id].map(c => (
-                              <Badge
-                                key={c.id}
-                                variant="outline"
-                                className="text-[10px] cursor-pointer gap-1 border-[hsl(var(--neon-violet)/0.4)] text-[hsl(var(--neon-violet))] hover:bg-[hsl(var(--neon-violet)/0.1)]"
-                                onClick={() => { setActiveTab('courses'); }}
+                        <div className="flex flex-wrap gap-1 mt-1.5 items-center">
+                          {(studentCursos[student.user_id] || []).map(c => (
+                            <Badge
+                              key={c.id}
+                              variant="outline"
+                              className="text-[10px] gap-1 border-[hsl(var(--neon-violet)/0.4)] text-[hsl(var(--neon-violet))] hover:bg-[hsl(var(--neon-violet)/0.1)] pr-1"
+                            >
+                              <BookOpen className="w-3 h-3" /> {c.titulo}
+                              <button
+                                onClick={() => removeOne(student.user_id, c.id)}
+                                title="Quitar del curso"
+                                className="ml-1 rounded hover:bg-destructive/20 p-0.5"
                               >
-                                <BookOpen className="w-3 h-3" /> {c.titulo}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
+                                <X className="w-2.5 h-2.5 text-destructive" />
+                              </button>
+                            </Badge>
+                          ))}
+                          {quickAssignFor === student.user_id ? (
+                            <Select value="" onValueChange={(v) => assignOne(student.user_id, v)}>
+                              <SelectTrigger className="h-6 text-[10px] w-40"><SelectValue placeholder="Elegir curso…" /></SelectTrigger>
+                              <SelectContent>
+                                {allCursos
+                                  .filter(c => !(studentCursos[student.user_id] || []).some(sc => sc.id === c.id))
+                                  .map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] gap-1 text-muted-foreground hover:text-primary" onClick={() => setQuickAssignFor(student.user_id)}>
+                              <Plus className="w-3 h-3" /> curso
+                            </Button>
+                          )}
+                        </div>
+
                       </div>
                       <div className="flex gap-1 shrink-0">
                         <Button variant="ghost" size="icon" title="Ver como estudiante" onClick={() => navigate(`/admin/student-view/${student.user_id}`)}>
