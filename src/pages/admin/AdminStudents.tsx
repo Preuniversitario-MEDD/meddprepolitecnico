@@ -13,6 +13,9 @@ import AvatarUpload from '@/components/AvatarUpload';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import CourseManager from '@/components/admin/CourseManager';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, X } from 'lucide-react';
 import StudentStatsTab from '@/components/admin/StudentStatsTab';
 import ConnectionsTab from '@/components/admin/ConnectionsTab';
 import { validarCedulaEcuatoriana, sanitizeInput } from '@/lib/security';
@@ -57,6 +60,11 @@ export default function AdminStudents() {
   const [form, setForm] = useState({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '', colegio: '' });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('students');
+  const [allCursos, setAllCursos] = useState<{ id: string; titulo: string }[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkCursoId, setBulkCursoId] = useState<string>('');
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [quickAssignFor, setQuickAssignFor] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -68,11 +76,12 @@ export default function AdminStudents() {
       setStudents(data as Profile[]);
       // Load course assignments for each student
       const { data: allAssignments } = await supabase.from('curso_estudiantes').select('user_id, curso_id');
-      const { data: allCursos } = await supabase.from('cursos').select('id, titulo');
-      if (allAssignments && allCursos) {
+      const { data: cursosData } = await supabase.from('cursos').select('id, titulo').order('created_at', { ascending: false });
+      if (cursosData) setAllCursos(cursosData);
+      if (allAssignments && cursosData) {
         const map: Record<string, { id: string; titulo: string }[]> = {};
         for (const a of allAssignments) {
-          const curso = allCursos.find(c => c.id === a.curso_id);
+          const curso = cursosData.find(c => c.id === a.curso_id);
           if (curso) {
             if (!map[a.user_id]) map[a.user_id] = [];
             map[a.user_id].push(curso);
@@ -197,6 +206,62 @@ export default function AdminStudents() {
     `${s.nombre} ${s.apellidos} ${s.cedula} ${s.usuario} ${(s as any).colegio || ''}`.toLowerCase().includes(search.toLowerCase())
   );
 
+  function toggleSelect(userId: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId); else next.add(userId);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === filtered.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(filtered.map(s => s.user_id)));
+  }
+
+  async function assignSelectedToCurso() {
+    if (!bulkCursoId || selectedIds.size === 0) return;
+    setBulkBusy(true);
+    const rows = Array.from(selectedIds).map(user_id => ({ user_id, curso_id: bulkCursoId }));
+    const { error } = await supabase.from('curso_estudiantes').upsert(rows, { onConflict: 'curso_id,user_id', ignoreDuplicates: true });
+    setBulkBusy(false);
+    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Asignados', description: `${selectedIds.size} estudiante(s) vinculados al curso` });
+    setSelectedIds(new Set());
+    loadStudents();
+  }
+
+  async function removeSelectedFromCurso() {
+    if (!bulkCursoId || selectedIds.size === 0) return;
+    setBulkBusy(true);
+    const { error } = await supabase.from('curso_estudiantes').delete()
+      .eq('curso_id', bulkCursoId).in('user_id', Array.from(selectedIds));
+    setBulkBusy(false);
+    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Removidos', description: `${selectedIds.size} estudiante(s) desvinculados del curso` });
+    setSelectedIds(new Set());
+    loadStudents();
+  }
+
+  async function assignOne(userId: string, cursoId: string) {
+    const { error } = await supabase.from('curso_estudiantes').upsert(
+      { user_id: userId, curso_id: cursoId },
+      { onConflict: 'curso_id,user_id', ignoreDuplicates: true }
+    );
+    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Asignado al curso' });
+    setQuickAssignFor(null);
+    loadStudents();
+  }
+
+  async function removeOne(userId: string, cursoId: string) {
+    const { error } = await supabase.from('curso_estudiantes').delete()
+      .eq('user_id', userId).eq('curso_id', cursoId);
+    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Removido del curso' });
+    loadStudents();
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -277,13 +342,46 @@ export default function AdminStudents() {
             <Input placeholder="Buscar por nombre, cédula, usuario o colegio..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
           </div>
 
+          {/* Bulk assign bar */}
+          <Card className="card-elevated">
+            <CardContent className="p-3 flex flex-col md:flex-row md:items-center gap-2">
+              <div className="flex items-center gap-2 flex-1">
+                <Checkbox
+                  checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                  onCheckedChange={toggleSelectAll}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {selectedIds.size > 0 ? `${selectedIds.size} seleccionado(s)` : 'Seleccionar todos'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                <Select value={bulkCursoId} onValueChange={setBulkCursoId}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Elegir curso…" /></SelectTrigger>
+                  <SelectContent>
+                    {allCursos.map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" disabled={bulkBusy || !bulkCursoId || selectedIds.size === 0} onClick={assignSelectedToCurso} className="gap-1 gradient-primary text-primary-foreground">
+                  <Plus className="w-3.5 h-3.5" /> Asignar
+                </Button>
+                <Button size="sm" variant="outline" disabled={bulkBusy || !bulkCursoId || selectedIds.size === 0} onClick={removeSelectedFromCurso} className="gap-1">
+                  <X className="w-3.5 h-3.5" /> Quitar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Student List */}
           <div className="space-y-2">
             {filtered.map((student, i) => (
               <motion.div key={student.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                <Card className={`card-elevated ${!student.activo ? 'opacity-50' : ''}`}>
+                <Card className={`card-elevated ${!student.activo ? 'opacity-50' : ''} ${selectedIds.has(student.user_id) ? 'ring-2 ring-primary/50' : ''}`}>
                   <CardContent className="p-3 md:p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <Checkbox
+                        checked={selectedIds.has(student.user_id)}
+                        onCheckedChange={() => toggleSelect(student.user_id)}
+                      />
                       <AvatarUpload
                         userId={student.user_id}
                         avatarUrl={student.avatar_url}
@@ -291,6 +389,7 @@ export default function AdminStudents() {
                         size="sm"
                         editable={false}
                       />
+
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold truncate text-foreground">{student.nombre} {student.apellidos}</p>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
@@ -314,20 +413,39 @@ export default function AdminStudents() {
                             </Badge>
                           </div>
                         )}
-                        {studentCursos[student.user_id]?.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {studentCursos[student.user_id].map(c => (
-                              <Badge
-                                key={c.id}
-                                variant="outline"
-                                className="text-[10px] cursor-pointer gap-1 border-[hsl(var(--neon-violet)/0.4)] text-[hsl(var(--neon-violet))] hover:bg-[hsl(var(--neon-violet)/0.1)]"
-                                onClick={() => { setActiveTab('courses'); }}
+                        <div className="flex flex-wrap gap-1 mt-1.5 items-center">
+                          {(studentCursos[student.user_id] || []).map(c => (
+                            <Badge
+                              key={c.id}
+                              variant="outline"
+                              className="text-[10px] gap-1 border-[hsl(var(--neon-violet)/0.4)] text-[hsl(var(--neon-violet))] hover:bg-[hsl(var(--neon-violet)/0.1)] pr-1"
+                            >
+                              <BookOpen className="w-3 h-3" /> {c.titulo}
+                              <button
+                                onClick={() => removeOne(student.user_id, c.id)}
+                                title="Quitar del curso"
+                                className="ml-1 rounded hover:bg-destructive/20 p-0.5"
                               >
-                                <BookOpen className="w-3 h-3" /> {c.titulo}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
+                                <X className="w-2.5 h-2.5 text-destructive" />
+                              </button>
+                            </Badge>
+                          ))}
+                          {quickAssignFor === student.user_id ? (
+                            <Select value="" onValueChange={(v) => assignOne(student.user_id, v)}>
+                              <SelectTrigger className="h-6 text-[10px] w-40"><SelectValue placeholder="Elegir curso…" /></SelectTrigger>
+                              <SelectContent>
+                                {allCursos
+                                  .filter(c => !(studentCursos[student.user_id] || []).some(sc => sc.id === c.id))
+                                  .map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] gap-1 text-muted-foreground hover:text-primary" onClick={() => setQuickAssignFor(student.user_id)}>
+                              <Plus className="w-3 h-3" /> curso
+                            </Button>
+                          )}
+                        </div>
+
                       </div>
                       <div className="flex gap-1 shrink-0">
                         <Button variant="ghost" size="icon" title="Ver como estudiante" onClick={() => navigate(`/admin/student-view/${student.user_id}`)}>
