@@ -342,13 +342,46 @@ export default function AdminStudents() {
             <Input placeholder="Buscar por nombre, cédula, usuario o colegio..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
           </div>
 
+          {/* Bulk assign bar */}
+          <Card className="card-elevated">
+            <CardContent className="p-3 flex flex-col md:flex-row md:items-center gap-2">
+              <div className="flex items-center gap-2 flex-1">
+                <Checkbox
+                  checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                  onCheckedChange={toggleSelectAll}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {selectedIds.size > 0 ? `${selectedIds.size} seleccionado(s)` : 'Seleccionar todos'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                <Select value={bulkCursoId} onValueChange={setBulkCursoId}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Elegir curso…" /></SelectTrigger>
+                  <SelectContent>
+                    {allCursos.map(c => <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" disabled={bulkBusy || !bulkCursoId || selectedIds.size === 0} onClick={assignSelectedToCurso} className="gap-1 gradient-primary text-primary-foreground">
+                  <Plus className="w-3.5 h-3.5" /> Asignar
+                </Button>
+                <Button size="sm" variant="outline" disabled={bulkBusy || !bulkCursoId || selectedIds.size === 0} onClick={removeSelectedFromCurso} className="gap-1">
+                  <X className="w-3.5 h-3.5" /> Quitar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Student List */}
           <div className="space-y-2">
             {filtered.map((student, i) => (
               <motion.div key={student.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                <Card className={`card-elevated ${!student.activo ? 'opacity-50' : ''}`}>
+                <Card className={`card-elevated ${!student.activo ? 'opacity-50' : ''} ${selectedIds.has(student.user_id) ? 'ring-2 ring-primary/50' : ''}`}>
                   <CardContent className="p-3 md:p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <Checkbox
+                        checked={selectedIds.has(student.user_id)}
+                        onCheckedChange={() => toggleSelect(student.user_id)}
+                      />
                       <AvatarUpload
                         userId={student.user_id}
                         avatarUrl={student.avatar_url}
@@ -356,6 +389,7 @@ export default function AdminStudents() {
                         size="sm"
                         editable={false}
                       />
+
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold truncate text-foreground">{student.nombre} {student.apellidos}</p>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
