@@ -34,7 +34,9 @@ interface ExamBlockConfig {
 export default function StudentDashboard() {
   const { profile, user, role } = useAuth();
   const { viewAsStudentId } = useViewAsStudent();
-  const { activeCursoId } = useActiveCourse();
+  const { activeCursoId, cursos } = useActiveCourse();
+  const activeCurso = cursos.find(c => c.id === activeCursoId);
+  const cursoTitulo = activeCurso?.titulo || 'Curso';
   const { checkAndNotify } = usePushNotifications();
   const effectiveUserId = viewAsStudentId || user?.id;
   const navigate = useNavigate();
@@ -251,7 +253,7 @@ export default function StudentDashboard() {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-1">
         <h1 className="text-2xl md:text-3xl font-display font-bold text-neon-mint">¡Hola, <span className="text-gradient-primary text-neon-mint">{firstName}</span>! 👋</h1>
-        <p className="text-muted-foreground text-sm">Sigue avanzando en tu preparación de Química</p>
+        <p className="text-muted-foreground text-sm">Sigue avanzando en tu preparación de {cursoTitulo}</p>
       </motion.div>
 
       {liveCompCount > 0 && (
@@ -287,7 +289,7 @@ export default function StudentDashboard() {
       </motion.div>
 
       <div>
-        <h2 className="font-display font-bold text-lg mb-3 text-neon-pink">Sesiones de Química</h2>
+        <h2 className="font-display font-bold text-lg mb-3 text-neon-pink">Sesiones de {cursoTitulo}</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {sesiones.map((sesion, i) => {
             const status = getSessionStatus(sesion);

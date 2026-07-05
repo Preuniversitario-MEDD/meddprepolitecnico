@@ -133,7 +133,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </div>
             <div>
               <h2 className="font-display font-bold text-sm text-sidebar-foreground">MEDD</h2>
-              <p className="text-[10px] text-muted-foreground leading-tight">Preparación de Química para la ESPOL</p>
+              <p className="text-[10px] text-muted-foreground leading-tight">Preparación integral rumbo al futuro</p>
             </div>
           </div>
 
@@ -201,7 +201,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
               <div>
                 <span className="font-display font-bold text-sm">MEDD</span>
-                <p className="text-[8px] text-muted-foreground leading-tight">Preparación de Química para la ESPOL</p>
+                <p className="text-[8px] text-muted-foreground leading-tight">Preparación integral rumbo al futuro</p>
               </div>
             </div>
             <div className="flex items-center gap-1">

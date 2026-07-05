@@ -90,7 +90,7 @@ export default function Login() {
               <FlaskConical className="w-8 h-8 text-primary-foreground" />
             </motion.div>
             <h1 className="text-3xl font-bold font-display text-gradient-primary bg-neon-pink text-primary-foreground">ESPOLMEDD</h1>
-            <p className="text-sm font-medium text-muted-foreground">Preparación de Química para la ESPOL</p>
+            <p className="text-sm font-medium text-muted-foreground">Preparación integral rumbo al futuro</p>
           </CardHeader>
 
           <CardContent className="pt-4">
