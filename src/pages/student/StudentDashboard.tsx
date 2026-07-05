@@ -34,7 +34,9 @@ interface ExamBlockConfig {
 export default function StudentDashboard() {
   const { profile, user, role } = useAuth();
   const { viewAsStudentId } = useViewAsStudent();
-  const { activeCursoId } = useActiveCourse();
+  const { activeCursoId, cursos } = useActiveCourse();
+  const activeCurso = cursos.find(c => c.id === activeCursoId);
+  const cursoTitulo = activeCurso?.titulo || 'Curso';
   const { checkAndNotify } = usePushNotifications();
   const effectiveUserId = viewAsStudentId || user?.id;
   const navigate = useNavigate();
