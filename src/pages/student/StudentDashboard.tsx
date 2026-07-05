@@ -289,7 +289,7 @@ export default function StudentDashboard() {
       </motion.div>
 
       <div>
-        <h2 className="font-display font-bold text-lg mb-3 text-neon-pink">Sesiones de Química</h2>
+        <h2 className="font-display font-bold text-lg mb-3 text-neon-pink">Sesiones de {cursoTitulo}</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {sesiones.map((sesion, i) => {
             const status = getSessionStatus(sesion);
