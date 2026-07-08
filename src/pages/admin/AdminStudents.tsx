@@ -180,7 +180,7 @@ export default function AdminStudents() {
     }
     toast({
       title: 'Contraseña reiniciada',
-      description: `Nueva clave temporal para ${student.nombre}: ${DEFAULT_STUDENT_PASSWORD}`,
+      description: `Nueva clave temporal para ${student.nombre}: ${(data as any)?.tempPassword || '(consulta al admin)'}`,
       duration: 20000,
     });
   }
