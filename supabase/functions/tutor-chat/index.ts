@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
     }
 
     // Anti-repetición: extraer últimas 2 respuestas del asistente para inyectarlas como contexto.
-    const lastAssistant = messages
+    const lastAssistant = safeMessages
       .filter((m: any) => m.role === "assistant")
       .slice(-2)
       .map((m: any) => (typeof m.content === "string" ? m.content : ""))
@@ -241,7 +241,7 @@ Deno.serve(async (req) => {
         stream: true,
         messages: [
           { role: "system", content: systemPrompt + antiRepeat },
-          ...messages,
+          ...safeMessages,
         ],
       }),
     });
