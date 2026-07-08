@@ -49,7 +49,7 @@ serve(async (req) => {
 
     if (action === "reset_password") {
       if (!userId) throw new Error("userId is required");
-      const tempPassword = DEFAULT_TEMP_PASSWORD;
+      const tempPassword = generateTempPassword();
       const { error } = await adminClient.auth.admin.updateUserById(userId, {
         password: tempPassword,
       });
