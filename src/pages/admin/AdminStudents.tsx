@@ -23,7 +23,7 @@ import type { Tables } from '@/integrations/supabase/types';
 
 type Profile = Tables<'profiles'> & { colegio?: string };
 
-const DEFAULT_STUDENT_PASSWORD = '123*789*h';
+// La contraseña temporal se genera aleatoriamente en el edge function `admin-users`.
 
 function generateUsuario(nombre: string, apellidos: string): string {
   const n = nombre.toLowerCase().replace(/\s+/g, ' ').trim().split(' ');
@@ -144,9 +144,10 @@ export default function AdminStudents() {
       } as any).eq('user_id', data.user.id);
     }
 
+    const tempPass = (data as any)?.tempPassword || '(revisa el panel de admin)';
     toast({
       title: '¡Éxito!',
-      description: `Estudiante ${form.nombre} creado. Cédula: ${form.cedula} · Clave temporal: ${DEFAULT_STUDENT_PASSWORD}`,
+      description: `Estudiante ${form.nombre} creado. Cédula: ${form.cedula} · Clave temporal: ${tempPass}`,
       duration: 20000,
     });
     setForm({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '', colegio: '' });
@@ -179,7 +180,7 @@ export default function AdminStudents() {
     }
     toast({
       title: 'Contraseña reiniciada',
-      description: `Nueva clave temporal para ${student.nombre}: ${DEFAULT_STUDENT_PASSWORD}`,
+      description: `Nueva clave temporal para ${student.nombre}: ${(data as any)?.tempPassword || '(consulta al admin)'}`,
       duration: 20000,
     });
   }
@@ -286,7 +287,7 @@ export default function AdminStudents() {
                 {form.nombre && form.apellidos && (
                   <div className="text-sm text-muted-foreground space-y-1">
                     <p>Usuario: <span className="font-mono text-primary font-semibold">{generateUsuario(form.nombre, form.apellidos)}</span></p>
-                    <p>La clave temporal por defecto es <code className="font-mono">123*789*h</code>. El estudiante deberá cambiarla en su primer ingreso.</p>
+                    <p>Se generará una clave temporal aleatoria segura que se mostrará al crearlo. El estudiante deberá cambiarla en su primer ingreso.</p>
                   </div>
                 )}
                 <Button onClick={addStudent} disabled={loading} className="w-full gradient-primary text-primary-foreground">

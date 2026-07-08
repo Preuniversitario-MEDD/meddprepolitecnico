@@ -144,6 +144,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Security: filter out any client-injected system/tool/function role messages
+    // to prevent prompt-injection via localStorage tampering. Only user/assistant
+    // messages are honored; the server-side system prompt is authoritative.
+    const safeMessages = (messages as any[]).filter(
+      (m) => m && (m.role === "user" || m.role === "assistant"),
+    );
+    if (safeMessages.length === 0) {
+      return new Response(JSON.stringify({ error: "messages inválidos" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Si es admin, verificar rol real en DB
     const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     let isAdmin = false;
@@ -157,7 +169,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const last = messages[messages.length - 1];
+    const last = safeMessages[safeMessages.length - 1];
     const lastText = typeof last?.content === "string"
       ? last.content
       : Array.isArray(last?.content)
@@ -205,7 +217,7 @@ Deno.serve(async (req) => {
     }
 
     // Anti-repetición: extraer últimas 2 respuestas del asistente para inyectarlas como contexto.
-    const lastAssistant = messages
+    const lastAssistant = safeMessages
       .filter((m: any) => m.role === "assistant")
       .slice(-2)
       .map((m: any) => (typeof m.content === "string" ? m.content : ""))
@@ -229,7 +241,7 @@ Deno.serve(async (req) => {
         stream: true,
         messages: [
           { role: "system", content: systemPrompt + antiRepeat },
-          ...messages,
+          ...safeMessages,
         ],
       }),
     });

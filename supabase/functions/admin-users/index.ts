@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, jsonResponse, requireAdmin } from "../_shared/auth.ts";
+import { corsHeaders, jsonResponse, requireAdmin, generateTempPassword } from "../_shared/auth.ts";
 
-const DEFAULT_TEMP_PASSWORD = "123*789*h";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -15,7 +14,7 @@ serve(async (req) => {
 
     if (action === "register") {
       const email = `${cedula}@espolmedd.app`;
-      const tempPassword = DEFAULT_TEMP_PASSWORD;
+      const tempPassword = generateTempPassword();
 
       const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
         email,
@@ -50,7 +49,7 @@ serve(async (req) => {
 
     if (action === "reset_password") {
       if (!userId) throw new Error("userId is required");
-      const tempPassword = DEFAULT_TEMP_PASSWORD;
+      const tempPassword = generateTempPassword();
       const { error } = await adminClient.auth.admin.updateUserById(userId, {
         password: tempPassword,
       });
