@@ -144,9 +144,10 @@ export default function AdminStudents() {
       } as any).eq('user_id', data.user.id);
     }
 
+    const tempPass = (data as any)?.tempPassword || '(revisa el panel de admin)';
     toast({
       title: '¡Éxito!',
-      description: `Estudiante ${form.nombre} creado. Cédula: ${form.cedula} · Clave temporal: ${DEFAULT_STUDENT_PASSWORD}`,
+      description: `Estudiante ${form.nombre} creado. Cédula: ${form.cedula} · Clave temporal: ${tempPass}`,
       duration: 20000,
     });
     setForm({ nombre: '', apellidos: '', cedula: '', fechaNacimiento: '', colegio: '' });
