@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const last = messages[messages.length - 1];
+    const last = safeMessages[safeMessages.length - 1];
     const lastText = typeof last?.content === "string"
       ? last.content
       : Array.isArray(last?.content)
