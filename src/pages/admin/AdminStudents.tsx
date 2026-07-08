@@ -23,7 +23,7 @@ import type { Tables } from '@/integrations/supabase/types';
 
 type Profile = Tables<'profiles'> & { colegio?: string };
 
-const DEFAULT_STUDENT_PASSWORD = '123*789*h';
+// La contraseña temporal se genera aleatoriamente en el edge function `admin-users`.
 
 function generateUsuario(nombre: string, apellidos: string): string {
   const n = nombre.toLowerCase().replace(/\s+/g, ' ').trim().split(' ');
