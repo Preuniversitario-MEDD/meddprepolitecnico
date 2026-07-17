@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ActiveCourseProvider, useActiveCourse } from "@/hooks/useActiveCourse";
 import { ThemeProvider } from "@/hooks/useTheme";
@@ -93,11 +93,12 @@ function StudentCourseGate({ children }: { children: React.ReactNode }) {
 }
 // Redirect after login: honor ?next= if it is a safe same-origin relative path (used by MCP OAuth consent).
 function PostLoginRedirect({ fallback }: { fallback: string }) {
-  const [params] = (require("react-router-dom") as typeof import("react-router-dom")).useSearchParams();
+  const [params] = useSearchParams();
   const next = params.get("next");
   const safe = next && next.startsWith("/") && !next.startsWith("//") ? next : fallback;
   return <Navigate to={safe} replace />;
 }
+
 
 
 function AppRoutes() {
