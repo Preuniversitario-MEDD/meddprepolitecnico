@@ -45,6 +45,7 @@ import AdminTutorAnalytics from "./pages/admin/AdminTutorAnalytics";
 import AdminTutor from "./pages/admin/AdminTutor";
 import NotFound from "./pages/NotFound";
 import Trust from "./pages/Trust";
+import OAuthConsent from "./pages/OAuthConsent";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { logAccess } from "@/lib/security";
@@ -90,6 +91,14 @@ function StudentCourseGate({ children }: { children: React.ReactNode }) {
   }
   return <>{children}</>;
 }
+// Redirect after login: honor ?next= if it is a safe same-origin relative path (used by MCP OAuth consent).
+function PostLoginRedirect({ fallback }: { fallback: string }) {
+  const [params] = (require("react-router-dom") as typeof import("react-router-dom")).useSearchParams();
+  const next = params.get("next");
+  const safe = next && next.startsWith("/") && !next.startsWith("//") ? next : fallback;
+  return <Navigate to={safe} replace />;
+}
+
 
 function AppRoutes() {
   const { user, role, loading } = useAuth();
@@ -97,8 +106,9 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to={role === 'admin' ? '/admin' : '/student'} replace /> : <Login />} />
+      <Route path="/login" element={user ? <PostLoginRedirect fallback={role === 'admin' ? '/admin' : '/student'} /> : <Login />} />
       <Route path="/" element={<Navigate to={user ? (role === 'admin' ? '/admin' : '/student') : '/login'} replace />} />
+      <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
       
       {/* Admin Routes */}
       <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
