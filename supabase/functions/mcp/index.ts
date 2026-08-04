@@ -6,135 +6,226 @@
 import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.23.0";
 
 // src/lib/mcp/tools/list-my-courses.ts
-import { createClient } from "npm:@supabase/supabase-js@^2.98.0";
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z } from "npm:zod@^4.4.3";
+
+// src/lib/mcp/supabase.ts
+import { createClient } from "npm:@supabase/supabase-js@^2.98.0";
+function runtimeEnv(name) {
+  const runtime = globalThis;
+  return runtime.Deno?.env?.get?.(name) ?? runtime.process?.env?.[name];
+}
+function configuredEnv(names) {
+  for (const name of names) {
+    const value = runtimeEnv(name)?.trim();
+    if (value) return value;
+  }
+  return void 0;
+}
+function supabaseProjectUrl() {
+  const url = configuredEnv(["SUPABASE_URL", "VITE_SUPABASE_URL"]);
+  if (!url) throw new Error("SUPABASE_URL (or VITE_SUPABASE_URL) is required");
+  return url;
+}
+function supabasePublishableKey() {
+  const direct = configuredEnv(["SUPABASE_PUBLISHABLE_KEY", "VITE_SUPABASE_PUBLISHABLE_KEY"]);
+  if (direct) return direct;
+  const keyset = runtimeEnv("SUPABASE_PUBLISHABLE_KEYS");
+  if (keyset) {
+    try {
+      const parsed = JSON.parse(keyset);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const keys = parsed;
+        const key = [keys.default, ...Object.values(keys)].find((v) => typeof v === "string" && v.trim().startsWith("sb_publishable_"))?.trim();
+        if (key) return key;
+      }
+    } catch {
+    }
+  }
+  const legacy = configuredEnv(["SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
+  if (legacy) return legacy;
+  throw new Error("SUPABASE_PUBLISHABLE_KEY, SUPABASE_PUBLISHABLE_KEYS, or SUPABASE_ANON_KEY is required");
+}
 function supabaseForUser(ctx) {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+  const token = ctx.getToken();
+  if (!token) throw new Error("supabaseForUser requires a verified OAuth token");
+  return createClient(supabaseProjectUrl(), supabasePublishableKey(), {
+    global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false }
   });
 }
+var store = /* @__PURE__ */ new Map();
+var MAX_ENTRIES = 200;
+var DEFAULT_TTL_MS = 3e4;
+async function cached(key, ttlMs, load) {
+  const now = Date.now();
+  const existing = store.get(key);
+  if (existing && existing.expires > now) return { value: existing.value, hit: true };
+  const value = await load();
+  if (store.size >= MAX_ENTRIES) {
+    for (const [k, v] of store) if (v.expires <= now) store.delete(k);
+    if (store.size >= MAX_ENTRIES) store.delete(store.keys().next().value);
+  }
+  store.set(key, { value, expires: now + ttlMs });
+  return { value, hit: false };
+}
+function page(items, limit, offset, cacheHit) {
+  const hasMore = items.length > limit;
+  const rows = hasMore ? items.slice(0, limit) : items;
+  return {
+    items: rows,
+    pagination: { limit, offset, returned: rows.length, has_more: hasMore, next_offset: hasMore ? offset + limit : null },
+    cached: cacheHit
+  };
+}
+function toolResult(payload) {
+  return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
+}
+function toolError(message) {
+  return { content: [{ type: "text", text: message }], isError: true };
+}
+
+// src/lib/mcp/tools/list-my-courses.ts
 var list_my_courses_default = defineTool({
   name: "list_my_courses",
   title: "List my courses",
-  description: "List the ESPOLMEDD courses the signed-in user has access to (title, description, id).",
-  inputSchema: {},
+  description: "List the ESPOLMEDD courses the signed-in user has access to (id, title, description). Paginated: use `limit` and `offset`; the response includes pagination.next_offset when more rows exist.",
+  inputSchema: {
+    limit: z.number().int().min(1).max(100).default(25).describe("Max courses to return (1-100)."),
+    offset: z.number().int().min(0).default(0).describe("Rows to skip, for pagination.")
+  },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_input, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    }
+  handler: async ({ limit, offset }, ctx) => {
+    if (!ctx.isAuthenticated()) return toolError("Not authenticated");
     const sb = supabaseForUser(ctx);
     const userId = ctx.getUserId();
-    const { data: roles } = await sb.from("user_roles").select("role").eq("user_id", userId);
-    const isAdmin = (roles || []).some((r) => r.role === "admin");
-    if (isAdmin) {
-      const { data: data2, error: error2 } = await sb.from("cursos").select("id, titulo, descripcion").order("created_at");
-      if (error2) return { content: [{ type: "text", text: error2.message }], isError: true };
-      return { content: [{ type: "text", text: JSON.stringify(data2) }], structuredContent: { courses: data2 ?? [] } };
-    }
-    const { data: enroll, error: e1 } = await sb.from("curso_estudiantes").select("curso_id").eq("user_id", userId);
-    if (e1) return { content: [{ type: "text", text: e1.message }], isError: true };
-    const ids = (enroll ?? []).map((r) => r.curso_id);
-    if (ids.length === 0) return { content: [{ type: "text", text: "[]" }], structuredContent: { courses: [] } };
-    const { data, error } = await sb.from("cursos").select("id, titulo, descripcion").in("id", ids).order("created_at");
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return { content: [{ type: "text", text: JSON.stringify(data) }], structuredContent: { courses: data ?? [] } };
+    const { value, hit } = await cached(`courses:${userId}:${limit}:${offset}`, DEFAULT_TTL_MS, async () => {
+      const { data: roles } = await sb.from("user_roles").select("role").eq("user_id", userId);
+      const isAdmin = (roles || []).some((r) => r.role === "admin");
+      let query = sb.from("cursos").select("id, titulo, descripcion");
+      if (!isAdmin) {
+        const { data: enroll, error: e1 } = await sb.from("curso_estudiantes").select("curso_id").eq("user_id", userId);
+        if (e1) throw new Error(e1.message);
+        const ids = (enroll ?? []).map((r) => r.curso_id);
+        if (ids.length === 0) return [];
+        query = query.in("id", ids);
+      }
+      const { data, error } = await query.order("created_at").range(offset, offset + limit);
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    }).catch((e) => ({ error: e.message }));
+    if (value?.error) return toolError(value.error);
+    return toolResult(page(value, limit, offset, hit));
   }
 });
 
 // src/lib/mcp/tools/list-sessions.ts
-import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.98.0";
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z } from "npm:zod@^4.4.3";
-function supabaseForUser2(ctx) {
-  return createClient2(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
+import { z as z2 } from "npm:zod@^4.4.3";
 var list_sessions_default = defineTool2({
   name: "list_sessions",
   title: "List sessions in a course",
-  description: "List learning sessions (number, title, topic) for a given course id.",
+  description: "List learning sessions (number, title, state) for a course id. Paginated with `limit`/`offset`; results are cached briefly to keep large lists fast.",
   inputSchema: {
-    curso_id: z.string().uuid().describe("Course id (from list_my_courses).")
+    curso_id: z2.string().uuid().describe("Course id (from list_my_courses)."),
+    limit: z2.number().int().min(1).max(100).default(25).describe("Max sessions to return (1-100)."),
+    offset: z2.number().int().min(0).default(0).describe("Rows to skip, for pagination.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ curso_id }, ctx) => {
-    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const sb = supabaseForUser2(ctx);
-    const { data, error } = await sb.from("sesiones").select("id, numero, titulo, tema").eq("curso_id", curso_id).order("numero");
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return { content: [{ type: "text", text: JSON.stringify(data) }], structuredContent: { sessions: data ?? [] } };
+  handler: async ({ curso_id, limit, offset }, ctx) => {
+    if (!ctx.isAuthenticated()) return toolError("Not authenticated");
+    const sb = supabaseForUser(ctx);
+    try {
+      const { value, hit } = await cached(
+        `sessions:${ctx.getUserId()}:${curso_id}:${limit}:${offset}`,
+        DEFAULT_TTL_MS,
+        async () => {
+          const { data, error } = await sb.from("sesiones").select("id, numero, titulo, descripcion, estado").eq("curso_id", curso_id).order("numero").range(offset, offset + limit);
+          if (error) throw new Error(error.message);
+          return data ?? [];
+        }
+      );
+      return toolResult(page(value, limit, offset, hit));
+    } catch (e) {
+      return toolError(e.message);
+    }
   }
 });
 
 // src/lib/mcp/tools/get-my-progress.ts
-import { createClient as createClient3 } from "npm:@supabase/supabase-js@^2.98.0";
 import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z2 } from "npm:zod@^4.4.3";
-function supabaseForUser3(ctx) {
-  return createClient3(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
+import { z as z3 } from "npm:zod@^4.4.3";
 var get_my_progress_default = defineTool3({
   name: "get_my_progress",
   title: "Get my progress",
-  description: "Return the signed-in user's progress rows for a course (per-session completion, exercises, quiz hits).",
+  description: "Return the signed-in user's progress rows for a course (per-session completion, exercises, quiz hits). Paginated with `limit`/`offset`.",
   inputSchema: {
-    curso_id: z2.string().uuid().describe("Course id (from list_my_courses).")
+    curso_id: z3.string().uuid().describe("Course id (from list_my_courses)."),
+    limit: z3.number().int().min(1).max(100).default(25).describe("Max rows to return (1-100)."),
+    offset: z3.number().int().min(0).default(0).describe("Rows to skip, for pagination.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ curso_id }, ctx) => {
-    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const sb = supabaseForUser3(ctx);
+  handler: async ({ curso_id, limit, offset }, ctx) => {
+    if (!ctx.isAuthenticated()) return toolError("Not authenticated");
+    const sb = supabaseForUser(ctx);
     const userId = ctx.getUserId();
-    const { data, error } = await sb.from("progreso_estudiante").select("sesion_id, teoria_vista, ejercicios_correctos, quiz_aciertos, porcentaje, completado").eq("user_id", userId).eq("curso_id", curso_id);
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return { content: [{ type: "text", text: JSON.stringify(data) }], structuredContent: { progress: data ?? [] } };
+    try {
+      const { value, hit } = await cached(
+        `progress:${userId}:${curso_id}:${limit}:${offset}`,
+        DEFAULT_TTL_MS,
+        async () => {
+          const { data, error } = await sb.from("progreso_estudiante").select(
+            "sesion_id, completada, ejercicios_completados, ejercicios_correctos, preguntas_correctas_total, puntaje_quiz, intentos_quiz, tiempo_invertido, fecha"
+          ).eq("user_id", userId).eq("curso_id", curso_id).order("fecha", { ascending: false }).range(offset, offset + limit);
+          if (error) throw new Error(error.message);
+          return data ?? [];
+        }
+      );
+      return toolResult(page(value, limit, offset, hit));
+    } catch (e) {
+      return toolError(e.message);
+    }
   }
 });
 
 // src/lib/mcp/tools/list-recent-exams.ts
-import { createClient as createClient4 } from "npm:@supabase/supabase-js@^2.98.0";
 import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.23.0";
-import { z as z3 } from "npm:zod@^4.4.3";
-function supabaseForUser4(ctx) {
-  return createClient4(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
+import { z as z4 } from "npm:zod@^4.4.3";
 var list_recent_exams_default = defineTool4({
   name: "list_recent_exams",
   title: "List my recent exam attempts",
-  description: "Return the signed-in user's most recent exam history entries (type, score, date).",
+  description: "Return the signed-in user's most recent exam history entries (type, correctness, date). Paginated with `limit`/`offset`, newest first.",
   inputSchema: {
-    limit: z3.number().int().min(1).max(50).default(10)
+    limit: z4.number().int().min(1).max(100).default(10).describe("Max rows to return (1-100)."),
+    offset: z4.number().int().min(0).default(0).describe("Rows to skip, for pagination."),
+    curso_id: z4.string().uuid().optional().describe("Optional course id filter.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit }, ctx) => {
-    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const sb = supabaseForUser4(ctx);
+  handler: async ({ limit, offset, curso_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return toolError("Not authenticated");
+    const sb = supabaseForUser(ctx);
     const userId = ctx.getUserId();
-    const { data, error } = await sb.from("examen_historial").select("exam_tipo, correcta, created_at, pregunta_id").eq("user_id", userId).order("created_at", { ascending: false }).limit(limit);
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return { content: [{ type: "text", text: JSON.stringify(data) }], structuredContent: { history: data ?? [] } };
+    try {
+      const { value, hit } = await cached(
+        `exams:${userId}:${curso_id ?? "all"}:${limit}:${offset}`,
+        DEFAULT_TTL_MS,
+        async () => {
+          let q = sb.from("examen_historial").select("exam_tipo, correcta, intento, created_at, pregunta_id, curso_id").eq("user_id", userId);
+          if (curso_id) q = q.eq("curso_id", curso_id);
+          const { data, error } = await q.order("created_at", { ascending: false }).range(offset, offset + limit);
+          if (error) throw new Error(error.message);
+          return data ?? [];
+        }
+      );
+      return toolResult(page(value, limit, offset, hit));
+    } catch (e) {
+      return toolError(e.message);
+    }
   }
 });
 
 // src/lib/mcp/tools/whoami.ts
-import { createClient as createClient5 } from "npm:@supabase/supabase-js@^2.98.0";
 import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.23.0";
-function supabaseForUser5(ctx) {
-  return createClient5(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
 var whoami_default = defineTool5({
   name: "whoami",
   title: "Who am I",
@@ -142,21 +233,24 @@ var whoami_default = defineTool5({
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {
-    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const sb = supabaseForUser5(ctx);
+    if (!ctx.isAuthenticated()) return toolError("Not authenticated");
+    const sb = supabaseForUser(ctx);
     const userId = ctx.getUserId();
-    const [{ data: profile }, { data: roles }] = await Promise.all([
-      sb.from("profiles").select("nombre, cedula, avatar_url").eq("user_id", userId).maybeSingle(),
-      sb.from("user_roles").select("role").eq("user_id", userId)
-    ]);
-    const payload = {
-      user_id: userId,
-      email: ctx.getUserEmail?.() ?? null,
-      nombre: profile?.nombre ?? null,
-      cedula: profile?.cedula ?? null,
-      roles: (roles ?? []).map((r) => r.role)
-    };
-    return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
+    const { value, hit } = await cached(`whoami:${userId}`, DEFAULT_TTL_MS, async () => {
+      const [{ data: profile }, { data: roles }] = await Promise.all([
+        sb.from("profiles").select("nombre, apellidos, cedula, avatar_url").eq("user_id", userId).maybeSingle(),
+        sb.from("user_roles").select("role").eq("user_id", userId)
+      ]);
+      return {
+        user_id: userId,
+        email: ctx.getUserEmail?.() ?? null,
+        nombre: profile?.nombre ?? null,
+        apellidos: profile?.apellidos ?? null,
+        cedula: profile?.cedula ?? null,
+        roles: (roles ?? []).map((r) => r.role)
+      };
+    });
+    return toolResult({ ...value, cached: hit });
   }
 });
 

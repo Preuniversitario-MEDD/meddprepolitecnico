@@ -35,7 +35,7 @@
       {
         "name": "list_my_courses",
         "title": "List my courses",
-        "description": "List the ESPOLMEDD courses the signed-in user has access to (title, description, id).",
+        "description": "List the ESPOLMEDD courses the signed-in user has access to (id, title, description). Paginated: use `limit` and `offset`; the response includes pagination.next_offset when more rows exist.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -44,14 +44,29 @@
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
-          "properties": {}
+          "properties": {
+            "limit": {
+              "default": 25,
+              "description": "Max courses to return (1-100).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "offset": {
+              "default": 0,
+              "description": "Rows to skip, for pagination.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
         },
         "outputSchema": null
       },
       {
         "name": "list_sessions",
         "title": "List sessions in a course",
-        "description": "List learning sessions (number, title, topic) for a given course id.",
+        "description": "List learning sessions (number, title, state) for a course id. Paginated with `limit`/`offset`; results are cached briefly to keep large lists fast.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -66,6 +81,20 @@
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Course id (from list_my_courses)."
+            },
+            "limit": {
+              "default": 25,
+              "description": "Max sessions to return (1-100).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "offset": {
+              "default": 0,
+              "description": "Rows to skip, for pagination.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
@@ -77,7 +106,7 @@
       {
         "name": "get_my_progress",
         "title": "Get my progress",
-        "description": "Return the signed-in user's progress rows for a course (per-session completion, exercises, quiz hits).",
+        "description": "Return the signed-in user's progress rows for a course (per-session completion, exercises, quiz hits). Paginated with `limit`/`offset`.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -92,6 +121,20 @@
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Course id (from list_my_courses)."
+            },
+            "limit": {
+              "default": 25,
+              "description": "Max rows to return (1-100).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "offset": {
+              "default": 0,
+              "description": "Rows to skip, for pagination.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
@@ -103,7 +146,7 @@
       {
         "name": "list_recent_exams",
         "title": "List my recent exam attempts",
-        "description": "Return the signed-in user's most recent exam history entries (type, score, date).",
+        "description": "Return the signed-in user's most recent exam history entries (type, correctness, date). Paginated with `limit`/`offset`, newest first.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -115,9 +158,23 @@
           "properties": {
             "limit": {
               "default": 10,
+              "description": "Max rows to return (1-100).",
               "type": "integer",
               "minimum": 1,
-              "maximum": 50
+              "maximum": 100
+            },
+            "offset": {
+              "default": 0,
+              "description": "Rows to skip, for pagination.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "curso_id": {
+              "description": "Optional course id filter.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           }
         },
