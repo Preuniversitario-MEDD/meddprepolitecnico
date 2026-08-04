@@ -1,33 +1,40 @@
-import { createClient } from "@supabase/supabase-js";
-import { defineTool, type ToolContext } from "@lovable.dev/mcp-js";
+import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-
-function supabaseForUser(ctx: ToolContext) {
-  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
+import { supabaseForUser, toolError, toolResult, cached, page, DEFAULT_TTL_MS } from "../supabase";
 
 export default defineTool({
   name: "list_recent_exams",
   title: "List my recent exam attempts",
-  description: "Return the signed-in user's most recent exam history entries (type, score, date).",
+  description:
+    "Return the signed-in user's most recent exam history entries (type, correctness, date). Paginated with `limit`/`offset`, newest first.",
   inputSchema: {
-    limit: z.number().int().min(1).max(50).default(10),
+    limit: z.number().int().min(1).max(100).default(10).describe("Max rows to return (1-100)."),
+    offset: z.number().int().min(0).default(0).describe("Rows to skip, for pagination."),
+    curso_id: z.string().uuid().optional().describe("Optional course id filter."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit }, ctx) => {
-    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+  handler: async ({ limit, offset, curso_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return toolError("Not authenticated");
     const sb = supabaseForUser(ctx);
     const userId = ctx.getUserId();
-    const { data, error } = await sb
-      .from("examen_historial")
-      .select("exam_tipo, correcta, created_at, pregunta_id")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(limit);
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return { content: [{ type: "text", text: JSON.stringify(data) }], structuredContent: { history: data ?? [] } };
+    try {
+      const { value, hit } = await cached(
+        `exams:${userId}:${curso_id ?? "all"}:${limit}:${offset}`,
+        DEFAULT_TTL_MS,
+        async () => {
+          let q = sb
+            .from("examen_historial")
+            .select("exam_tipo, correcta, intento, created_at, pregunta_id, curso_id")
+            .eq("user_id", userId);
+          if (curso_id) q = q.eq("curso_id", curso_id);
+          const { data, error } = await q.order("created_at", { ascending: false }).range(offset, offset + limit);
+          if (error) throw new Error(error.message);
+          return data ?? [];
+        },
+      );
+      return toolResult(page(value, limit, offset, hit));
+    } catch (e) {
+      return toolError((e as Error).message);
+    }
   },
 });

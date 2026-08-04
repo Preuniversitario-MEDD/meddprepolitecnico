@@ -46,6 +46,7 @@ import AdminTutor from "./pages/admin/AdminTutor";
 import NotFound from "./pages/NotFound";
 import Trust from "./pages/Trust";
 import OAuthConsent from "./pages/OAuthConsent";
+import McpDocs from "./pages/McpDocs";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { logAccess } from "@/lib/security";
@@ -151,6 +152,8 @@ function AppRoutes() {
       <Route path="/student/elegir-curso" element={<ProtectedRoute requiredRole="estudiante"><ElegirCurso /></ProtectedRoute>} />
 
       <Route path="/trust" element={<Trust />} />
+      <Route path="/mcp" element={<McpDocs />} />
+      <Route path="/docs/mcp" element={<McpDocs />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
