@@ -69,6 +69,9 @@ async function cached(key, ttlMs, load) {
   store.set(key, { value, expires: now + ttlMs });
   return { value, hit: false };
 }
+function invalidatePrefix(prefix) {
+  for (const k of store.keys()) if (k.startsWith(prefix)) store.delete(k);
+}
 function page(items, limit, offset, cacheHit) {
   const hasMore = items.length > limit;
   const rows = hasMore ? items.slice(0, limit) : items;
@@ -224,9 +227,104 @@ var list_recent_exams_default = defineTool4({
   }
 });
 
-// src/lib/mcp/tools/whoami.ts
+// src/lib/mcp/tools/list-locked-sections.ts
 import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.23.0";
-var whoami_default = defineTool5({
+import { z as z5 } from "npm:zod@^4.4.3";
+var list_locked_sections_default = defineTool5({
+  name: "list_locked_sections",
+  title: "List locked sections",
+  description: "List the course sessions that are still locked for the signed-in user, with the reason and the completion status of the prerequisite session. Paginated with `limit`/`offset`.",
+  inputSchema: {
+    curso_id: z5.string().uuid().describe("Course id (from list_my_courses)."),
+    limit: z5.number().int().min(1).max(100).default(25).describe("Max rows to return (1-100)."),
+    offset: z5.number().int().min(0).default(0).describe("Rows to skip, for pagination.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ curso_id, limit, offset }, ctx) => {
+    if (!ctx.isAuthenticated()) return toolError("Not authenticated");
+    const sb = supabaseForUser(ctx);
+    const userId = ctx.getUserId();
+    try {
+      const { value, hit } = await cached(`locked:${userId}:${curso_id}`, DEFAULT_TTL_MS, async () => {
+        const [{ data: sesiones, error: e1 }, { data: unlocks }, { data: progreso }] = await Promise.all([
+          sb.from("sesiones").select("id, numero, titulo, estado").eq("curso_id", curso_id).order("numero"),
+          sb.from("sesion_estudiante").select("sesion_id, desbloqueada").eq("user_id", userId),
+          sb.from("progreso_estudiante").select("sesion_id, completada").eq("user_id", userId).eq("curso_id", curso_id)
+        ]);
+        if (e1) throw new Error(e1.message);
+        const unlocked = new Set((unlocks ?? []).filter((u) => u.desbloqueada).map((u) => u.sesion_id));
+        const done = new Set((progreso ?? []).filter((p) => p.completada).map((p) => p.sesion_id));
+        const list = sesiones ?? [];
+        return list.filter((s) => s.numero > 1 && !unlocked.has(s.id)).map((s) => {
+          const prev = list.find((p) => p.numero === s.numero - 1);
+          const prereqDone = prev ? done.has(prev.id) : true;
+          return {
+            sesion_id: s.id,
+            numero: s.numero,
+            titulo: s.titulo,
+            locked: true,
+            prerequisito: prev ? { sesion_id: prev.id, numero: prev.numero, titulo: prev.titulo } : null,
+            prerequisito_completado: prereqDone,
+            can_request_unlock: prereqDone,
+            reason: prereqDone ? "Prerequisite session is at 100% \u2014 call request_unlock with this sesion_id." : "Previous session is not yet complete (100%)."
+          };
+        });
+      });
+      return toolResult(page(value.slice(offset, offset + limit + 1), limit, offset, hit));
+    } catch (e) {
+      return toolError(e.message);
+    }
+  }
+});
+
+// src/lib/mcp/tools/request-unlock.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z6 } from "npm:zod@^4.4.3";
+var request_unlock_default = defineTool6({
+  name: "request_unlock",
+  title: "Request section unlock",
+  description: "Request the unlock of a locked session for the signed-in user. Granted only when the previous session reached 100% completion; otherwise it returns the missing requirement.",
+  inputSchema: {
+    sesion_id: z6.string().uuid().describe("Session id to unlock (from list_locked_sections).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ sesion_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return toolError("Not authenticated");
+    const sb = supabaseForUser(ctx);
+    const userId = ctx.getUserId();
+    const { data: target, error: e1 } = await sb.from("sesiones").select("id, numero, titulo, curso_id").eq("id", sesion_id).maybeSingle();
+    if (e1) return toolError(e1.message);
+    if (!target) return toolError("Session not found or not accessible.");
+    const { data: existing } = await sb.from("sesion_estudiante").select("desbloqueada").eq("user_id", userId).eq("sesion_id", sesion_id).maybeSingle();
+    if (existing?.desbloqueada) {
+      return toolResult({ granted: true, already_unlocked: true, sesion_id, numero: target.numero, titulo: target.titulo });
+    }
+    if (target.numero > 1) {
+      const { data: prev } = await sb.from("sesiones").select("id, numero, titulo").eq("curso_id", target.curso_id).eq("numero", target.numero - 1).maybeSingle();
+      if (prev) {
+        const { data: prog } = await sb.from("progreso_estudiante").select("completada").eq("user_id", userId).eq("sesion_id", prev.id).maybeSingle();
+        if (!prog?.completada) {
+          return toolResult({
+            granted: false,
+            sesion_id,
+            reason: `Session ${prev.numero} ("${prev.titulo}") is not at 100% yet. Finish theory, 20 correct exercises and 150 quiz hits first.`,
+            prerequisito: { sesion_id: prev.id, numero: prev.numero, titulo: prev.titulo }
+          });
+        }
+      }
+    }
+    const { error } = await sb.from("sesion_estudiante").upsert({ user_id: userId, sesion_id, desbloqueada: true, curso_id: target.curso_id }, {
+      onConflict: "user_id,sesion_id"
+    });
+    if (error) return toolError(error.message);
+    invalidatePrefix(`locked:${userId}:`);
+    return toolResult({ granted: true, sesion_id, numero: target.numero, titulo: target.titulo });
+  }
+});
+
+// src/lib/mcp/tools/whoami.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.23.0";
+var whoami_default = defineTool7({
   name: "whoami",
   title: "Who am I",
   description: "Return the signed-in ESPOLMEDD user profile (name, cedula, role).",
@@ -259,13 +357,13 @@ var projectRef = "xoaondyfwefdnuknlaix";
 var mcp_default = defineMcp({
   name: "espolmedd-mcp",
   title: "ESPOLMEDD",
-  version: "0.1.0",
-  instructions: "Tools for the ESPOLMEDD university-prep platform. Use `whoami` to identify the signed-in user, `list_my_courses` to discover courses, then `list_sessions` and `get_my_progress` for study state. `list_recent_exams` returns recent exam attempts.",
+  version: "0.2.0",
+  instructions: "Tools for the ESPOLMEDD university-prep platform. Use `whoami` to identify the signed-in user, `list_my_courses` to discover courses, then `list_sessions`, `get_my_progress` and `list_recent_exams` for study state. All list tools are paginated (`limit`/`offset`, response has pagination.next_offset). Use `list_locked_sections` to see which sessions are blocked and `request_unlock` to unlock one once its prerequisite session reaches 100%.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
   }),
-  tools: [whoami_default, list_my_courses_default, list_sessions_default, get_my_progress_default, list_recent_exams_default]
+  tools: [whoami_default, list_my_courses_default, list_sessions_default, get_my_progress_default, list_recent_exams_default, list_locked_sections_default, request_unlock_default]
 });
 
 // lovable-mcp-supabase-entry.ts
