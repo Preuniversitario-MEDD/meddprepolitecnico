@@ -582,6 +582,202 @@ export type Database = {
         }
         Relationships: []
       }
+      estudio_mazos: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string
+          curso_id: string | null
+          descripcion: string | null
+          id: string
+          publico: boolean
+          sesion_id: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by: string
+          curso_id?: string | null
+          descripcion?: string | null
+          id?: string
+          publico?: boolean
+          sesion_id?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string
+          curso_id?: string | null
+          descripcion?: string | null
+          id?: string
+          publico?: boolean
+          sesion_id?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estudio_mazos_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estudio_mazos_sesion_id_fkey"
+            columns: ["sesion_id"]
+            isOneToOne: false
+            referencedRelation: "sesiones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estudio_progreso: {
+        Row: {
+          aciertos: number
+          estado: string
+          facilidad: number
+          fallos: number
+          id: string
+          intervalo_dias: number
+          mazo_id: string
+          proxima_revision: string
+          repeticiones: number
+          tarjeta_id: string
+          ultima_revision: string | null
+          user_id: string
+        }
+        Insert: {
+          aciertos?: number
+          estado?: string
+          facilidad?: number
+          fallos?: number
+          id?: string
+          intervalo_dias?: number
+          mazo_id: string
+          proxima_revision?: string
+          repeticiones?: number
+          tarjeta_id: string
+          ultima_revision?: string | null
+          user_id: string
+        }
+        Update: {
+          aciertos?: number
+          estado?: string
+          facilidad?: number
+          fallos?: number
+          id?: string
+          intervalo_dias?: number
+          mazo_id?: string
+          proxima_revision?: string
+          repeticiones?: number
+          tarjeta_id?: string
+          ultima_revision?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estudio_progreso_mazo_id_fkey"
+            columns: ["mazo_id"]
+            isOneToOne: false
+            referencedRelation: "estudio_mazos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estudio_progreso_tarjeta_id_fkey"
+            columns: ["tarjeta_id"]
+            isOneToOne: false
+            referencedRelation: "estudio_tarjetas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estudio_sesiones: {
+        Row: {
+          aciertos: number
+          created_at: string
+          duracion_segundos: number
+          id: string
+          mazo_id: string | null
+          modo: string
+          tarjetas_vistas: number
+          user_id: string
+        }
+        Insert: {
+          aciertos?: number
+          created_at?: string
+          duracion_segundos?: number
+          id?: string
+          mazo_id?: string | null
+          modo: string
+          tarjetas_vistas?: number
+          user_id: string
+        }
+        Update: {
+          aciertos?: number
+          created_at?: string
+          duracion_segundos?: number
+          id?: string
+          mazo_id?: string | null
+          modo?: string
+          tarjetas_vistas?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estudio_sesiones_mazo_id_fkey"
+            columns: ["mazo_id"]
+            isOneToOne: false
+            referencedRelation: "estudio_mazos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estudio_tarjetas: {
+        Row: {
+          created_at: string
+          frente: string
+          id: string
+          imagen_url: string | null
+          mazo_id: string
+          orden: number
+          pista: string | null
+          reverso: string
+        }
+        Insert: {
+          created_at?: string
+          frente: string
+          id?: string
+          imagen_url?: string | null
+          mazo_id: string
+          orden?: number
+          pista?: string | null
+          reverso: string
+        }
+        Update: {
+          created_at?: string
+          frente?: string
+          id?: string
+          imagen_url?: string | null
+          mazo_id?: string
+          orden?: number
+          pista?: string | null
+          reverso?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estudio_tarjetas_mazo_id_fkey"
+            columns: ["mazo_id"]
+            isOneToOne: false
+            referencedRelation: "estudio_mazos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_bloqueos: {
         Row: {
           created_at: string
