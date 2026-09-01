@@ -12,7 +12,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, Settings, LogOut,
-  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, ChevronDown, FileText, Compass, ClipboardCheck, Sparkles
+  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, ChevronDown, FileText, Compass, ClipboardCheck, Sparkles, Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
