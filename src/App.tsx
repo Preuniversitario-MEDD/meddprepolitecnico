@@ -41,6 +41,8 @@ import SchulteRecords from "./pages/student/SchulteRecords";
 import AdminConcentracion from "./pages/admin/AdminConcentracion";
 import OrientacionVocacional from "./pages/student/OrientacionVocacional";
 import StudentTutor from "./pages/student/StudentTutor";
+import Estudio from "./pages/student/Estudio";
+import EstudioMazo from "./pages/student/EstudioMazo";
 import AdminTutorAnalytics from "./pages/admin/AdminTutorAnalytics";
 import AdminTutor from "./pages/admin/AdminTutor";
 import NotFound from "./pages/NotFound";
