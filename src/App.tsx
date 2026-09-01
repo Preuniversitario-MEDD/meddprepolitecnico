@@ -41,6 +41,8 @@ import SchulteRecords from "./pages/student/SchulteRecords";
 import AdminConcentracion from "./pages/admin/AdminConcentracion";
 import OrientacionVocacional from "./pages/student/OrientacionVocacional";
 import StudentTutor from "./pages/student/StudentTutor";
+import Estudio from "./pages/student/Estudio";
+import EstudioMazo from "./pages/student/EstudioMazo";
 import AdminTutorAnalytics from "./pages/admin/AdminTutorAnalytics";
 import AdminTutor from "./pages/admin/AdminTutor";
 import NotFound from "./pages/NotFound";
@@ -149,6 +151,8 @@ function AppRoutes() {
       <Route path="/student/schulte-records" element={<ProtectedRoute><SchulteRecords /></ProtectedRoute>} />
       <Route path="/student/orientacion-vocacional" element={<ProtectedRoute><OrientacionVocacional /></ProtectedRoute>} />
       <Route path="/student/tutor" element={<ProtectedRoute><StudentTutor /></ProtectedRoute>} />
+      <Route path="/student/estudio" element={<ProtectedRoute><Estudio /></ProtectedRoute>} />
+      <Route path="/student/estudio/:id" element={<ProtectedRoute><EstudioMazo /></ProtectedRoute>} />
       <Route path="/student/elegir-curso" element={<ProtectedRoute requiredRole="estudiante"><ElegirCurso /></ProtectedRoute>} />
 
       <Route path="/trust" element={<Trust />} />
