@@ -151,6 +151,8 @@ function AppRoutes() {
       <Route path="/student/schulte-records" element={<ProtectedRoute><SchulteRecords /></ProtectedRoute>} />
       <Route path="/student/orientacion-vocacional" element={<ProtectedRoute><OrientacionVocacional /></ProtectedRoute>} />
       <Route path="/student/tutor" element={<ProtectedRoute><StudentTutor /></ProtectedRoute>} />
+      <Route path="/student/estudio" element={<ProtectedRoute><Estudio /></ProtectedRoute>} />
+      <Route path="/student/estudio/:id" element={<ProtectedRoute><EstudioMazo /></ProtectedRoute>} />
       <Route path="/student/elegir-curso" element={<ProtectedRoute requiredRole="estudiante"><ElegirCurso /></ProtectedRoute>} />
 
       <Route path="/trust" element={<Trust />} />
