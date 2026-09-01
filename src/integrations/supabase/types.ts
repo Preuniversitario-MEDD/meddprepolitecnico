@@ -1109,6 +1109,119 @@ export type Database = {
           },
         ]
       }
+      productividad_focus: {
+        Row: {
+          completada: boolean
+          created_at: string
+          id: string
+          minutos_completados: number
+          minutos_planificados: number
+          tarea_id: string | null
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          completada?: boolean
+          created_at?: string
+          id?: string
+          minutos_completados?: number
+          minutos_planificados?: number
+          tarea_id?: string | null
+          tipo?: string
+          user_id: string
+        }
+        Update: {
+          completada?: boolean
+          created_at?: string
+          id?: string
+          minutos_completados?: number
+          minutos_planificados?: number
+          tarea_id?: string | null
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "productividad_focus_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "productividad_tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      productividad_tareas: {
+        Row: {
+          completada_en: string | null
+          created_at: string
+          curso_id: string | null
+          duracion_estimada: number
+          duracion_real: number
+          estado: string
+          fecha_limite: string | null
+          id: string
+          materia: string | null
+          notas: string | null
+          orden: number
+          prioridad: string
+          sesion_id: string | null
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completada_en?: string | null
+          created_at?: string
+          curso_id?: string | null
+          duracion_estimada?: number
+          duracion_real?: number
+          estado?: string
+          fecha_limite?: string | null
+          id?: string
+          materia?: string | null
+          notas?: string | null
+          orden?: number
+          prioridad?: string
+          sesion_id?: string | null
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completada_en?: string | null
+          created_at?: string
+          curso_id?: string | null
+          duracion_estimada?: number
+          duracion_real?: number
+          estado?: string
+          fecha_limite?: string | null
+          id?: string
+          materia?: string | null
+          notas?: string | null
+          orden?: number
+          prioridad?: string
+          sesion_id?: string | null
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "productividad_tareas_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "productividad_tareas_sesion_id_fkey"
+            columns: ["sesion_id"]
+            isOneToOne: false
+            referencedRelation: "sesiones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           activo: boolean
