@@ -43,6 +43,7 @@ import OrientacionVocacional from "./pages/student/OrientacionVocacional";
 import StudentTutor from "./pages/student/StudentTutor";
 import Estudio from "./pages/student/Estudio";
 import EstudioMazo from "./pages/student/EstudioMazo";
+import Productividad from "./pages/student/Productividad";
 import AdminTutorAnalytics from "./pages/admin/AdminTutorAnalytics";
 import AdminTutor from "./pages/admin/AdminTutor";
 import NotFound from "./pages/NotFound";
