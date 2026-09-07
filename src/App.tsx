@@ -43,6 +43,7 @@ import OrientacionVocacional from "./pages/student/OrientacionVocacional";
 import StudentTutor from "./pages/student/StudentTutor";
 import Estudio from "./pages/student/Estudio";
 import EstudioMazo from "./pages/student/EstudioMazo";
+import Productividad from "./pages/student/Productividad";
 import AdminTutorAnalytics from "./pages/admin/AdminTutorAnalytics";
 import AdminTutor from "./pages/admin/AdminTutor";
 import NotFound from "./pages/NotFound";
@@ -153,6 +154,7 @@ function AppRoutes() {
       <Route path="/student/tutor" element={<ProtectedRoute><StudentTutor /></ProtectedRoute>} />
       <Route path="/student/estudio" element={<ProtectedRoute><Estudio /></ProtectedRoute>} />
       <Route path="/student/estudio/:id" element={<ProtectedRoute><EstudioMazo /></ProtectedRoute>} />
+      <Route path="/student/productividad" element={<ProtectedRoute><Productividad /></ProtectedRoute>} />
       <Route path="/student/elegir-curso" element={<ProtectedRoute requiredRole="estudiante"><ElegirCurso /></ProtectedRoute>} />
 
       <Route path="/trust" element={<Trust />} />

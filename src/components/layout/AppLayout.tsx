@@ -12,7 +12,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, BookOpen, Settings, LogOut,
-  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, ChevronDown, FileText, Compass, ClipboardCheck, Sparkles, Layers
+  Moon, Sun, GraduationCap, Brain, Library, MessageSquare, Zap, Eye, ArrowLeft, ChevronDown, FileText, Compass, ClipboardCheck, Sparkles, Layers, ListTodo
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -43,6 +43,7 @@ const studentLinks: Array<{ path: string; icon: any; label: string; shortLabel: 
   { path: '/student', icon: LayoutDashboard, label: 'Inicio', shortLabel: 'Inicio' },
   { path: '/student/sessions', icon: BookOpen, label: 'Sesiones', shortLabel: 'Sesion' },
   { path: '/student/estudio', icon: Layers, label: 'Estudio', shortLabel: 'Estudio' },
+  { path: '/student/productividad', icon: ListTodo, label: 'Productividad', shortLabel: 'Tareas' },
   { path: '/student/concentracion', icon: Eye, label: 'Concentración Visual', shortLabel: 'Foco', moduleKey: 'concentracion' },
   { path: '/student/library', icon: Library, label: 'Biblioteca', shortLabel: 'Biblio', moduleKey: 'biblioteca' },
   { path: '/student/competencia', icon: Zap, label: 'Competencia', shortLabel: 'Compet' },
