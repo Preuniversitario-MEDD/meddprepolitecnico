@@ -50,6 +50,29 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function formatLastSeen(lastSeen: string | null) {
+  if (!lastSeen) return { text: 'Nunca conectado', ago: 'sin conexión', color: 'text-muted-foreground' };
+  const diff = Date.now() - new Date(lastSeen).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  const months = Math.floor(days / 30);
+
+  const text = new Date(lastSeen).toLocaleString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+  let ago: string;
+  let color: string;
+  if (mins < 2) { ago = 'en línea ahora'; color = 'text-[hsl(var(--neon-mint))]'; }
+  else if (mins < 60) { ago = `hace ${mins} min`; color = 'text-[hsl(var(--neon-mint))]'; }
+  else if (hours < 24) { ago = `hace ${hours} h`; color = 'text-[hsl(var(--neon-blue,217 91% 60%))]'; }
+  else if (days === 1) { ago = 'hace 1 día'; color = 'text-muted-foreground'; }
+  else if (days < 30) { ago = `hace ${days} días`; color = days >= 7 ? 'text-[hsl(var(--neon-orange))]' : 'text-muted-foreground'; }
+  else if (months === 1) { ago = 'hace 1 mes'; color = 'text-destructive'; }
+  else { ago = `hace ${months} meses`; color = 'text-destructive'; }
+
+  return { text, ago, color };
+}
+
 export default function AdminStudents() {
   const [students, setStudents] = useState<Profile[]>([]);
   const [studentCursos, setStudentCursos] = useState<Record<string, { id: string; titulo: string }[]>>({});
@@ -399,6 +422,14 @@ export default function AdminStudents() {
                           {(student as any).colegio && <span>🏫 {(student as any).colegio}</span>}
                           {student.fecha_nacimiento && <span>🎂 {calcAge(student.fecha_nacimiento)}</span>}
                           <span>📅 {formatDate(student.created_at)}</span>
+                          {(() => {
+                            const ls = formatLastSeen(student.last_seen_at);
+                            return (
+                              <span className={ls.color} title={`Última conexión: ${ls.text}`}>
+                                🕒 {ls.text} · {ls.ago}
+                              </span>
+                            );
+                          })()}
                           <span className={student.activo ? 'text-[hsl(var(--neon-mint))]' : 'text-destructive'}>
                             {student.activo ? '● Activo' : '● Bloqueado'}
                           </span>
