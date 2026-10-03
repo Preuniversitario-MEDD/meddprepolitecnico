@@ -422,6 +422,14 @@ export default function AdminStudents() {
                           {(student as any).colegio && <span>🏫 {(student as any).colegio}</span>}
                           {student.fecha_nacimiento && <span>🎂 {calcAge(student.fecha_nacimiento)}</span>}
                           <span>📅 {formatDate(student.created_at)}</span>
+                          {(() => {
+                            const ls = formatLastSeen(student.last_seen_at);
+                            return (
+                              <span className={ls.color} title={`Última conexión: ${ls.text}`}>
+                                🕒 {ls.text} · {ls.ago}
+                              </span>
+                            );
+                          })()}
                           <span className={student.activo ? 'text-[hsl(var(--neon-mint))]' : 'text-destructive'}>
                             {student.activo ? '● Activo' : '● Bloqueado'}
                           </span>
