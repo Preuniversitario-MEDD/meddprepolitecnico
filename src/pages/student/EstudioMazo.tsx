@@ -13,6 +13,7 @@ import { ArrowLeft, Loader2, Lightbulb, RotateCcw, Check, X, Trophy, Timer } fro
 import { calcularSrs, esVencida, barajar, normalizar, type Calidad } from '@/lib/srs';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import { registrarPuntosEsfuerzo } from '@/lib/xp';
 
 const db = supabase as any;
 
@@ -68,6 +69,7 @@ export default function EstudioMazo() {
 
   const registrarSesion = useCallback(async (vistas: number, aciertos: number) => {
     if (!user || !id || vistas === 0) return;
+    registrarPuntosEsfuerzo('flashcard', { cantidad: vistas });
     await db.from('estudio_sesiones').insert({
       user_id: user.id, mazo_id: id, modo, tarjetas_vistas: vistas, aciertos,
       duracion_segundos: Math.round((Date.now() - inicio.current) / 1000),

@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Timer, ArrowLeft, CheckCircle, XCircle, AlertTriangle, RotateCcw, Trophy, Flag, Eye, Lock, Zap, BookOpen, FlaskConical, Brain } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { registrarPuntosEsfuerzo } from '@/lib/xp';
 import ExamRuleta from '@/components/exam/ExamRuleta';
 
 interface ExamQuestion {
@@ -281,6 +282,7 @@ export default function SectionExam() {
     const aprobado = finalPct >= config.puntaje_aprobacion;
 
     if (user && !isAdminPreview) {
+      registrarPuntosEsfuerzo('examen');
       const horaFin = new Date();
       await supabase.from('examenes').insert({
         user_id: user.id,

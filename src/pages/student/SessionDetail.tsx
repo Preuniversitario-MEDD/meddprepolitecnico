@@ -14,6 +14,7 @@ import ContentItem from '@/components/session/ContentItem';
 import TheoryContentItem from '@/components/session/TheoryContentItem';
 import PracticalApplications from '@/components/session/PracticalApplications';
 import { useToast } from '@/hooks/use-toast';
+import { registrarPuntosEsfuerzo, hoyEc } from '@/lib/xp';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Contenido = Tables<'contenido'>;
@@ -38,6 +39,13 @@ export default function SessionDetail() {
   const [contenido, setContenido] = useState<Contenido[]>([]);
   const [pestanas, setPestanas] = useState<Pestana[]>([]);
   const [activeTab, setActiveTab] = useState<string>('');
+  useEffect(() => {
+    if (activeTab !== 'teoria' || !id || !user) return;
+    const k = `medd_xp_teoria_${id}_${hoyEc()}`;
+    if (localStorage.getItem(k)) return;
+    const t = setTimeout(() => { localStorage.setItem(k, '1'); registrarPuntosEsfuerzo('teoria'); }, 30000);
+    return () => clearTimeout(t);
+  }, [activeTab, id, user?.id]);
   const [showSolutions, setShowSolutions] = useState<Record<string, boolean>>({});
   const [aiExercise, setAiExercise] = useState<AIExercise | null>(null);
   const [aiLoading, setAiLoading] = useState(false);

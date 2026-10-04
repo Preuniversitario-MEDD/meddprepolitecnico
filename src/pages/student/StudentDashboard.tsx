@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, CheckCircle, Clock, FlaskConical, FileText, Zap, Trophy, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import { Gamificacion } from '@/components/dashboard/Gamificacion';
 import StudyTimeline from '@/components/dashboard/StudyTimeline';
 import PerformanceCharts from '@/components/dashboard/PerformanceCharts';
 import WeakAreas from '@/components/dashboard/WeakAreas';
@@ -216,6 +217,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
+      <Gamificacion />
       {/* Exam unlock dialog */}
       <Dialog open={!!unlockDialog} onOpenChange={(open) => !open && setUnlockDialog(null)}>
         <DialogContent className="border-2 border-[hsl(var(--neon-orange))] bg-background">
