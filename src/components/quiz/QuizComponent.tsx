@@ -11,6 +11,8 @@ import confetti from 'canvas-confetti';
 import MathText from './MathText';
 import { useGameSounds } from '@/hooks/useGameSounds';
 
+import { registrarPuntosEsfuerzo } from '@/lib/xp';
+
 interface QuizQuestion {
   id: string;
   pregunta: string;
@@ -141,6 +143,7 @@ export default function QuizComponent({ sesionId, userId }: Props) {
     const roundErrors = questions.length - roundCorrect;
     const elapsedSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
     const finalScore = Math.round((roundCorrect / questions.length) * 100);
+    registrarPuntosEsfuerzo('quiz', { extra: finalScore > 80 });
 
     const { data: existingProgress } = await supabase.from('progreso_estudiante').select('*').eq('user_id', userId).eq('sesion_id', sesionId).maybeSingle();
 

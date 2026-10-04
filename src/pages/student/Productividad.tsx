@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Timer, Play, Pause, RotateCcw, CalendarDays, ListTodo, Flame, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import { registrarPuntosEsfuerzo } from '@/lib/xp';
 
 const db = supabase as any;
 
@@ -360,6 +361,7 @@ function Pomodoro({ tareas, tareaId, setTareaId, userId, onSesion }: {
     registrar(modo, mins);
     confetti({ particleCount: 70, spread: 70, origin: { y: 0.7 } });
     toast.success(modo === 'enfoque' ? '¡Bloque de enfoque completado!' : 'Descanso terminado, volvamos.');
+    if (modo === 'enfoque') registrarPuntosEsfuerzo('pomodoro');
     if (modo === 'enfoque') { setCiclos(c => c + 1); setModo('descanso'); setRestante(descanso * 60); }
     else { setModo('enfoque'); setRestante(minutos * 60); }
   };
