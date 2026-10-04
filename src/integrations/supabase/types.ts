@@ -582,6 +582,48 @@ export type Database = {
         }
         Relationships: []
       }
+      estudiante_rachas: {
+        Row: {
+          dia_puntos: string | null
+          id: string
+          puntos_hoy: number
+          puntos_semana_actual: number
+          puntos_totales: number
+          racha_actual: number
+          racha_maxima: number
+          semana_inicio: string | null
+          ultimo_dia_estudio: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          dia_puntos?: string | null
+          id?: string
+          puntos_hoy?: number
+          puntos_semana_actual?: number
+          puntos_totales?: number
+          racha_actual?: number
+          racha_maxima?: number
+          semana_inicio?: string | null
+          ultimo_dia_estudio?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          dia_puntos?: string | null
+          id?: string
+          puntos_hoy?: number
+          puntos_semana_actual?: number
+          puntos_totales?: number
+          racha_actual?: number
+          racha_maxima?: number
+          semana_inicio?: string | null
+          ultimo_dia_estudio?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       estudio_mazos: {
         Row: {
           color: string
@@ -1637,6 +1679,41 @@ export type Database = {
         }
         Relationships: []
       }
+      xp_eventos: {
+        Row: {
+          created_at: string
+          curso_id: string | null
+          id: string
+          puntos: number
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          curso_id?: string | null
+          id?: string
+          puntos: number
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          curso_id?: string | null
+          id?: string
+          puntos?: number
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "xp_eventos_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       public_profiles: {
@@ -1674,6 +1751,43 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      liga_semanal: {
+        Args: { _curso?: string }
+        Returns: {
+          avatar_url: string
+          nombre: string
+          posicion: number
+          puntos: number
+          user_id: string
+        }[]
+      }
+      registrar_xp: {
+        Args: {
+          _cantidad?: number
+          _curso?: string
+          _extra?: boolean
+          _tipo: string
+        }
+        Returns: {
+          dia_puntos: string | null
+          id: string
+          puntos_hoy: number
+          puntos_semana_actual: number
+          puntos_totales: number
+          racha_actual: number
+          racha_maxima: number
+          semana_inicio: string | null
+          ultimo_dia_estudio: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "estudiante_rachas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
