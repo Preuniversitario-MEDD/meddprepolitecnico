@@ -8,6 +8,13 @@
       "when": 1791072008363,
       "tag": "0000_gamificacion_xp",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791158786692,
+      "tag": "0001_perfil_integral_y_archivo",
+      "breakpoints": true
     }
   ]
 }
