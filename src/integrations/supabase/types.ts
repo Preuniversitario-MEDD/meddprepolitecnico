@@ -1116,6 +1116,36 @@ export type Database = {
         }
         Relationships: []
       }
+      perfil_integral: {
+        Row: {
+          analisis: Json | null
+          created_at: string
+          dimensiones: Json
+          id: string
+          precision_estimada: number | null
+          respuestas: Json
+          user_id: string
+        }
+        Insert: {
+          analisis?: Json | null
+          created_at?: string
+          dimensiones?: Json
+          id?: string
+          precision_estimada?: number | null
+          respuestas?: Json
+          user_id: string
+        }
+        Update: {
+          analisis?: Json | null
+          created_at?: string
+          dimensiones?: Json
+          id?: string
+          precision_estimada?: number | null
+          respuestas?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       pestanas_sesion: {
         Row: {
           clave: string
@@ -1603,6 +1633,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tests_archivo: {
+        Row: {
+          archivado_en: string
+          datos: Json
+          fecha_original: string | null
+          id: string
+          origen: string
+          test_key: string | null
+          user_id: string
+        }
+        Insert: {
+          archivado_en?: string
+          datos?: Json
+          fecha_original?: string | null
+          id?: string
+          origen: string
+          test_key?: string | null
+          user_id: string
+        }
+        Update: {
+          archivado_en?: string
+          datos?: Json
+          fecha_original?: string | null
+          id?: string
+          origen?: string
+          test_key?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       tutor_usage: {
         Row: {
