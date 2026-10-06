@@ -49,6 +49,7 @@ const studentLinks: Array<{ path: string; icon: any; label: string; shortLabel: 
   { path: '/student/competencia', icon: Zap, label: 'Competencia', shortLabel: 'Compet' },
   { path: '/student/psicometria', icon: ClipboardCheck, label: 'Psicometría', shortLabel: 'Psico', moduleKey: 'psicometria' },
   { path: '/student/orientacion-vocacional', icon: Compass, label: 'Orientación Vocacional', shortLabel: 'Vocac', moduleKey: 'orientacion_vocacional' },
+  { path: '/student/test-integral', icon: Sparkles, label: 'Test Integral', shortLabel: 'Integral', moduleKey: 'orientacion_vocacional' },
   { path: '/student/tutor', icon: Sparkles, label: 'Tutor IA', shortLabel: 'Tutor', moduleKey: 'tutor' },
   { path: '/student/mensajes', icon: MessageSquare, label: 'Mensajes', shortLabel: 'Msj', moduleKey: 'mensajes' },
   { path: '/student/profile', icon: GraduationCap, label: 'Perfil', shortLabel: 'Perfil' },
