@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, jsonResponse, requireAdmin, generateTempPassword } from "../_shared/auth.ts";
-
+const DEFAULT_PASSWORD = "123*789*h";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -49,13 +49,27 @@ serve(async (req) => {
 
     if (action === "reset_password") {
       if (!userId) throw new Error("userId is required");
-      const tempPassword = generateTempPassword();
       const { error } = await adminClient.auth.admin.updateUserById(userId, {
-        password: tempPassword,
+        password: DEFAULT_PASSWORD,
       });
       if (error) throw error;
       await adminClient.from("profiles").update({ primera_vez: true }).eq("user_id", userId);
-      return jsonResponse({ success: true, tempPassword });
+      return jsonResponse({ success: true, tempPassword: DEFAULT_PASSWORD });
+    }
+
+    if (action === "reset_all_passwords") {
+      const { data: roles } = await adminClient.from("user_roles").select("user_id").eq("role", "estudiante");
+      const { data: admins } = await adminClient.from("user_roles").select("user_id").in("role", ["admin"]);
+      const adminSet = new Set((admins || []).map((a: any) => a.user_id));
+      const ids = [...new Set((roles || []).map((r: any) => r.user_id))].filter((id) => !adminSet.has(id));
+      let ok = 0, fail = 0;
+      for (const id of ids) {
+        const { error } = await adminClient.auth.admin.updateUserById(id, { password: DEFAULT_PASSWORD });
+        if (error) { fail++; continue; }
+        await adminClient.from("profiles").update({ primera_vez: true }).eq("user_id", id);
+        ok++;
+      }
+      return jsonResponse({ success: true, ok, fail, tempPassword: DEFAULT_PASSWORD });
     }
 
     if (action === "delete_user") {

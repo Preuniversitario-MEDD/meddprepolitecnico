@@ -208,6 +208,17 @@ export default function AdminStudents() {
     });
   }
 
+  async function resetAllPasswords() {
+    if (!confirm('¿Reiniciar la contraseña de TODOS los estudiantes a 123*789*h?')) return;
+    toast({ title: 'Reiniciando contraseñas...', description: 'Esto puede tardar unos segundos.' });
+    const { data, error } = await supabase.functions.invoke('admin-users', { body: { action: 'reset_all_passwords' } });
+    if (error || data?.error) {
+      toast({ title: 'Error', description: data?.error || error?.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Contraseñas reiniciadas', description: `${data.ok} estudiantes ahora tienen la clave 123*789*h${data.fail ? ` (${data.fail} fallaron)` : ''}`, duration: 15000 });
+  }
+
   async function saveEdit() {
     if (!editStudent) return;
     const nombreSan = sanitizeInput(form.nombre);
@@ -291,6 +302,8 @@ export default function AdminStudents() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-2xl font-display font-bold">Estudiantes & Cursos</h1>
         {activeTab === 'students' && (
+          <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={resetAllPasswords}>Reiniciar todas las contraseñas</Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button className="gradient-primary text-primary-foreground gap-2">
@@ -319,6 +332,7 @@ export default function AdminStudents() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         )}
       </div>
 
