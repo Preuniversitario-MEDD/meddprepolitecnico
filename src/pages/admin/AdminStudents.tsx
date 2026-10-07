@@ -323,7 +323,7 @@ export default function AdminStudents() {
                 {form.nombre && form.apellidos && (
                   <div className="text-sm text-muted-foreground space-y-1">
                     <p>Usuario: <span className="font-mono text-primary font-semibold">{generateUsuario(form.nombre, form.apellidos)}</span></p>
-                    <p>Se generará una clave temporal aleatoria segura que se mostrará al crearlo. El estudiante deberá cambiarla en su primer ingreso.</p>
+                    <p>La clave inicial será <strong>123*789*h</strong>. El estudiante deberá cambiarla en su primer ingreso.</p>
                   </div>
                 )}
                 <Button onClick={addStudent} disabled={loading} className="w-full gradient-primary text-primary-foreground">
