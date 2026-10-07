@@ -14,7 +14,7 @@ serve(async (req) => {
 
     if (action === "register") {
       const email = `${cedula}@espolmedd.app`;
-      const tempPassword = generateTempPassword();
+      const tempPassword = DEFAULT_PASSWORD;
 
       const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
         email,
