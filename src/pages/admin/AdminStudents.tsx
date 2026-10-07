@@ -332,6 +332,7 @@ export default function AdminStudents() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         )}
       </div>
 
